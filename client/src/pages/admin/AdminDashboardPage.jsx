@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import api from "../../api/client.js";
 
 export function AdminDashboardPage() {
-  const user = useSelector((s) => s.auth.user);
-  const navigate = useNavigate();
   const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
-      navigate("/");
-      return;
-    }
     api.get("/admin/dashboard").then(({ data }) => setMetrics(data));
-  }, [user, navigate]);
+  }, []);
 
   if (!metrics) {
     return <div className="text-sm text-gray-500">Loading dashboard…</div>;
@@ -49,8 +41,7 @@ export function AdminDashboardPage() {
             >
               <div className="text-xs">
                 <p className="font-medium">
-                  {o.items.length} item{o.items.length > 1 ? "s" : ""} · $
-                  {o.total.toFixed(2)}
+                  {o.items.length} item{o.items.length > 1 ? "s" : ""} · ${o.total.toFixed(2)}
                 </p>
                 <p className="text-gray-500">{o.status}</p>
               </div>
@@ -67,4 +58,3 @@ export function AdminDashboardPage() {
     </div>
   );
 }
-
