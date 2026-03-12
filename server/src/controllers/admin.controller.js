@@ -1,6 +1,30 @@
 import { Product } from "../models/product.model.js";
 import { Order } from "../models/order.model.js";
 import { Review } from "../models/review.model.js";
+import { Category } from "../models/category.model.js";
+
+function normalizeProductPayload(payload) {
+  const next = { ...payload };
+
+  if (typeof next.visible === "boolean") {
+    next.isVisible = next.visible;
+    delete next.visible;
+  }
+
+  if (typeof next.newDrop === "boolean") {
+    next.isNewDrop = next.newDrop;
+    delete next.newDrop;
+  }
+
+  if (next.stock !== undefined) {
+    next.inventoryCount = Number(next.stock);
+    next.inStock = Number(next.stock) > 0;
+    delete next.stock;
+  }
+
+  return next;
+}
+
 
 export async function getDashboardMetrics(req, res) {
   const [totalProducts, totalOrders, totalRevenueAgg, recentOrders] =
@@ -25,17 +49,25 @@ export async function getDashboardMetrics(req, res) {
 }
 
 export async function adminListProducts(req, res) {
-  const products = await Product.find().sort({ createdAt: -1 });
+  const products = await Product.find()
+    .sort({ createdAt: -1 })
+    .populate("category", "name slug");
   res.json(products);
 }
 
+
+export async function adminListCategories(req, res) {
+  const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+  res.json(categories);
+}
+
 export async function adminCreateProduct(req, res) {
-  const product = await Product.create(req.body);
+  const product = await Product.create(normalizeProductPayload(req.body));
   res.status(201).json(product);
 }
 
 export async function adminUpdateProduct(req, res) {
-  const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+  const product = await Product.findByIdAndUpdate(req.params.id, normalizeProductPayload(req.body), {
     new: true,
   });
   if (!product) {
