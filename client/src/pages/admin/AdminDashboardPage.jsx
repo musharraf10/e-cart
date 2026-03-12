@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../../api/client.js";
 
 export function AdminDashboardPage() {
@@ -14,7 +15,23 @@ export function AdminDashboardPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Admin dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold">Admin dashboard</h1>
+        <div className="flex gap-2">
+          <Link
+            to="/admin/products"
+            className="rounded-full border border-gray-300 px-4 py-2 text-xs font-semibold"
+          >
+            Manage products
+          </Link>
+          <Link
+            to="/admin/products/new"
+            className="rounded-full bg-gray-900 text-white px-4 py-2 text-xs font-semibold"
+          >
+            Create product
+          </Link>
+        </div>
+      </div>
       <div className="grid sm:grid-cols-3 gap-4 text-sm">
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-xs text-gray-500">Revenue</p>

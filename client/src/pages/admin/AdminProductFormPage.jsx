@@ -26,9 +26,16 @@ export function AdminProductFormPage() {
 
   const navigate = useNavigate();
   const [form, setForm] = useState(defaultForm);
+  const [categories, setCategories] = useState([]);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
+
+  useEffect(() => {
+    api.get("/admin/categories").then(({ data }) => setCategories(data));
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -41,6 +48,9 @@ export function AdminProductFormPage() {
         return;
       }
 
+      const categoryId =
+        typeof product.category === "object" ? product.category?._id : product.category;
+
       setForm({
         name: product.name || "",
         slug: product.slug || "",
@@ -50,6 +60,7 @@ export function AdminProductFormPage() {
         sizes: product.sizes || [],
         colors: (product.colors || []).join(", "),
         stock: String(product.inventoryCount ?? 0),
+        category: categoryId || "",
         category: product.category || "",
         images: product.images?.length ? product.images : [""],
         visible: product.isVisible ?? true,
@@ -57,6 +68,12 @@ export function AdminProductFormPage() {
       });
     });
   }, [editId, isEdit, navigate]);
+
+  const selectedCategory = categories.find((category) => category._id === form.category);
+
+  const filteredCategories = categories.filter((category) =>
+    category.name.toLowerCase().includes(categorySearch.toLowerCase()),
+  );
 
   const setImageAt = (index, value) => {
     const next = [...form.images];
@@ -177,12 +194,46 @@ export function AdminProductFormPage() {
           />
         </div>
 
-        <input
-          placeholder="Category (ObjectId)"
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-          className="w-full border rounded-lg px-3 py-2"
-        />
+        <div className="relative">
+          <p className="text-sm font-medium mb-2">Category</p>
+          <button
+            type="button"
+            onClick={() => setShowCategoryMenu((prev) => !prev)}
+            className="w-full border rounded-lg px-3 py-2 text-left text-sm"
+          >
+            {selectedCategory?.name || "Select category"}
+          </button>
+
+          {showCategoryMenu && (
+            <div className="absolute z-10 mt-1 w-full border rounded-lg bg-white shadow-lg p-2 space-y-2">
+              <input
+                placeholder="Search category..."
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+              />
+              <div className="max-h-44 overflow-auto">
+                {filteredCategories.map((category) => (
+                  <button
+                    key={category._id}
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, category: category._id });
+                      setShowCategoryMenu(false);
+                      setCategorySearch("");
+                    }}
+                    className="w-full text-left px-2 py-2 rounded hover:bg-gray-100 text-sm"
+                  >
+                    {category.name}
+                  </button>
+                ))}
+                {filteredCategories.length === 0 && (
+                  <p className="px-2 py-2 text-xs text-gray-500">No categories found.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="space-y-2">
           <p className="text-sm font-medium">Sizes</p>
