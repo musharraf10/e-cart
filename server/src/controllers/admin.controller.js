@@ -26,6 +26,29 @@ function normalizeProductPayload(payload) {
 }
 
 
+function normalizeProductPayload(payload) {
+  const next = { ...payload };
+
+  if (typeof next.visible === "boolean") {
+    next.isVisible = next.visible;
+    delete next.visible;
+  }
+
+  if (typeof next.newDrop === "boolean") {
+    next.isNewDrop = next.newDrop;
+    delete next.newDrop;
+  }
+
+  if (next.stock !== undefined) {
+    next.inventoryCount = Number(next.stock);
+    next.inStock = Number(next.stock) > 0;
+    delete next.stock;
+  }
+
+  return next;
+}
+
+
 export async function getDashboardMetrics(req, res) {
   const [totalProducts, totalOrders, totalRevenueAgg, recentOrders] =
     await Promise.all([

@@ -61,6 +61,7 @@ export function AdminProductFormPage() {
         colors: (product.colors || []).join(", "),
         stock: String(product.inventoryCount ?? 0),
         category: categoryId || "",
+        category: product.category || "",
         images: product.images?.length ? product.images : [""],
         visible: product.isVisible ?? true,
         newDrop: product.isNewDrop ?? false,
