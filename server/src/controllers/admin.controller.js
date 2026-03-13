@@ -31,6 +31,7 @@ function normalizeProductPayload(payload) {
   return next;
 }
 
+
 export async function getDashboardMetrics(req, res) {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
@@ -163,6 +164,12 @@ export async function adminBulkUpdateProducts(req, res) {
 
   res.json({ message: "Bulk action completed" });
 }
+  const products = await Product.find()
+    .sort({ createdAt: -1 })
+    .populate("category", "name slug");
+  res.json(products);
+}
+
 
 export async function adminListCategories(req, res) {
   const categories = await Category.find({ isActive: true }).sort({ name: 1 });
@@ -171,6 +178,7 @@ export async function adminListCategories(req, res) {
 
 export async function adminCreateCategory(req, res) {
   const { name, description } = req.body;
+
   if (!name || !name.trim()) {
     res.status(400);
     throw new Error("Category name is required");
@@ -179,11 +187,22 @@ export async function adminCreateCategory(req, res) {
   const slug = slugify(name, { lower: true, strict: true, trim: true });
   const existing = await Category.findOne({ $or: [{ name: name.trim() }, { slug }] });
   if (existing) {
+
+  const existingByName = await Category.findOne({ name: name.trim() });
+  const existingBySlug = await Category.findOne({ slug });
+
+  if (existingByName || existingBySlug) {
     res.status(400);
     throw new Error("Category already exists");
   }
 
-  const category = await Category.create({ name: name.trim(), description, slug, isActive: true });
+  const category = await Category.create({
+    name: name.trim(),
+    description,
+    slug,
+    isActive: true,
+  });
+
   res.status(201).json(category);
 }
 
@@ -193,7 +212,13 @@ export async function adminCreateProduct(req, res) {
 }
 
 export async function adminUpdateProduct(req, res) {
-  const product = await Product.findByIdAndUpdate(req.params.id, normalizeProductPayload(req.body), { new: true });
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    normalizeProductPayload(req.body),
+    {
+      new: true,
+    },
+  );
   if (!product) {
     res.status(404);
     throw new Error("Product not found");

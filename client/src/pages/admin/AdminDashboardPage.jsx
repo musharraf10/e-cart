@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../../api/client.js";
 
 export function AdminDashboardPage() {
-  const [data, setData] = useState(null);
+  const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
-    api.get("/admin/dashboard").then(({ data: payload }) => setData(payload));
+    api.get("/admin/dashboard").then(({ data }) => setMetrics(data));
   }, []);
 
   if (!data) return <div className="text-sm text-gray-500">Loading dashboard…</div>;
@@ -22,29 +23,30 @@ export function AdminDashboardPage() {
   ];
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-xl font-semibold">Admin Operations Dashboard</h1>
-
-      <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
-        {metricCards.map(([label, value]) => (
-          <div key={label} className="bg-white rounded-xl p-4 shadow-sm">
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="text-xl font-semibold mt-1">{value}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="grid xl:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm text-sm">
-          <h2 className="font-semibold mb-3">Revenue (last 30 days)</h2>
-          <div className="space-y-1 max-h-44 overflow-auto">
-            {data.charts?.revenueLast30Days?.map((row) => (
-              <div key={row._id} className="flex justify-between text-xs border-b py-1">
-                <span>{row._id}</span>
-                <span>${row.revenue.toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold">Admin dashboard</h1>
+        <div className="flex gap-2">
+          <Link
+            to="/admin/products"
+            className="rounded-full border border-gray-300 px-4 py-2 text-xs font-semibold"
+          >
+            Manage products
+          </Link>
+          <Link
+            to="/admin/products/new"
+            className="rounded-full bg-gray-900 text-white px-4 py-2 text-xs font-semibold"
+          >
+            Create product
+          </Link>
+        </div>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-4 text-sm">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <p className="text-xs text-gray-500">Revenue</p>
+          <p className="text-xl font-semibold mt-1">
+            ${metrics.totalRevenue.toFixed(2)}
+          </p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm text-sm">
           <h2 className="font-semibold mb-3">Orders (last 30 days)</h2>
@@ -68,13 +70,24 @@ export function AdminDashboardPage() {
             </div>
           ))}
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="font-semibold mb-2">Low Inventory Alerts</h2>
-          <p className="text-xs text-gray-600">{data.lowStockProducts} products below stock threshold (&lt;5).</p>
-          <h3 className="font-semibold mt-4 mb-2">Recent Reviews</h3>
-          {(data.recentReviews || []).map((r) => (
-            <div key={r._id} className="border-b py-2 text-xs">
-              {r.user?.name}: {r.rating}/5 on {r.product?.name}
+      </div>
+      <section className="bg-white rounded-xl p-4 shadow-sm text-sm">
+        <h2 className="text-sm font-semibold mb-2">Recent orders</h2>
+        <div className="space-y-2">
+          {metrics.recentOrders.map((o) => (
+            <div
+              key={o._id}
+              className="border rounded-lg px-3 py-2 flex items-center justify-between"
+            >
+              <div className="text-xs">
+                <p className="font-medium">
+                  {o.items.length} item{o.items.length > 1 ? "s" : ""} · ${o.total.toFixed(2)}
+                </p>
+                <p className="text-gray-500">{o.status}</p>
+              </div>
+              <span className="text-[11px] text-gray-500">
+                {new Date(o.createdAt).toLocaleDateString()}
+              </span>
             </div>
           ))}
         </div>
