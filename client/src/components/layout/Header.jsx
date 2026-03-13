@@ -34,8 +34,7 @@ export function Header() {
           <NavLink
             to="/cart"
             className={({ isActive }) =>
-              `text-sm relative ${
-                isActive ? "text-accent font-semibold" : "text-gray-600"
+              `text-sm relative ${isActive ? "text-accent font-semibold" : "text-gray-600"
               }`
             }
           >
@@ -59,22 +58,13 @@ export function Header() {
               {user.role === "admin" && (
                 <>
                   <NavLink
-                    to="/admin"
+                    to="/admin/dashboard"
                     className={({ isActive }) =>
-                      `text-sm ${
-                        isActive ? "text-accent font-semibold" : "text-gray-600"
+                      `text-sm ${isActive ? "text-accent font-semibold" : "text-gray-600"
                       }`
                     }
                   >
                     Admin
-                  </NavLink>
-                  <NavLink
-                    to="/admin/products"
-                    className={({ isActive }) =>
-                      `text-sm ${isActive ? "text-accent font-semibold" : "text-gray-600"}`
-                    }
-                  >
-                    Products
                   </NavLink>
                 </>
               )}
