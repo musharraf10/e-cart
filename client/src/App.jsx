@@ -75,6 +75,8 @@ export default function App() {
               <Route path="analytics" element={<AdminAnalyticsPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
+          </Route>
+
           <Route path="/account/*" element={<AccountPage />} />
 
           <Route element={<AdminRoute />}>

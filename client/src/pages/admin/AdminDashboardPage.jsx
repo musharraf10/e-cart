@@ -1,97 +1,195 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import api from "../../api/client.js";
 
 export function AdminDashboardPage() {
-  const [metrics, setMetrics] = useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.get("/admin/dashboard").then(({ data }) => setMetrics(data));
+    let mounted = true;
+
+    api
+      .get("/admin/dashboard")
+      .then(({ data: payload }) => {
+        if (mounted) {
+          setData(payload);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (mounted) {
+          setError("Failed to load dashboard data");
+          setLoading(false);
+        }
+        console.error(err);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  if (!data) return <div className="text-sm text-gray-500">Loading dashboard…</div>;
+  if (loading) {
+    return <div className="text-sm text-gray-500 py-8 text-center">Loading dashboard…</div>;
+  }
+
+  if (error || !data) {
+    return (
+      <div className="text-sm text-red-600 py-8 text-center">
+        {error || "Could not load dashboard data"}
+      </div>
+    );
+  }
+
+  const formatCurrency = (amount) =>
+    `$${(Number(amount) || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const metricCards = [
-    ["Total Revenue", `$${(data.totalRevenue || 0).toFixed(2)}`],
-    ["Revenue Today", `$${(data.revenueToday || 0).toFixed(2)}`],
-    ["Orders Today", data.ordersToday || 0],
-    ["Total Orders", data.totalOrders || 0],
-    ["Total Customers", data.totalCustomers || 0],
-    ["Total Products", data.totalProducts || 0],
-    ["Low Stock Products", data.lowStockProducts || 0],
-    ["Out of Stock Products", data.outOfStockProducts || 0],
+    ["Total Revenue", formatCurrency(data.totalRevenue)],
+    ["Revenue Today", formatCurrency(data.revenueToday)],
+    ["Orders Today", data.ordersToday ?? 0],
+    ["Total Orders", data.totalOrders ?? 0],
+    ["Total Customers", data.totalCustomers ?? 0],
+    ["Total Products", data.totalProducts ?? 0],
+    ["Low Stock Products", data.lowStockProducts ?? 0],
+    ["Out of Stock Products", data.outOfStockProducts ?? 0],
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Admin dashboard</h1>
-        <div className="flex gap-2">
-          <Link
-            to="/admin/products"
-            className="rounded-full border border-gray-300 px-4 py-2 text-xs font-semibold"
+    <div className="space-y-6 p-4 md:p-6">
+      <h1 className="text-2xl font-bold tracking-tight">Admin Operations Dashboard</h1>
+
+      {/* Metric Cards */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {metricCards.map(([label, value]) => (
+          <div
+            key={label}
+            className="bg-white rounded-lg border shadow-sm p-4 transition hover:shadow"
           >
-            Manage products
-          </Link>
-          <Link
-            to="/admin/products/new"
-            className="rounded-full bg-gray-900 text-white px-4 py-2 text-xs font-semibold"
-          >
-            Create product
-          </Link>
-        </div>
-      </div>
-      <div className="grid sm:grid-cols-3 gap-4 text-sm">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Revenue</p>
-          <p className="text-xl font-semibold mt-1">
-            ${metrics.totalRevenue.toFixed(2)}
-          </p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm text-sm">
-          <h2 className="font-semibold mb-3">Orders (last 30 days)</h2>
-          <div className="space-y-1 max-h-44 overflow-auto">
-            {data.charts?.ordersLast30Days?.map((row) => (
-              <div key={row._id} className="flex justify-between text-xs border-b py-1">
-                <span>{row._id}</span>
-                <span>{row.orders}</span>
-              </div>
-            ))}
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              {label}
+            </p>
+            <p className="text-2xl font-semibold mt-1.5">{value}</p>
           </div>
-        </div>
+        ))}
       </section>
 
-      <section className="grid xl:grid-cols-2 gap-4 text-sm">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h2 className="font-semibold mb-2">Recent Orders</h2>
-          {(data.recentOrders || []).map((o) => (
-            <div key={o._id} className="border-b py-2 text-xs">
-              {o._id.slice(-6).toUpperCase()} · {o.user?.name || "Guest"} · ${o.total.toFixed(2)} · {o.status}
-            </div>
-          ))}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Revenue & Orders last 30 days */}
+        <div className="bg-white rounded-lg border shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-3">Revenue (Last 30 Days)</h2>
+          <div className="max-h-64 overflow-auto text-sm">
+            {data.charts?.revenueLast30Days?.length ? (
+              data.charts.revenueLast30Days.map((row) => (
+                <div
+                  key={row._id}
+                  className="flex justify-between py-1.5 border-b last:border-b-0 text-gray-700"
+                >
+                  <span>{row._id}</span>
+                  <span className="font-medium">{formatCurrency(row.revenue)}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-6">No revenue data yet</p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-3">Orders (Last 30 Days)</h2>
+          <div className="max-h-64 overflow-auto text-sm">
+            {data.charts?.ordersLast30Days?.length ? (
+              data.charts.ordersLast30Days.map((row) => (
+                <div
+                  key={row._id}
+                  className="flex justify-between py-1.5 border-b last:border-b-0 text-gray-700"
+                >
+                  <span>{row._id}</span>
+                  <span className="font-medium">{row.orders}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-6">No orders yet</p>
+            )}
+          </div>
         </div>
       </div>
-      <section className="bg-white rounded-xl p-4 shadow-sm text-sm">
-        <h2 className="text-sm font-semibold mb-2">Recent orders</h2>
-        <div className="space-y-2">
-          {metrics.recentOrders.map((o) => (
-            <div
-              key={o._id}
-              className="border rounded-lg px-3 py-2 flex items-center justify-between"
-            >
-              <div className="text-xs">
-                <p className="font-medium">
-                  {o.items.length} item{o.items.length > 1 ? "s" : ""} · ${o.total.toFixed(2)}
-                </p>
-                <p className="text-gray-500">{o.status}</p>
-              </div>
-              <span className="text-[11px] text-gray-500">
-                {new Date(o.createdAt).toLocaleDateString()}
-              </span>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Recent Orders */}
+        <div className="bg-white rounded-lg border shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-3">Recent Orders</h2>
+          {data.recentOrders?.length ? (
+            <div className="space-y-3 text-sm">
+              {data.recentOrders.map((order) => (
+                <div
+                  key={order._id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
+                >
+                  <div>
+                    <div className="font-medium">
+                      #{order._id.slice(-6).toUpperCase()} · {order.user?.name || "Guest"}
+                    </div>
+                    <div className="text-gray-500 text-xs mt-0.5">
+                      {new Date(order.createdAt).toLocaleString("en-US", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </div>
+                  </div>
+                  <div className="mt-1 sm:mt-0 text-right">
+                    <div className="font-medium">{formatCurrency(order.total)}</div>
+                    <div className="text-xs capitalize text-gray-600">{order.status}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <p className="text-gray-500 text-center py-8">No recent orders</p>
+          )}
         </div>
-      </section>
+
+        {/* Recent Reviews + Low Stock Hint */}
+        <div className="bg-white rounded-lg border shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-3">Recent Activity</h2>
+
+          <div className="mb-4">
+            <p className="text-sm text-gray-600">
+              <strong>{data.lowStockProducts || 0}</strong> products low on stock (&lt; 5 units)
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              <strong>{data.outOfStockProducts || 0}</strong> products out of stock
+            </p>
+          </div>
+
+          <h3 className="font-medium text-gray-700 mt-5 mb-2">Recent Reviews</h3>
+          {data.recentReviews?.length ? (
+            <div className="space-y-3 text-sm">
+              {data.recentReviews.map((review) => (
+                <div key={review._id} className="border-b pb-3 last:border-b-0 last:pb-0">
+                  <div className="flex justify-between">
+                    <span className="font-medium">
+                      {review.user?.name || "Anonymous"} • {review.rating}/5
+                    </span>
+                    <span className="text-gray-500 text-xs">
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="text-gray-600 mt-1 line-clamp-2">
+                    on <em>{review.product?.name || "Product"}</em>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-6">No recent reviews</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
