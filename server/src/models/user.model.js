@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    isBlocked: { type: Boolean, default: false },
+    mobileNumber: String,
+    isMobileVerified: { type: Boolean, default: false },
+    avatar: String,
+    dateOfBirth: Date,
+    gender: { type: String, enum: ["male", "female", "other", "prefer_not_to_say"] },
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     address: {
       line1: String,

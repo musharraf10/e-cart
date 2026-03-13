@@ -15,6 +15,7 @@ const productSchema = new mongoose.Schema(
     inventoryCount: { type: Number, default: 0 },
     isVisible: { type: Boolean, default: true },
     isNewDrop: { type: Boolean, default: false },
+    isFeatured: { type: Boolean, default: false },
     averageRating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
   },
