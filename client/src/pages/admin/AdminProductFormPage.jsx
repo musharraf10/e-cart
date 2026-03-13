@@ -43,6 +43,11 @@ export function AdminProductFormPage() {
     loadCategories();
   }, []);
 
+
+  useEffect(() => {
+    api.get("/admin/categories").then(({ data }) => setCategories(data));
+  }, []);
+
   useEffect(() => {
     if (!isEdit) return;
 
@@ -66,7 +71,7 @@ export function AdminProductFormPage() {
         sizes: product.sizes || [],
         colors: (product.colors || []).join(", "),
         stock: String(product.inventoryCount ?? 0),
-        category: categoryId || "",
+        category: product.category || "",
         images: product.images?.length ? product.images : [""],
         visible: product.isVisible ?? true,
         newDrop: product.isNewDrop ?? false,
@@ -268,9 +273,9 @@ export function AdminProductFormPage() {
                   </button>
                 ))}
                 {filteredCategories.length === 0 && (
-                  <p className="px-2 py-2 text-xs text-gray-500">
+                  <><p className="px-2 py-2 text-xs text-gray-500">
                     No categories found. Create one using the button above.
-                  </p>
+                  </p><p className="px-2 py-2 text-xs text-gray-500">No categories found.</p></>
                 )}
               </div>
             </div>
@@ -285,11 +290,10 @@ export function AdminProductFormPage() {
                 key={size}
                 type="button"
                 onClick={() => toggleSize(size)}
-                className={`px-3 py-1 rounded-full border text-sm ${
-                  form.sizes.includes(size)
+                className={`px-3 py-1 rounded-full border text-sm ${form.sizes.includes(size)
                     ? "border-gray-900 bg-gray-900 text-white"
                     : "border-gray-300"
-                }`}
+                  }`}
               >
                 {size}
               </button>

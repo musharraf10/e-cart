@@ -47,6 +47,7 @@ export default function App() {
             <Route path="wishlist" element={<WishlistPage />} />
             <Route path="settings" element={<AccountSettingsPage />} />
           </Route>
+          <Route path="/account/*" element={<AccountPage />} />
 
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminDashboardPage />} />

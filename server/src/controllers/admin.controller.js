@@ -96,9 +96,13 @@ export async function adminCreateProduct(req, res) {
 }
 
 export async function adminUpdateProduct(req, res) {
-  const product = await Product.findByIdAndUpdate(req.params.id, normalizeProductPayload(req.body), {
-    new: true,
-  });
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    normalizeProductPayload(req.body),
+    {
+      new: true,
+    },
+  );
   if (!product) {
     res.status(404);
     throw new Error("Product not found");
