@@ -12,6 +12,7 @@ import productRoutes from "./routes/product.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import userRoutes from "./routes/user.routes.js";
 import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/users", userRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -32,7 +32,7 @@ export function AdminProductFormPage() {
   const [submitting, setSubmitting] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
 
-  // const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
+  const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
 
   const loadCategories = async () => {
     const { data } = await api.get("/admin/categories");
@@ -43,7 +43,6 @@ export function AdminProductFormPage() {
     loadCategories();
   }, []);
 
-  const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
 
   useEffect(() => {
     api.get("/admin/categories").then(({ data }) => setCategories(data));

@@ -26,6 +26,7 @@ function normalizeProductPayload(payload) {
   return next;
 }
 
+
 export async function getDashboardMetrics(req, res) {
   const [totalProducts, totalOrders, totalRevenueAgg, recentOrders] =
     await Promise.all([
@@ -54,6 +55,7 @@ export async function adminListProducts(req, res) {
     .populate("category", "name slug");
   res.json(products);
 }
+
 
 export async function adminListCategories(req, res) {
   const categories = await Category.find({ isActive: true }).sort({ name: 1 });
