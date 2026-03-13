@@ -30,6 +30,7 @@ import { OrdersPage } from "./pages/account/OrdersPage.jsx";
 import { OrderDetailsPage } from "./pages/account/OrderDetailsPage.jsx";
 import { WishlistPage } from "./pages/account/WishlistPage.jsx";
 import { AccountSettingsPage } from "./pages/account/AccountSettingsPage.jsx";
+import { AccountPage } from "./pages/AccountPage.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -74,6 +75,14 @@ export default function App() {
               <Route path="analytics" element={<AdminAnalyticsPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
+          </Route>
+
+          <Route path="/account/*" element={<AccountPage />} />
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/products" element={<AdminProductsPage />} />
+            <Route path="/admin/products/new" element={<AdminProductFormPage />} />
           </Route>
         </Route>
       </Routes>
