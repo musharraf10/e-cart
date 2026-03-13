@@ -1,30 +1,8 @@
+import slugify from "slugify";
 import { Product } from "../models/product.model.js";
 import { Order } from "../models/order.model.js";
 import { Review } from "../models/review.model.js";
 import { Category } from "../models/category.model.js";
-
-function normalizeProductPayload(payload) {
-  const next = { ...payload };
-
-  if (typeof next.visible === "boolean") {
-    next.isVisible = next.visible;
-    delete next.visible;
-  }
-
-  if (typeof next.newDrop === "boolean") {
-    next.isNewDrop = next.newDrop;
-    delete next.newDrop;
-  }
-
-  if (next.stock !== undefined) {
-    next.inventoryCount = Number(next.stock);
-    next.inStock = Number(next.stock) > 0;
-    delete next.stock;
-  }
-
-  return next;
-}
-
 
 function normalizeProductPayload(payload) {
   const next = { ...payload };
@@ -82,6 +60,34 @@ export async function adminListProducts(req, res) {
 export async function adminListCategories(req, res) {
   const categories = await Category.find({ isActive: true }).sort({ name: 1 });
   res.json(categories);
+}
+
+export async function adminCreateCategory(req, res) {
+  const { name, description } = req.body;
+
+  if (!name || !name.trim()) {
+    res.status(400);
+    throw new Error("Category name is required");
+  }
+
+  const slug = slugify(name, { lower: true, strict: true, trim: true });
+
+  const existingByName = await Category.findOne({ name: name.trim() });
+  const existingBySlug = await Category.findOne({ slug });
+
+  if (existingByName || existingBySlug) {
+    res.status(400);
+    throw new Error("Category already exists");
+  }
+
+  const category = await Category.create({
+    name: name.trim(),
+    description,
+    slug,
+    isActive: true,
+  });
+
+  res.status(201).json(category);
 }
 
 export async function adminCreateProduct(req, res) {
