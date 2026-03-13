@@ -3,6 +3,23 @@ import api from "../../api/client.js";
 
 export function AdminDashboardPage() {
   const [data, setData] = useState(null);
+
+  useEffect(() => {
+    api.get("/admin/dashboard").then(({ data: payload }) => setData(payload));
+  }, []);
+
+  if (!data) return <div className="text-sm text-gray-500">Loading dashboard…</div>;
+
+  const metricCards = [
+    ["Total Revenue", `$${(data.totalRevenue || 0).toFixed(2)}`],
+    ["Revenue Today", `$${(data.revenueToday || 0).toFixed(2)}`],
+    ["Orders Today", data.ordersToday || 0],
+    ["Total Orders", data.totalOrders || 0],
+    ["Total Customers", data.totalCustomers || 0],
+    ["Total Products", data.totalProducts || 0],
+    ["Low Stock Products", data.lowStockProducts || 0],
+    ["Out of Stock Products", data.outOfStockProducts || 0],
+  ];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
