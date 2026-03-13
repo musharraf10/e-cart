@@ -30,6 +30,17 @@ export function AdminProductFormPage() {
   const [categorySearch, setCategorySearch] = useState("");
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+
+  const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
+
+  const loadCategories = async () => {
+    const { data } = await api.get("/admin/categories");
+    setCategories(data);
+  };
+
+  useEffect(() => {
+    loadCategories();
 
   const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
 
@@ -59,8 +70,7 @@ export function AdminProductFormPage() {
         originalPrice: product.originalPrice ? String(product.originalPrice) : "",
         sizes: product.sizes || [],
         colors: (product.colors || []).join(", "),
-        stock: String(product.inventoryCount ?? 0),
-        category: categoryId || "",
+        stock: String(product.inventoryCount ?? 0)
         category: product.category || "",
         images: product.images?.length ? product.images : [""],
         visible: product.isVisible ?? true,
@@ -93,6 +103,29 @@ export function AdminProductFormPage() {
       ? form.sizes.filter((s) => s !== size)
       : [...form.sizes, size];
     setForm({ ...form, sizes });
+  };
+
+  const createCategory = async () => {
+    const name = categorySearch.trim();
+
+    if (!name) {
+      alert("Enter category name in search field first");
+      return;
+    }
+
+    setCreatingCategory(true);
+    try {
+      const { data } = await api.post("/admin/categories", { name });
+      await loadCategories();
+      setForm((prev) => ({ ...prev, category: data._id }));
+      setCategorySearch("");
+      setShowCategoryMenu(false);
+      alert("Category created");
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to create category");
+    } finally {
+      setCreatingCategory(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -212,6 +245,18 @@ export function AdminProductFormPage() {
                 onChange={(e) => setCategorySearch(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 text-sm"
               />
+
+              <button
+                type="button"
+                onClick={createCategory}
+                disabled={creatingCategory || !categorySearch.trim()}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold disabled:opacity-60"
+              >
+                {creatingCategory
+                  ? "Creating category..."
+                  : `Create \"${categorySearch.trim() || "new category"}\"`}
+              </button>
+
               <div className="max-h-44 overflow-auto">
                 {filteredCategories.map((category) => (
                   <button
@@ -228,6 +273,9 @@ export function AdminProductFormPage() {
                   </button>
                 ))}
                 {filteredCategories.length === 0 && (
+                  <p className="px-2 py-2 text-xs text-gray-500">
+                    No categories found. Create one using the button above.
+                  </p>
                   <p className="px-2 py-2 text-xs text-gray-500">No categories found.</p>
                 )}
               </div>
