@@ -3,28 +3,13 @@ import api from "../../api/client.js";
 
 export function AdminDashboardPage() {
   const [data, setData] = useState(null);
-
-  useEffect(() => {
-    api.get("/admin/dashboard").then(({ data: payload }) => setData(payload));
-  }, []);
-
-  if (!data) return <div className="text-sm text-gray-500">Loading dashboard…</div>;
-
-  const metricCards = [
-    ["Total Revenue", `$${(data.totalRevenue || 0).toFixed(2)}`],
-    ["Revenue Today", `$${(data.revenueToday || 0).toFixed(2)}`],
-    ["Orders Today", data.ordersToday || 0],
-    ["Total Orders", data.totalOrders || 0],
-    ["Total Customers", data.totalCustomers || 0],
-    ["Total Products", data.totalProducts || 0],
-    ["Low Stock Products", data.lowStockProducts || 0],
-    ["Out of Stock Products", data.outOfStockProducts || 0],
-  ];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let mounted = true;
+
+    setLoading(true);
 
     api
       .get("/admin/dashboard")
@@ -32,6 +17,7 @@ export function AdminDashboardPage() {
         if (mounted) {
           setData(payload);
           setLoading(false);
+          setError(null);
         }
       })
       .catch((err) => {
@@ -45,20 +31,9 @@ export function AdminDashboardPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, []); // ← only one useEffect — runs once on mount
 
-  if (loading) {
-    return <div className="text-sm text-gray-500 py-8 text-center">Loading dashboard…</div>;
-  }
-
-  if (error || !data) {
-    return (
-      <div className="text-sm text-red-600 py-8 text-center">
-        {error || "Could not load dashboard data"}
-      </div>
-    );
-  }
-
+  // You can define helper functions here (they are not hooks)
   const formatCurrency = (amount) =>
     `$${(Number(amount) || 0).toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -66,15 +41,35 @@ export function AdminDashboardPage() {
     })}`;
 
   const metricCards = [
-    ["Total Revenue", formatCurrency(data.totalRevenue)],
-    ["Revenue Today", formatCurrency(data.revenueToday)],
-    ["Orders Today", data.ordersToday ?? 0],
-    ["Total Orders", data.totalOrders ?? 0],
-    ["Total Customers", data.totalCustomers ?? 0],
-    ["Total Products", data.totalProducts ?? 0],
-    ["Low Stock Products", data.lowStockProducts ?? 0],
-    ["Out of Stock Products", data.outOfStockProducts ?? 0],
+    ["Total Revenue", formatCurrency(data?.totalRevenue)],
+    ["Revenue Today", formatCurrency(data?.revenueToday)],
+    ["Orders Today", data?.ordersToday ?? 0],
+    ["Total Orders", data?.totalOrders ?? 0],
+    ["Total Customers", data?.totalCustomers ?? 0],
+    ["Total Products", data?.totalProducts ?? 0],
+    ["Low Stock Products", data?.lowStockProducts ?? 0],
+    ["Out of Stock Products", data?.outOfStockProducts ?? 0],
   ];
+
+  // ────────────────────────────────────────────────
+  // Only return after ALL hooks are called
+  // ────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="text-sm text-gray-500 py-12 text-center min-h-[50vh]">
+        Loading dashboard…
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="text-sm text-red-600 py-12 text-center min-h-[50vh]">
+        {error || "Could not load dashboard data"}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -95,8 +90,8 @@ export function AdminDashboardPage() {
         ))}
       </section>
 
+      {/* Charts – Revenue & Orders */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Revenue & Orders last 30 days */}
         <div className="bg-white rounded-lg border shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-3">Revenue (Last 30 Days)</h2>
           <div className="max-h-64 overflow-auto text-sm">
@@ -136,8 +131,8 @@ export function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Recent Orders + Activity */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Orders */}
         <div className="bg-white rounded-lg border shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-3">Recent Orders</h2>
           {data.recentOrders?.length ? (
@@ -145,7 +140,7 @@ export function AdminDashboardPage() {
               {data.recentOrders.map((order) => (
                 <div
                   key={order._id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 last:border-b-0"
                 >
                   <div>
                     <div className="font-medium">
@@ -170,16 +165,15 @@ export function AdminDashboardPage() {
           )}
         </div>
 
-        {/* Recent Reviews + Low Stock Hint */}
         <div className="bg-white rounded-lg border shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-3">Recent Activity</h2>
 
-          <div className="mb-4">
-            <p className="text-sm text-gray-600">
-              <strong>{data.lowStockProducts || 0}</strong> products low on stock (&lt; 5 units)
+          <div className="mb-4 space-y-1 text-sm text-gray-600">
+            <p>
+              <strong>{data.lowStockProducts ?? 0}</strong> products low on stock (&lt; 5 units)
             </p>
-            <p className="text-sm text-gray-600 mt-1">
-              <strong>{data.outOfStockProducts || 0}</strong> products out of stock
+            <p>
+              <strong>{data.outOfStockProducts ?? 0}</strong> products out of stock
             </p>
           </div>
 
@@ -187,8 +181,8 @@ export function AdminDashboardPage() {
           {data.recentReviews?.length ? (
             <div className="space-y-3 text-sm">
               {data.recentReviews.map((review) => (
-                <div key={review._id} className="border-b pb-3 last:border-b-0 last:pb-0">
-                  <div className="flex justify-between">
+                <div key={review._id} className="border-b pb-3 last:border-b-0">
+                  <div className="flex justify-between items-baseline">
                     <span className="font-medium">
                       {review.user?.name || "Anonymous"} • {review.rating}/5
                     </span>
