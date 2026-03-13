@@ -20,6 +20,7 @@ import { OrdersPage } from "./pages/account/OrdersPage.jsx";
 import { OrderDetailsPage } from "./pages/account/OrderDetailsPage.jsx";
 import { WishlistPage } from "./pages/account/WishlistPage.jsx";
 import { AccountSettingsPage } from "./pages/account/AccountSettingsPage.jsx";
+import { AccountPage } from "./pages/AccountPage.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
