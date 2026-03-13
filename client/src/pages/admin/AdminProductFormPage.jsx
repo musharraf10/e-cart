@@ -41,6 +41,11 @@ export function AdminProductFormPage() {
 
   useEffect(() => {
     loadCategories();
+
+  const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
+
+  useEffect(() => {
+    api.get("/admin/categories").then(({ data }) => setCategories(data));
   }, []);
 
   useEffect(() => {
@@ -65,8 +70,8 @@ export function AdminProductFormPage() {
         originalPrice: product.originalPrice ? String(product.originalPrice) : "",
         sizes: product.sizes || [],
         colors: (product.colors || []).join(", "),
-        stock: String(product.inventoryCount ?? 0),
-        category: categoryId || "",
+        stock: String(product.inventoryCount ?? 0)
+        category: product.category || "",
         images: product.images?.length ? product.images : [""],
         visible: product.isVisible ?? true,
         newDrop: product.isNewDrop ?? false,
@@ -271,6 +276,7 @@ export function AdminProductFormPage() {
                   <p className="px-2 py-2 text-xs text-gray-500">
                     No categories found. Create one using the button above.
                   </p>
+                  <p className="px-2 py-2 text-xs text-gray-500">No categories found.</p>
                 )}
               </div>
             </div>
