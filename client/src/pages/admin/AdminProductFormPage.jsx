@@ -32,7 +32,7 @@ export function AdminProductFormPage() {
   const [submitting, setSubmitting] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
 
-  const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
+  // const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
 
   const loadCategories = async () => {
     const { data } = await api.get("/admin/categories");
@@ -41,6 +41,7 @@ export function AdminProductFormPage() {
 
   useEffect(() => {
     loadCategories();
+  }, []);
 
   const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
 
@@ -70,7 +71,7 @@ export function AdminProductFormPage() {
         originalPrice: product.originalPrice ? String(product.originalPrice) : "",
         sizes: product.sizes || [],
         colors: (product.colors || []).join(", "),
-        stock: String(product.inventoryCount ?? 0)
+        stock: String(product.inventoryCount ?? 0),
         category: product.category || "",
         images: product.images?.length ? product.images : [""],
         visible: product.isVisible ?? true,
@@ -273,10 +274,9 @@ export function AdminProductFormPage() {
                   </button>
                 ))}
                 {filteredCategories.length === 0 && (
-                  <p className="px-2 py-2 text-xs text-gray-500">
+                  <><p className="px-2 py-2 text-xs text-gray-500">
                     No categories found. Create one using the button above.
-                  </p>
-                  <p className="px-2 py-2 text-xs text-gray-500">No categories found.</p>
+                  </p><p className="px-2 py-2 text-xs text-gray-500">No categories found.</p></>
                 )}
               </div>
             </div>
@@ -291,11 +291,10 @@ export function AdminProductFormPage() {
                 key={size}
                 type="button"
                 onClick={() => toggleSize(size)}
-                className={`px-3 py-1 rounded-full border text-sm ${
-                  form.sizes.includes(size)
+                className={`px-3 py-1 rounded-full border text-sm ${form.sizes.includes(size)
                     ? "border-gray-900 bg-gray-900 text-white"
                     : "border-gray-300"
-                }`}
+                  }`}
               >
                 {size}
               </button>
