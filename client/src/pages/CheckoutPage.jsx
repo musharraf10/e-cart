@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client.js";
@@ -21,6 +21,24 @@ export function CheckoutPage() {
   const navigate = useNavigate();
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+
+
+  useEffect(() => {
+    api.get("/users/addresses")
+      .then(({ data }) => {
+        const defaultAddress = data.find((a) => a.isDefault);
+        if (!defaultAddress) return;
+        setAddress({
+          line1: defaultAddress.addressLine1 || "",
+          line2: defaultAddress.addressLine2 || "",
+          city: defaultAddress.city || "",
+          state: defaultAddress.state || "",
+          postalCode: defaultAddress.postalCode || "",
+          country: defaultAddress.country || "",
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const handlePlaceOrder = async () => {
     if (!items.length) return;

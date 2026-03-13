@@ -7,12 +7,15 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const state = store.getState();
-  const token = state.auth.token;
+  const token =
+    state.auth.token ||
+    (typeof window !== "undefined" ? localStorage.getItem("noorfit_token") : null);
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
 export default api;
-
