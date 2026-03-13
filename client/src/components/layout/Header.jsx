@@ -59,7 +59,7 @@ export function Header() {
               {user.role === "admin" && (
                 <>
                   <NavLink
-                    to="/admin"
+                    to="/admin/dashboard"
                     className={({ isActive }) =>
                       `text-sm ${
                         isActive ? "text-accent font-semibold" : "text-gray-600"

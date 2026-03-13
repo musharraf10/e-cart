@@ -89,7 +89,7 @@ export async function getDashboardMetrics(req, res) {
       { $sort: { _id: 1 } },
     ]),
     Order.aggregate([
-      { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+      { $match: { createdAt: { $gte: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000) } } },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -436,7 +436,7 @@ export async function adminToggleCustomerBlock(req, res) {
     res.status(404);
     throw new Error("User not found");
   }
-  user.isBlocked = !user.isBlocked;
+  user.isBlocked = !Boolean(user.isBlocked);
   await user.save();
   res.json(user);
 }

@@ -46,6 +46,9 @@ router.post("/categories", adminCreateCategory);
 
 router.get("/categories", adminListCategories);
 router.post("/categories", adminCreateCategory);
+
+router.get("/categories", adminListCategories);
+router.post("/categories", adminCreateCategory);
 router.get("/products", adminListProducts);
 router.post("/products", adminCreateProduct);
 router.post("/products/bulk", adminBulkUpdateProducts);

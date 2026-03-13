@@ -16,19 +16,26 @@ export function AdminProductsPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const toggleVisibility = async (id) => {
-    await api.patch(`/admin/products/${id}/visibility`);
+  const toggleSelect = (id) => {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const bulkAction = async (action) => {
+    if (!selected.length) return;
+    const value = action === "update_price" ? window.prompt("Enter new price") : undefined;
+    await api.post("/admin/products/bulk", { ids: selected, action, value });
+    setSelected([]);
     load();
   };
 
-  const toggleNewDrop = async (id) => {
-    await api.patch(`/admin/products/${id}/new-drop`);
-    load();
-  };
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h1 className="text-xl font-semibold">Product Management</h1>
+        <Link to="/admin/products/new" className="rounded-full bg-gray-900 text-white px-4 py-2 text-xs font-semibold">Add product</Link>
+      </div>
 
       <div className="bg-white rounded-xl p-3 shadow-sm grid sm:grid-cols-4 gap-2 text-sm">
         <input placeholder="Search products" className="border rounded-lg px-3 py-2" value={filters.q} onChange={(e)=>setFilters({...filters,q:e.target.value})} />

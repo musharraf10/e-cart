@@ -1,5 +1,22 @@
 import { Product } from "../models/product.model.js";
 
+function withDerivedFields(productDoc) {
+  const product = productDoc.toObject ? productDoc.toObject() : productDoc;
+
+  return {
+    ...product,
+    ratingsAverage: product.averageRating || 0,
+    ratingsCount: product.numReviews || 0,
+    variants: (product.sizes || []).flatMap((size) =>
+      (product.colors || []).map((color) => ({
+        size,
+        color,
+        stock: product.inventoryCount,
+      })),
+    ),
+  };
+}
+
 export async function listProducts(req, res) {
   const {
     page = 1,
@@ -29,12 +46,12 @@ export async function listProducts(req, res) {
   const skip = (Number(page) - 1) * Number(limit);
 
   const [items, total] = await Promise.all([
-    Product.find(filters).sort(sortOption).skip(skip).limit(Number(limit)),
+    Product.find(filters).populate("category", "name slug").sort(sortOption).skip(skip).limit(Number(limit)),
     Product.countDocuments(filters),
   ]);
 
   res.json({
-    items,
+    items: items.map(withDerivedFields),
     page: Number(page),
     totalPages: Math.ceil(total / Number(limit)),
     total,
@@ -42,12 +59,30 @@ export async function listProducts(req, res) {
 }
 
 export async function getProductBySlug(req, res) {
-  const product = await Product.findOne({ slug: req.params.slug });
+  const product = await Product.findOne({ slug: req.params.slug }).populate("category", "name slug");
   if (!product || !product.isVisible) {
     res.status(404);
     throw new Error("Product not found");
   }
-  res.json(product);
+  res.json(withDerivedFields(product));
+}
+
+export async function getRelatedProducts(req, res) {
+  const baseProduct = await Product.findById(req.params.productId);
+  if (!baseProduct) {
+    res.status(404);
+    throw new Error("Product not found");
+  }
+
+  const items = await Product.find({
+    _id: { $ne: baseProduct._id },
+    isVisible: true,
+    $or: [{ category: baseProduct.category }, { isFeatured: true }, { isNewDrop: true }],
+  })
+    .limit(Number(req.query.limit || 4))
+    .sort({ averageRating: -1, createdAt: -1 });
+
+  res.json({ items: items.map(withDerivedFields) });
 }
 
 export async function searchProducts(req, res) {
@@ -62,6 +97,5 @@ export async function searchProducts(req, res) {
     $or: [{ name: regex }, { description: regex }],
   }).limit(20);
 
-  res.json({ items });
+  res.json({ items: items.map(withDerivedFields) });
 }
-
