@@ -5,10 +5,13 @@ import api from "../../api/client.js";
 export function AdminProductsPage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [filters, setFilters] = useState({ q: "", stockStatus: "", visibility: "", newDrop: "" });
+  const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const { data } = await api.get("/admin/products");
+    const params = new URLSearchParams(Object.entries(filters).filter(([, v]) => v !== "")).toString();
+    const { data } = await api.get(`/admin/products${params ? `?${params}` : ""}`);
     setProducts(data);
     setLoading(false);
   };
@@ -27,11 +30,12 @@ export function AdminProductsPage() {
     load();
   };
 
-  const remove = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
-    await api.delete(`/admin/products/${id}`);
-    load();
-  };
+      <div className="bg-white rounded-xl p-3 shadow-sm grid sm:grid-cols-4 gap-2 text-sm">
+        <input placeholder="Search products" className="border rounded-lg px-3 py-2" value={filters.q} onChange={(e)=>setFilters({...filters,q:e.target.value})} />
+        <select className="border rounded-lg px-3 py-2" value={filters.stockStatus} onChange={(e)=>setFilters({...filters,stockStatus:e.target.value})}><option value="">Stock status</option><option value="low">Low</option><option value="out">Out</option></select>
+        <select className="border rounded-lg px-3 py-2" value={filters.visibility} onChange={(e)=>setFilters({...filters,visibility:e.target.value})}><option value="">Visibility</option><option value="visible">Visible</option><option value="hidden">Hidden</option></select>
+        <button className="rounded-lg bg-gray-900 text-white" onClick={load}>Apply Filters</button>
+      </div>
 
   if (loading) {
     return <div className="text-sm text-gray-500">Loading products…</div>;

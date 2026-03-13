@@ -10,6 +10,16 @@ import { AuthPage } from "./pages/AuthPage.jsx";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage.jsx";
 import { AdminProductsPage } from "./pages/admin/AdminProductsPage.jsx";
 import { AdminProductFormPage } from "./pages/admin/AdminProductFormPage.jsx";
+import { AdminOpsLayout } from "./pages/admin/ops/AdminOpsLayout.jsx";
+import { AdminInventoryPage } from "./pages/admin/ops/AdminInventoryPage.jsx";
+import { AdminOrdersPage } from "./pages/admin/ops/AdminOrdersPage.jsx";
+import { AdminCustomersPage } from "./pages/admin/ops/AdminCustomersPage.jsx";
+import { AdminReviewsPage } from "./pages/admin/ops/AdminReviewsPage.jsx";
+import { AdminCouponsPage } from "./pages/admin/ops/AdminCouponsPage.jsx";
+import { AdminDropsPage } from "./pages/admin/ops/AdminDropsPage.jsx";
+import { AdminReturnsPage } from "./pages/admin/ops/AdminReturnsPage.jsx";
+import { AdminAnalyticsPage } from "./pages/admin/ops/AdminAnalyticsPage.jsx";
+import { AdminSettingsPage } from "./pages/admin/ops/AdminSettingsPage.jsx";
 import { ProtectedRoute } from "./components/routes/ProtectedRoute.jsx";
 import { AdminRoute } from "./components/routes/AdminRoute.jsx";
 import { initializeAuth } from "./store/slices/authSlice.js";
@@ -48,6 +58,23 @@ export default function App() {
             <Route path="wishlist" element={<WishlistPage />} />
             <Route path="settings" element={<AccountSettingsPage />} />
           </Route>
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminOpsLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboardPage />} />
+              <Route path="products" element={<AdminProductsPage />} />
+              <Route path="products/new" element={<AdminProductFormPage />} />
+              <Route path="inventory" element={<AdminInventoryPage />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="customers" element={<AdminCustomersPage />} />
+              <Route path="reviews" element={<AdminReviewsPage />} />
+              <Route path="coupons" element={<AdminCouponsPage />} />
+              <Route path="drops" element={<AdminDropsPage />} />
+              <Route path="returns" element={<AdminReturnsPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
+            </Route>
           <Route path="/account/*" element={<AccountPage />} />
 
           <Route element={<AdminRoute />}>

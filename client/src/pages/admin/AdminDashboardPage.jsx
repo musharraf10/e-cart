@@ -9,9 +9,18 @@ export function AdminDashboardPage() {
     api.get("/admin/dashboard").then(({ data }) => setMetrics(data));
   }, []);
 
-  if (!metrics) {
-    return <div className="text-sm text-gray-500">Loading dashboard…</div>;
-  }
+  if (!data) return <div className="text-sm text-gray-500">Loading dashboard…</div>;
+
+  const metricCards = [
+    ["Total Revenue", `$${(data.totalRevenue || 0).toFixed(2)}`],
+    ["Revenue Today", `$${(data.revenueToday || 0).toFixed(2)}`],
+    ["Orders Today", data.ordersToday || 0],
+    ["Total Orders", data.totalOrders || 0],
+    ["Total Customers", data.totalCustomers || 0],
+    ["Total Products", data.totalProducts || 0],
+    ["Low Stock Products", data.lowStockProducts || 0],
+    ["Out of Stock Products", data.outOfStockProducts || 0],
+  ];
 
   return (
     <div className="space-y-4">
@@ -39,13 +48,27 @@ export function AdminDashboardPage() {
             ${metrics.totalRevenue.toFixed(2)}
           </p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Orders</p>
-          <p className="text-xl font-semibold mt-1">{metrics.totalOrders}</p>
+        <div className="bg-white rounded-xl p-4 shadow-sm text-sm">
+          <h2 className="font-semibold mb-3">Orders (last 30 days)</h2>
+          <div className="space-y-1 max-h-44 overflow-auto">
+            {data.charts?.ordersLast30Days?.map((row) => (
+              <div key={row._id} className="flex justify-between text-xs border-b py-1">
+                <span>{row._id}</span>
+                <span>{row.orders}</span>
+              </div>
+            ))}
+          </div>
         </div>
+      </section>
+
+      <section className="grid xl:grid-cols-2 gap-4 text-sm">
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Products</p>
-          <p className="text-xl font-semibold mt-1">{metrics.totalProducts}</p>
+          <h2 className="font-semibold mb-2">Recent Orders</h2>
+          {(data.recentOrders || []).map((o) => (
+            <div key={o._id} className="border-b py-2 text-xs">
+              {o._id.slice(-6).toUpperCase()} · {o.user?.name || "Guest"} · ${o.total.toFixed(2)} · {o.status}
+            </div>
+          ))}
         </div>
       </div>
       <section className="bg-white rounded-xl p-4 shadow-sm text-sm">
@@ -67,9 +90,6 @@ export function AdminDashboardPage() {
               </span>
             </div>
           ))}
-          {metrics.recentOrders.length === 0 && (
-            <p className="text-xs text-gray-500">No orders yet.</p>
-          )}
         </div>
       </section>
     </div>
