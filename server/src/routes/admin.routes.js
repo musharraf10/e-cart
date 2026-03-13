@@ -4,6 +4,8 @@ import {
   getDashboardMetrics,
   adminListProducts,
   adminCreateProduct,
+  adminListCategories,
+  adminCreateCategory,
   adminUpdateProduct,
   adminDeleteProduct,
   adminToggleVisibility,
@@ -21,6 +23,8 @@ router.use(protect, admin);
 
 router.get("/dashboard", getDashboardMetrics);
 
+router.get("/categories", adminListCategories);
+router.post("/categories", adminCreateCategory);
 router.get("/products", adminListProducts);
 router.post("/products", adminCreateProduct);
 router.put("/products/:id", adminUpdateProduct);
