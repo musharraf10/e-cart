@@ -20,6 +20,10 @@ export async function protect(req, res, next) {
       res.status(401);
       throw new Error("User not found");
     }
+    if (req.user.isBlocked) {
+      res.status(403);
+      throw new Error("Account is blocked");
+    }
     next();
   } catch (err) {
     res.status(401);

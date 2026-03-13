@@ -57,16 +57,26 @@ export function Header() {
                 Account
               </NavLink>
               {user.role === "admin" && (
-                <NavLink
-                  to="/admin"
-                  className={({ isActive }) =>
-                    `text-sm ${
-                      isActive ? "text-accent font-semibold" : "text-gray-600"
-                    }`
-                  }
-                >
-                  Admin
-                </NavLink>
+                <>
+                  <NavLink
+                    to="/admin/dashboard"
+                    className={({ isActive }) =>
+                      `text-sm ${
+                        isActive ? "text-accent font-semibold" : "text-gray-600"
+                      }`
+                    }
+                  >
+                    Admin
+                  </NavLink>
+                  <NavLink
+                    to="/admin/products"
+                    className={({ isActive }) =>
+                      `text-sm ${isActive ? "text-accent font-semibold" : "text-gray-600"}`
+                    }
+                  >
+                    Products
+                  </NavLink>
+                </>
               )}
               <button
                 type="button"
