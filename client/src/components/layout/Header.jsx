@@ -14,81 +14,35 @@ export function Header() {
   };
 
   return (
-    <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-20">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 border-b border-borderlux bg-[#111111]/90 backdrop-blur">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-2">
           <span className="text-xl font-semibold tracking-tight">NoorFit</span>
-          <span className="hidden sm:inline text-xs text-gray-500">
-            Crafted for Comfort. Designed for Life.
-          </span>
+          <span className="hidden lg:inline text-xs text-muted">Crafted for Comfort. Designed for Life.</span>
         </Link>
-        <nav className="flex items-center gap-4">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `text-sm ${isActive ? "text-accent font-semibold" : "text-gray-600"}`
-            }
-          >
-            Shop
-          </NavLink>
-          <NavLink
-            to="/cart"
-            className={({ isActive }) =>
-              `text-sm relative ${
-                isActive ? "text-accent font-semibold" : "text-gray-600"
-              }`
-            }
-          >
-            Cart
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-3 text-[10px] bg-accent text-white rounded-full px-1.5 py-0.5">
-                {cartCount}
-              </span>
-            )}
-          </NavLink>
+
+        <nav className="hidden md:flex items-center gap-4 text-sm">
+          <NavLink to="/" className={({ isActive }) => (isActive ? "text-accent font-semibold" : "text-muted hover:text-white")}>Home</NavLink>
+          <NavLink to="/" className={({ isActive }) => (isActive ? "text-accent font-semibold" : "text-muted hover:text-white")}>Shop</NavLink>
+          <NavLink to="/" className="text-muted hover:text-white">Categories</NavLink>
+          <NavLink to="/cart" className={({ isActive }) => (isActive ? "text-accent font-semibold" : "text-muted hover:text-white")}>Cart</NavLink>
           {user ? (
             <>
-              <NavLink
-                to="/account"
-                className={({ isActive }) =>
-                  `text-sm ${isActive ? "text-accent font-semibold" : "text-gray-600"}`
-                }
-              >
-                Account
-              </NavLink>
+              <NavLink to="/account" className={({ isActive }) => (isActive ? "text-accent font-semibold" : "text-muted hover:text-white")}>Account</NavLink>
               {user.role === "admin" && (
-                <NavLink
-                  to="/admin"
-                  className={({ isActive }) =>
-                    `text-sm ${
-                      isActive ? "text-accent font-semibold" : "text-gray-600"
-                    }`
-                  }
-                >
-                  Admin
-                </NavLink>
+                <NavLink to="/admin/dashboard" className={({ isActive }) => (isActive ? "text-accent font-semibold" : "text-muted hover:text-white")}>Admin</NavLink>
               )}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="text-sm text-gray-600 hover:text-accent"
-              >
-                Logout
-              </button>
+              <button type="button" onClick={handleLogout} className="text-muted hover:text-white">Logout</button>
             </>
           ) : (
-            <NavLink
-              to="/auth"
-              className={({ isActive }) =>
-                `text-sm ${isActive ? "text-accent font-semibold" : "text-gray-600"}`
-              }
-            >
-              Sign in
-            </NavLink>
+            <NavLink to="/auth" className={({ isActive }) => (isActive ? "text-accent font-semibold" : "text-muted hover:text-white")}>Sign in</NavLink>
           )}
         </nav>
+
+        <Link to="/cart" className="md:hidden relative text-sm text-muted">Cart
+          {cartCount > 0 && <span className="absolute -top-2 -right-3 text-[10px] bg-accent text-black rounded-full px-1.5 py-0.5">{cartCount}</span>}
+        </Link>
       </div>
     </header>
   );
 }
-

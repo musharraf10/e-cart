@@ -25,16 +25,15 @@ export function HomePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white px-6 py-10 flex flex-col md:flex-row gap-6 items-center">
+    <div className="space-y-8">
+      <section className="lux-card p-5 md:p-8 flex flex-col md:flex-row gap-6 items-center">
         <div className="space-y-3 max-w-xl">
-          <p className="text-xs uppercase tracking-[0.2em] text-gray-400">NoorFit</p>
-          <h1 className="text-3xl md:text-4xl font-semibold">
-            Crafted for Comfort. <span className="text-accent">Designed for Life.</span>
+          <p className="text-xs uppercase tracking-[0.2em] text-muted">NoorFit</p>
+          <h1 className="text-3xl md:text-5xl font-semibold leading-tight">
+            Minimal luxury for <span className="text-accent">modern movement</span>
           </h1>
-          <p className="text-sm text-gray-300">
-            Discover elevated everyday pieces with tailored comfort, breathable fabrics, and
-            clean silhouettes for life on the move.
+          <p className="text-sm text-muted">
+            Discover elevated everyday essentials with tailored comfort and timeless silhouettes.
           </p>
           <form onSubmit={handleSearch} className="flex gap-2 mt-4">
             <input
@@ -42,27 +41,22 @@ export function HomePage() {
               placeholder="Search tees, joggers, hoodies…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="flex-1 rounded-full px-4 py-2 text-sm text-gray-900"
+              className="lux-input"
             />
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-full bg-accent text-xs font-semibold uppercase tracking-wide"
-            >
-              Search
-            </button>
+            <button type="submit" className="btn-primary text-xs uppercase tracking-wide">Search</button>
           </form>
         </div>
         <div className="hidden md:flex flex-1 justify-end">
-          <div className="h-40 w-40 rounded-full bg-gradient-to-tr from-accent/40 to-white/10 border border-white/10" />
+          <div className="h-44 w-44 rounded-full bg-gradient-to-tr from-accent/40 to-white/5 border border-borderlux" />
         </div>
       </section>
 
       <section className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold">Featured pieces</h2>
+        <h2 className="text-lg font-semibold">Featured pieces</h2>
         <select
           value={filters.sort}
           onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value }))}
-          className="text-xs border rounded-full px-3 py-1 bg-white"
+          className="bg-card border border-borderlux rounded-xl px-3 py-2 text-xs"
         >
           <option value="newest">Newest</option>
           <option value="price_asc">Price · Low to High</option>
@@ -71,17 +65,14 @@ export function HomePage() {
         </select>
       </section>
 
-      <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
         {products.map((p) => (
           <ProductCard key={p._id} product={p} />
         ))}
         {products.length === 0 && (
-          <div className="col-span-full text-center text-sm text-gray-500">
-            No products found yet.
-          </div>
+          <div className="col-span-full text-center text-sm text-muted">No products found yet.</div>
         )}
       </section>
     </div>
   );
 }
-
