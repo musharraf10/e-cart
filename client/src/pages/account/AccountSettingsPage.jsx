@@ -7,42 +7,131 @@ import { logout } from "../../store/slices/authSlice.js";
 export function AccountSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [message, setMessage] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const changePassword = async (e) => {
     e.preventDefault();
-    await api.put('/users/change-password', { currentPassword, newPassword });
-    alert('Password changed');
-    setCurrentPassword('');
-    setNewPassword('');
+    try {
+      await api.put("/users/change-password", { currentPassword, newPassword });
+      setMessage("Password updated successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setMessage("Failed to update password");
+    }
   };
 
   const deleteAccount = async () => {
-    if (!window.confirm('Delete your account permanently?')) return;
-    await api.delete('/users/delete-account');
-    dispatch(logout());
-    navigate('/');
+    if (
+      !window.confirm(
+        "Are you sure you want to delete your account? This action cannot be undone."
+      )
+    )
+      return;
+    try {
+      await api.delete("/users/delete-account");
+      dispatch(logout());
+      navigate("/");
+    } catch (err) {
+      alert("Failed to delete account");
+    }
   };
 
   const logoutAll = () => {
     dispatch(logout());
-    navigate('/auth');
+    navigate("/auth");
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Account settings</h1>
-      <form onSubmit={changePassword} className="bg-white rounded-xl p-4 shadow-sm space-y-3 text-sm">
-        <h2 className="font-semibold">Change password</h2>
-        <input className="w-full border rounded-lg px-3 py-2" type="password" placeholder="Current password" value={currentPassword} onChange={(e)=>setCurrentPassword(e.target.value)} required />
-        <input className="w-full border rounded-lg px-3 py-2" type="password" placeholder="New password" value={newPassword} onChange={(e)=>setNewPassword(e.target.value)} required />
-        <button className="rounded-full bg-gray-900 text-white px-4 py-2">Update password</button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-white tracking-tight">Account Settings</h1>
+        <p className="text-[#a1a1aa] text-sm mt-1">Manage your security and account preferences</p>
+      </div>
+
+      <form onSubmit={changePassword} className="bg-[#171717] border border-[#262626] rounded-2xl p-8 shadow-xl">
+        <h2 className="text-white text-lg font-semibold mb-6">Change Password</h2>
+
+        {message && (
+          <div
+            className={`mb-6 px-4 py-3 rounded-xl text-sm font-medium ${
+              message.includes("successfully")
+                ? "bg-green-900/30 text-green-400 border border-green-900"
+                : "bg-red-900/30 text-red-400 border border-red-900"
+            }`}
+          >
+            {message}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <div>
+            <label className="block text-[#a1a1aa] text-xs uppercase tracking-wide mb-2">
+              Current Password
+            </label>
+            <input
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+              type="password"
+              placeholder="Enter your current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-[#a1a1aa] text-xs uppercase tracking-wide mb-2">
+              New Password
+            </label>
+            <input
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+              type="password"
+              placeholder="Enter your new password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+            <p className="text-[#a1a1aa] text-xs mt-2">Use at least 8 characters</p>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full mt-8 px-6 py-3.5 rounded-xl bg-[#ff6b00] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#ff6b00]/20"
+        >
+          Update Password
+        </button>
       </form>
-      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3 text-sm">
-        <h2 className="font-semibold">Security actions</h2>
-        <button onClick={logoutAll} className="px-4 py-2 rounded-full border">Logout from current device</button>
-        <button onClick={deleteAccount} className="px-4 py-2 rounded-full border border-red-300 text-red-600 ml-2">Delete account</button>
+
+      <div className="space-y-6">
+        <div className="bg-[#171717] border border-[#262626] rounded-2xl p-8 shadow-xl">
+          <h2 className="text-white text-lg font-semibold mb-4">Logout</h2>
+          <p className="text-[#a1a1aa] text-sm mb-6">
+            Sign out from your current device
+          </p>
+          <button
+            onClick={logoutAll}
+            className="px-6 py-3 rounded-xl bg-[#262626] text-white text-sm font-medium hover:bg-[#303030] transition-all duration-200"
+          >
+            Logout from Current Device
+          </button>
+        </div>
+
+        <div className="bg-[#171717] border border-red-900/30 rounded-2xl p-8 shadow-xl">
+          <h2 className="text-white text-lg font-semibold mb-4">Danger Zone</h2>
+          <p className="text-[#a1a1aa] text-sm mb-6">
+            Delete your account and all associated data. This action cannot be undone.
+          </p>
+          <button
+            onClick={deleteAccount}
+            className="px-6 py-3 rounded-xl bg-red-900/20 text-red-400 text-sm font-medium hover:bg-red-900/40 transition-all duration-200 border border-red-900/50"
+          >
+            Delete Account Permanently
+          </button>
+        </div>
       </div>
     </div>
   );

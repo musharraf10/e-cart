@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 body {
-  @apply font-sans text-gray-900;
+  @apply font-sans text-white bg-[#0f0f0f];
+}
+
+html {
+  @apply scroll-smooth;
 }
 
