@@ -75,7 +75,7 @@ export function ProfilePage() {
           </div>
           {isEditing && (
             <input
-              className="mt-4 bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-2 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors w-full max-w-md"
+              className="mt-4 bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-2 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors w-full max-w-md"
               placeholder="Avatar URL"
               value={form.avatar}
               onChange={(e) => setForm({ ...form, avatar: e.target.value })}
@@ -89,7 +89,7 @@ export function ProfilePage() {
               Full Name
             </label>
             <input
-              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Full Name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -102,7 +102,7 @@ export function ProfilePage() {
               Email Address
             </label>
             <input
-              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Email"
               type="email"
               value={form.email}
@@ -116,7 +116,7 @@ export function ProfilePage() {
               Mobile Number
             </label>
             <input
-              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Mobile Number"
               value={form.mobileNumber}
               onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })}
@@ -129,7 +129,7 @@ export function ProfilePage() {
               Date of Birth
             </label>
             <input
-              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               type="date"
               value={form.dateOfBirth}
               onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
@@ -142,7 +142,7 @@ export function ProfilePage() {
               Gender
             </label>
             <select
-              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ff6b00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#d4af37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               value={form.gender}
               onChange={(e) => setForm({ ...form, gender: e.target.value })}
               disabled={!isEditing}
@@ -160,7 +160,7 @@ export function ProfilePage() {
           <div className="flex gap-4 mt-8">
             <button
               type="submit"
-              className="flex-1 px-6 py-3.5 rounded-xl bg-[#ff6b00] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#ff6b00]/20"
+              className="flex-1 px-6 py-3.5 rounded-xl bg-[#d4af37] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#d4af37]/20"
             >
               Save Changes
             </button>

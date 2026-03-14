@@ -41,7 +41,7 @@ export function WishlistPage() {
           {items.map((p) => (
             <div
               key={p._id}
-              className="bg-[#171717] border border-[#262626] rounded-2xl overflow-hidden shadow-xl hover:border-[#ff6b00] transition-all duration-200 group flex flex-col"
+              className="bg-[#171717] border border-[#262626] rounded-2xl overflow-hidden shadow-xl hover:border-[#d4af37] transition-all duration-200 group flex flex-col"
             >
               <div className="relative h-64 overflow-hidden bg-[#0f0f0f]">
                 {p.images?.[0] ? (
@@ -67,13 +67,13 @@ export function WishlistPage() {
                 </h3>
 
                 <div className="mt-auto">
-                  <p className="text-[#ff6b00] text-xl font-bold mb-4">
+                  <p className="text-[#d4af37] text-xl font-bold mb-4">
                     ${p.price?.toFixed(2)}
                   </p>
 
                   <button
                     onClick={() => moveToCart(p)}
-                    className="w-full px-4 py-3 rounded-xl bg-[#ff6b00] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#ff6b00]/20"
+                    className="w-full px-4 py-3 rounded-xl bg-[#d4af37] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#d4af37]/20"
                   >
                     Move to Cart
                   </button>

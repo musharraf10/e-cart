@@ -4,7 +4,7 @@ import api from "../../api/client.js";
 
 const statusColors = {
   pending: "bg-[#52525b] text-white",
-  processing: "bg-[#ff6b00] text-white",
+  processing: "bg-[#d4af37] text-white",
   shipped: "bg-[#3b82f6] text-white",
   delivered: "bg-[#22c55e] text-white",
   cancelled: "bg-[#ef4444] text-white",
@@ -28,7 +28,7 @@ export function OrdersPage() {
           <Link
             key={o._id}
             to={`/account/orders/${o._id}`}
-            className="block bg-[#171717] border border-[#262626] rounded-2xl p-6 shadow-xl hover:border-[#ff6b00] transition-all duration-200 group"
+            className="block bg-[#171717] border border-[#262626] rounded-2xl p-6 shadow-xl hover:border-[#d4af37] transition-all duration-200 group"
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex-1">
@@ -37,9 +37,8 @@ export function OrdersPage() {
                     Order #{o._id.slice(-6).toUpperCase()}
                   </h3>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide ${
-                      statusColors[o.status] || statusColors.pending
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide ${statusColors[o.status] || statusColors.pending
+                      }`}
                   >
                     {o.status}
                   </span>
@@ -64,7 +63,7 @@ export function OrdersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#ff6b00] text-sm font-medium group-hover:translate-x-1 transition-transform">
+                <span className="text-[#d4af37] text-sm font-medium group-hover:translate-x-1 transition-transform">
                   View Details →
                 </span>
               </div>

@@ -26,8 +26,7 @@ export function Header() {
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `text-sm font-medium transition-colors ${
-                isActive ? "text-[#ff6b00]" : "text-[#a1a1aa] hover:text-white"
+              `text-sm font-medium transition-colors ${isActive ? "text-[#d4af37]" : "text-[#a1a1aa] hover:text-white"
               }`
             }
           >
@@ -36,14 +35,13 @@ export function Header() {
           <NavLink
             to="/cart"
             className={({ isActive }) =>
-              `text-sm font-medium relative transition-colors ${
-                isActive ? "text-[#ff6b00]" : "text-[#a1a1aa] hover:text-white"
+              `text-sm font-medium relative transition-colors ${isActive ? "text-[#d4af37]" : "text-[#a1a1aa] hover:text-white"
               }`
             }
           >
             Cart
             {cartCount > 0 && (
-              <span className="absolute -top-3 -right-4 text-[10px] bg-[#ff6b00] text-white rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg shadow-[#ff6b00]/30">
+              <span className="absolute -top-3 -right-4 text-[10px] bg-[#d4af37] text-white rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg shadow-[#d4af37]/30">
                 {cartCount}
               </span>
             )}
@@ -53,8 +51,7 @@ export function Header() {
               <NavLink
                 to="/account"
                 className={({ isActive }) =>
-                  `text-sm font-medium transition-colors ${
-                    isActive ? "text-[#ff6b00]" : "text-[#a1a1aa] hover:text-white"
+                  `text-sm font-medium transition-colors ${isActive ? "text-[#d4af37]" : "text-[#a1a1aa] hover:text-white"
                   }`
                 }
               >
@@ -65,8 +62,7 @@ export function Header() {
                   <NavLink
                     to="/admin/dashboard"
                     className={({ isActive }) =>
-                      `text-sm font-medium transition-colors ${
-                        isActive ? "text-[#ff6b00]" : "text-[#a1a1aa] hover:text-white"
+                      `text-sm font-medium transition-colors ${isActive ? "text-[#d4af37]" : "text-[#a1a1aa] hover:text-white"
                       }`
                     }
                   >
@@ -86,8 +82,7 @@ export function Header() {
             <NavLink
               to="/auth"
               className={({ isActive }) =>
-                `text-sm font-medium transition-colors ${
-                  isActive ? "text-[#ff6b00]" : "text-[#a1a1aa] hover:text-white"
+                `text-sm font-medium transition-colors ${isActive ? "text-[#d4af37]" : "text-[#a1a1aa] hover:text-white"
                 }`
               }
             >

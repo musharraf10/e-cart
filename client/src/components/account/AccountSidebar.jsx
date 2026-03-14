@@ -21,10 +21,9 @@ export function AccountSidebar() {
             key={link.to}
             to={link.to}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? "bg-[#ff6b00] text-white shadow-lg shadow-[#ff6b00]/20"
-                  : "text-[#a1a1aa] hover:text-white hover:bg-[#262626]"
+              `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${isActive
+                ? "bg-[#d4af37] text-white shadow-lg shadow-[#d4af37]/20"
+                : "text-[#a1a1aa] hover:text-white hover:bg-[#262626]"
               }`
             }
           >

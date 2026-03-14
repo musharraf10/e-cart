@@ -4,7 +4,7 @@ module.exports = {
     extend: {
       colors: {
         primary: "#111827",
-        accent: "#f97316",
+        accent: "#a8a5a2",
       },
       fontFamily: {
         sans: ["system-ui", "sans-serif"],
@@ -13,4 +13,3 @@ module.exports = {
   },
   plugins: [],
 };
-

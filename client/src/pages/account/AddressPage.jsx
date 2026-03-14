@@ -40,7 +40,7 @@ export function AddressPage() {
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="px-6 py-2.5 rounded-xl bg-[#ff6b00] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#ff6b00]/20"
+            className="px-6 py-2.5 rounded-xl bg-[#d4af37] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#d4af37]/20"
           >
             Add Address
           </button>
@@ -58,7 +58,7 @@ export function AddressPage() {
                 Full Name
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="Full Name"
                 value={form.fullName}
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
@@ -71,7 +71,7 @@ export function AddressPage() {
                 Phone Number
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="Phone Number"
                 value={form.phoneNumber}
                 onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
@@ -84,7 +84,7 @@ export function AddressPage() {
                 Address Line 1
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="Street Address"
                 value={form.addressLine1}
                 onChange={(e) => setForm({ ...form, addressLine1: e.target.value })}
@@ -97,7 +97,7 @@ export function AddressPage() {
                 Address Line 2 (Optional)
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="Apartment, Suite, etc."
                 value={form.addressLine2}
                 onChange={(e) => setForm({ ...form, addressLine2: e.target.value })}
@@ -109,7 +109,7 @@ export function AddressPage() {
                 City
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="City"
                 value={form.city}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
@@ -122,7 +122,7 @@ export function AddressPage() {
                 State/Province
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="State/Province"
                 value={form.state}
                 onChange={(e) => setForm({ ...form, state: e.target.value })}
@@ -135,7 +135,7 @@ export function AddressPage() {
                 Postal Code
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="Postal Code"
                 value={form.postalCode}
                 onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
@@ -148,7 +148,7 @@ export function AddressPage() {
                 Country
               </label>
               <input
-                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+                className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
                 placeholder="Country"
                 value={form.country}
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
@@ -173,7 +173,7 @@ export function AddressPage() {
           <div className="flex gap-4 mt-8">
             <button
               type="submit"
-              className="flex-1 px-6 py-3.5 rounded-xl bg-[#ff6b00] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#ff6b00]/20"
+              className="flex-1 px-6 py-3.5 rounded-xl bg-[#d4af37] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#d4af37]/20"
             >
               {editingId ? "Update Address" : "Add Address"}
             </button>
@@ -194,12 +194,12 @@ export function AddressPage() {
 
       <div className="grid md:grid-cols-2 gap-6">
         {addresses.map((a) => (
-          <div key={a._id} className="bg-[#171717] border border-[#262626] rounded-2xl p-6 shadow-xl hover:border-[#ff6b00] transition-all duration-200 group">
+          <div key={a._id} className="bg-[#171717] border border-[#262626] rounded-2xl p-6 shadow-xl hover:border-[#d4af37] transition-all duration-200 group">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-white font-semibold text-lg">{a.fullName}</h3>
                 {a.isDefault && (
-                  <span className="inline-block mt-1 px-2 py-1 rounded-full bg-[#ff6b00] text-white text-xs font-medium">
+                  <span className="inline-block mt-1 px-2 py-1 rounded-full bg-[#d4af37] text-white text-xs font-medium">
                     Default
                   </span>
                 )}
@@ -234,7 +234,7 @@ export function AddressPage() {
                   onClick={() =>
                     api.put(`/users/addresses/${a._id}`, { ...a, isDefault: true }).then(load)
                   }
-                  className="flex-1 px-4 py-2 rounded-lg bg-[#ff6b00] text-white text-sm font-medium hover:bg-[#ff7a1a] transition-all duration-200"
+                  className="flex-1 px-4 py-2 rounded-lg bg-[#d4af37] text-white text-sm font-medium hover:bg-[#ff7a1a] transition-all duration-200"
                 >
                   Set Default
                 </button>

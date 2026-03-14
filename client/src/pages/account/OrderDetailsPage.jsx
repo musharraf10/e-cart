@@ -6,7 +6,7 @@ const steps = ["pending", "processing", "shipped", "delivered"];
 
 const statusColors = {
   pending: "bg-[#52525b] text-white",
-  processing: "bg-[#ff6b00] text-white",
+  processing: "bg-[#d4af37] text-white",
   shipped: "bg-[#3b82f6] text-white",
   delivered: "bg-[#22c55e] text-white",
   cancelled: "bg-[#ef4444] text-white",
@@ -31,7 +31,7 @@ export function OrderDetailsPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("/account/orders")}
-          className="text-[#ff6b00] hover:text-[#ff7a1a] transition-colors"
+          className="text-[#d4af37] hover:text-[#ff7a1a] transition-colors"
         >
           ← Back to Orders
         </button>
@@ -122,7 +122,7 @@ export function OrderDetailsPage() {
               </div>
               <div className="border-t border-[#262626] pt-3 flex justify-between">
                 <span className="text-white font-semibold">Total</span>
-                <span className="text-[#ff6b00] text-xl font-bold">
+                <span className="text-[#d4af37] text-xl font-bold">
                   ${order.total.toFixed(2)}
                 </span>
               </div>
@@ -134,9 +134,8 @@ export function OrderDetailsPage() {
               Order Status
             </h2>
             <div
-              className={`px-4 py-2 rounded-full text-center text-sm font-semibold mb-6 ${
-                statusColors[order.status] || statusColors.pending
-              }`}
+              className={`px-4 py-2 rounded-full text-center text-sm font-semibold mb-6 ${statusColors[order.status] || statusColors.pending
+                }`}
             >
               {order.status.toUpperCase()}
             </div>
@@ -145,25 +144,22 @@ export function OrderDetailsPage() {
               {steps.map((step) => (
                 <div
                   key={step}
-                  className={`flex items-center gap-3 text-sm ${
-                    steps.indexOf(step) <= steps.indexOf(order.status)
+                  className={`flex items-center gap-3 text-sm ${steps.indexOf(step) <= steps.indexOf(order.status)
                       ? "opacity-100"
                       : "opacity-50"
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-3 h-3 rounded-full ${
-                      steps.indexOf(step) <= steps.indexOf(order.status)
-                        ? "bg-[#ff6b00]"
+                    className={`w-3 h-3 rounded-full ${steps.indexOf(step) <= steps.indexOf(order.status)
+                        ? "bg-[#d4af37]"
                         : "bg-[#262626]"
-                    }`}
+                      }`}
                   ></div>
                   <span
-                    className={`capitalize ${
-                      steps.indexOf(step) <= steps.indexOf(order.status)
+                    className={`capitalize ${steps.indexOf(step) <= steps.indexOf(order.status)
                         ? "text-white"
                         : "text-[#a1a1aa]"
-                    }`}
+                      }`}
                   >
                     {step}
                   </span>

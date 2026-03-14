@@ -57,11 +57,10 @@ export function AccountSettingsPage() {
 
         {message && (
           <div
-            className={`mb-6 px-4 py-3 rounded-xl text-sm font-medium ${
-              message.includes("successfully")
+            className={`mb-6 px-4 py-3 rounded-xl text-sm font-medium ${message.includes("successfully")
                 ? "bg-green-900/30 text-green-400 border border-green-900"
                 : "bg-red-900/30 text-red-400 border border-red-900"
-            }`}
+              }`}
           >
             {message}
           </div>
@@ -73,7 +72,7 @@ export function AccountSettingsPage() {
               Current Password
             </label>
             <input
-              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
               type="password"
               placeholder="Enter your current password"
               value={currentPassword}
@@ -87,7 +86,7 @@ export function AccountSettingsPage() {
               New Password
             </label>
             <input
-              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#ff6b00] transition-colors"
+              className="w-full bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-3 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors"
               type="password"
               placeholder="Enter your new password"
               value={newPassword}
@@ -100,7 +99,7 @@ export function AccountSettingsPage() {
 
         <button
           type="submit"
-          className="w-full mt-8 px-6 py-3.5 rounded-xl bg-[#ff6b00] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#ff6b00]/20"
+          className="w-full mt-8 px-6 py-3.5 rounded-xl bg-[#d4af37] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#d4af37]/20"
         >
           Update Password
         </button>
