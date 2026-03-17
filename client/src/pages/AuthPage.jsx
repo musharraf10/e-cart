@@ -57,28 +57,6 @@ export function AuthPage() {
             : "Create your account today"}
         </p>
 
-        <div className="flex rounded-xl bg-primary p-1 gap-1 mt-6 mb-6">
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${isLogin
-              ? "bg-accent text-primary"
-              : "text-muted hover:text-white"
-              }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("register")}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!isLogin
-              ? "bg-accent text-primary"
-              : "text-muted hover:text-white"
-              }`}
-          >
-            Register
-          </button>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
