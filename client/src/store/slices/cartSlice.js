@@ -30,6 +30,7 @@ const cartSlice = createSlice({
       const existing = state.items.find(
         (i) =>
           i.product === action.payload.product &&
+          i.sku === action.payload.sku &&
           i.size === action.payload.size &&
           i.color === action.payload.color,
       );
@@ -60,4 +61,3 @@ const cartSlice = createSlice({
 
 export const { addToCart, removeFromCart, updateQty, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;
-

@@ -192,8 +192,8 @@ export function AdminProductsPage() {
                     <td className="px-5 py-4 font-medium text-white">{product.name}</td>
                     <td className="px-5 py-4 text-muted">${(product.price || 0).toFixed(2)}</td>
                     <td className="px-5 py-4 text-muted">
-                      {product.inventoryCount ?? 0}
-                      {product.inventoryCount <= 0 && <span className="ml-2 text-red-400 text-xs">Out</span>}
+                      {(product.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0)}
+                      {(product.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0) <= 0 && <span className="ml-2 text-red-400 text-xs">Out</span>}
                     </td>
                     <td className="px-5 py-4">
                       <span className={product.isVisible ? "text-emerald-400 font-medium" : "text-muted"}>

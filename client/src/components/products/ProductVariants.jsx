@@ -1,11 +1,13 @@
 export function ProductVariants({
-  sizes = [],
-  colors = [],
+  variants = [],
   size,
   color,
   setSize,
   setColor,
 }) {
+  const sizes = [...new Set(variants.map((variant) => variant.size).filter(Boolean))];
+  const colors = [...new Set(variants.map((variant) => variant.color).filter(Boolean))];
+
   return (
     <div className="space-y-4 text-sm">
       {sizes.length > 0 && (

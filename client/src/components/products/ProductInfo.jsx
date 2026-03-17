@@ -14,40 +14,48 @@ export function ProductInfo({
   setQty,
 }) {
   const dispatch = useDispatch();
+  const selectedVariant = (product.variants || []).find(
+    (variant) => variant.size === size && variant.color === color,
+  );
 
+  const selectedPrice = selectedVariant?.price ?? product.price;
   const discount =
-    product.originalPrice && product.originalPrice > product.price
+    product.originalPrice && product.originalPrice > selectedPrice
       ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) *
-            100
+          ((product.originalPrice - selectedPrice) / product.originalPrice) *
+            100,
         )
       : 0;
 
   const stockLabel =
-    product.inventoryCount <= 0
+    !selectedVariant || selectedVariant.stock <= 0
       ? "Out of Stock"
-      : product.inventoryCount < 5
+      : selectedVariant.stock < 5
         ? "Low Stock"
         : "In Stock";
 
   const add = () => {
-    if (
-      (product.sizes?.length && !size) ||
-      (product.colors?.length && !color)
-    ) {
+    if (!size || !color || !selectedVariant) {
       alert("Please select size and color");
       return;
     }
+
+    if (qty > selectedVariant.stock) {
+      alert("Requested quantity is higher than available stock");
+      return;
+    }
+
     dispatch(
       addToCart({
         product: product._id,
         name: product.name,
-        price: product.price,
+        price: selectedPrice,
         image: product.images?.[0],
         qty,
         size,
         color,
-      })
+        sku: selectedVariant.sku,
+      }),
     );
   };
 
@@ -73,9 +81,9 @@ export function ProductInfo({
 
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-2xl font-semibold text-white">
-          ${product.price.toFixed(2)}
+          ${selectedPrice.toFixed(2)}
         </span>
-        {product.originalPrice > product.price && (
+        {product.originalPrice > selectedPrice && (
           <>
             <span className="text-muted line-through">
               ${product.originalPrice.toFixed(2)}
@@ -102,8 +110,7 @@ export function ProductInfo({
       </p>
 
       <ProductVariants
-        sizes={product.sizes}
-        colors={product.colors}
+        variants={product.variants}
         size={size}
         color={color}
         setSize={setSize}

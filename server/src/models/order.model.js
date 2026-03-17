@@ -9,6 +9,7 @@ const orderItemSchema = new mongoose.Schema(
     qty: Number,
     size: String,
     color: String,
+    sku: String,
   },
   { _id: false },
 );
@@ -49,4 +50,3 @@ const orderSchema = new mongoose.Schema(
 );
 
 export const Order = mongoose.model("Order", orderSchema);
-

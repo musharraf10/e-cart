@@ -58,8 +58,10 @@ export function ShopPage() {
           const colorSet = new Set();
           (data.items || []).forEach((p) => {
             if (p.category?._id) catMap.set(p.category._id, { _id: p.category._id, name: p.category.name, slug: p.category.slug });
-            (p.sizes || []).forEach((s) => sizeSet.add(s));
-            (p.colors || []).forEach((c) => colorSet.add(c));
+            (p.variants || []).forEach((v) => {
+              if (v.size) sizeSet.add(v.size);
+              if (v.color) colorSet.add(v.color);
+            });
           });
           setCategories(Array.from(catMap.values()));
           setSizes(Array.from(sizeSet).sort());
@@ -82,8 +84,10 @@ export function ShopPage() {
       const colorSet = new Set();
       (data.items || []).forEach((p) => {
         if (p.category?._id) catMap.set(p.category._id, { _id: p.category._id, name: p.category.name, slug: p.category.slug });
-        (p.sizes || []).forEach((s) => sizeSet.add(s));
-        (p.colors || []).forEach((c) => colorSet.add(c));
+        (p.variants || []).forEach((v) => {
+          if (v.size) sizeSet.add(v.size);
+          if (v.color) colorSet.add(v.color);
+        });
       });
       setCategories(Array.from(catMap.values()));
       setSizes(Array.from(sizeSet).sort());
