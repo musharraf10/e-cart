@@ -7,7 +7,7 @@ import api from "../../api/client.js";
 import { addToCart } from "../../store/slices/cartSlice.js";
 import { useToast } from "../ui/ToastProvider.jsx";
 
-export function ProductCard({ product }) {
+export function ProductCard({ product, compact = false }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { notify } = useToast();
@@ -60,21 +60,21 @@ export function ProductCard({ product }) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.03 }}
+      whileHover={compact ? { scale: 1.01 } : { scale: 1.03 }}
       transition={{ duration: 0.2 }}
       className="group h-full flex flex-col"
     >
       <Link
         to={`/product/${product.slug}`}
-        className="flex flex-col h-full rounded-xl bg-card border border-[#262626] overflow-hidden hover:border-accent/40 transition-all duration-300"
+        className={`flex flex-col h-full rounded-xl bg-card border border-[#262626] overflow-hidden hover:border-accent/40 transition-all duration-300 ${compact ? "max-w-[240px]" : ""}`}
       >
-        <div className="relative aspect-[4/5] bg-[#262626] overflow-hidden flex-shrink-0">
+        <div className={`relative ${compact ? "aspect-[3/4]" : "aspect-[4/5]"} bg-[#262626] overflow-hidden flex-shrink-0`}>
           {product.images?.[0] ? (
             <img
               src={product.images[0]}
               alt={product.name}
               loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className={`w-full h-full ${compact ? "object-contain p-2" : "object-cover"} transition-transform duration-300 group-hover:scale-105`}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted text-sm">NoorFit</div>
@@ -126,10 +126,10 @@ export function ProductCard({ product }) {
           </div>
         </div>
 
-        <div className="p-4 flex flex-col flex-1">
-          <h3 className="text-sm font-medium text-white line-clamp-2">{product.name}</h3>
+        <div className={`flex flex-col flex-1 ${compact ? "p-3" : "p-4"}`}>
+          <h3 className={`font-medium text-white line-clamp-2 ${compact ? "text-xs" : "text-sm"}`}>{product.name}</h3>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-white font-semibold">${Number(product.price || 0).toFixed(2)}</span>
+            <span className={`text-white font-semibold ${compact ? "text-sm" : "text-base"}`}>${Number(product.price || 0).toFixed(2)}</span>
             {product.originalPrice && product.originalPrice > product.price && (
               <span className="text-muted text-xs line-through">${product.originalPrice.toFixed(2)}</span>
             )}
