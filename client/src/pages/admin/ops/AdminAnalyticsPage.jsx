@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import api from "../../../api/client.js";
 
 function toCsv(rows) {
-  if (!rows.length) return "";
+  if (!rows?.length) return "";
   const headers = Object.keys(rows[0]);
   const body = rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? "")).join(",")).join("\n");
   return `${headers.join(",")}\n${body}`;
@@ -20,21 +21,58 @@ function download(name, content) {
 
 export function AdminAnalyticsPage() {
   const [data, setData] = useState(null);
-  useEffect(()=>{ api.get('/admin/analytics').then(({data})=>setData(data)); },[]);
-  if (!data) return <div className="text-sm text-gray-500">Loading analytics...</div>;
+  useEffect(() => {
+    api.get("/admin/analytics").then(({ data }) => setData(data));
+  }, []);
+
+  if (!data) {
+    return (
+      <div className="flex justify-center items-center min-h-[40vh]">
+        <div className="animate-pulse rounded-xl bg-card border border-[#262626] h-32 w-full max-w-md" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Analytics & Reports</h1>
-      <div className="flex gap-2 text-xs">
-        <button className="border rounded-full px-3 py-1" onClick={()=>download('sales-by-product.csv',toCsv(data.salesByProduct))}>Export CSV (Products)</button>
-        <button className="border rounded-full px-3 py-1" onClick={()=>download('daily-revenue.csv',toCsv(data.dailyRevenue))}>Export CSV (Daily Revenue)</button>
-        <button className="border rounded-full px-3 py-1" onClick={()=>download('monthly-revenue.xls',toCsv(data.monthlyRevenue))}>Export Excel</button>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <h1 className="text-2xl font-bold tracking-tight text-white">Analytics & Reports</h1>
+      <div className="flex flex-wrap gap-2 text-xs">
+        <button className="rounded-xl border border-[#262626] px-4 py-2 text-white hover:bg-[#262626]" onClick={() => download("sales-by-product.csv", toCsv(data.salesByProduct))}>
+          Export CSV (Products)
+        </button>
+        <button className="rounded-xl border border-[#262626] px-4 py-2 text-white hover:bg-[#262626]" onClick={() => download("daily-revenue.csv", toCsv(data.dailyRevenue))}>
+          Export CSV (Daily Revenue)
+        </button>
+        <button className="rounded-xl border border-[#262626] px-4 py-2 text-white hover:bg-[#262626]" onClick={() => download("monthly-revenue.csv", toCsv(data.monthlyRevenue))}>
+          Export Monthly
+        </button>
       </div>
       <div className="grid xl:grid-cols-2 gap-4 text-sm">
-        <div className="bg-white rounded-xl p-3 shadow-sm"><h2 className="font-semibold mb-2">Sales by product</h2>{data.salesByProduct.map((r,i)=><div key={i} className="text-xs border-b py-1">{r._id} · qty {r.qty} · ${r.revenue.toFixed(2)}</div>)}</div>
-        <div className="bg-white rounded-xl p-3 shadow-sm"><h2 className="font-semibold mb-2">Sales by category</h2>{data.salesByCategory.map((r,i)=><div key={i} className="text-xs border-b py-1">{r.category} · {r.products} products</div>)}</div>
+        <div className="bg-card rounded-xl border border-[#262626] p-4">
+          <h2 className="font-semibold text-white mb-3">Sales by product</h2>
+          {(data.salesByProduct || []).length === 0 ? (
+            <p className="text-muted text-sm">No data</p>
+          ) : (
+            (data.salesByProduct || []).map((r, i) => (
+              <div key={i} className="text-xs border-b border-[#262626] py-2 text-muted last:border-b-0">
+                {r._id} · qty {r.qty} · ${(r.revenue || 0).toFixed(2)}
+              </div>
+            ))
+          )}
+        </div>
+        <div className="bg-card rounded-xl border border-[#262626] p-4">
+          <h2 className="font-semibold text-white mb-3">Sales by category</h2>
+          {(data.salesByCategory || []).length === 0 ? (
+            <p className="text-muted text-sm">No data</p>
+          ) : (
+            (data.salesByCategory || []).map((r, i) => (
+              <div key={i} className="text-xs border-b border-[#262626] py-2 text-muted last:border-b-0">
+                {r.category} · {r.products} products
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

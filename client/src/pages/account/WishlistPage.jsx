@@ -73,7 +73,7 @@ export function WishlistPage() {
 
                   <button
                     onClick={() => moveToCart(p)}
-                    className="w-full px-4 py-3 rounded-xl bg-[#d4af37] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#d4af37]/20"
+                    className="w-full px-4 py-3 rounded-xl bg-accent text-primary text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-lg shadow-accent/20"
                   >
                     Move to Cart
                   </button>

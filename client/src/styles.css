@@ -2,11 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply font-sans text-white bg-[#0f0f0f];
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply font-sans text-white bg-primary antialiased;
+    background-color: #0f0f0f;
+  }
 }
 
-html {
-  @apply scroll-smooth;
+/* Focus ring for accessibility */
+@layer utilities {
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary;
+  }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 }
-

@@ -160,7 +160,7 @@ export function ProfilePage() {
           <div className="flex gap-4 mt-8">
             <button
               type="submit"
-              className="flex-1 px-6 py-3.5 rounded-xl bg-[#d4af37] text-white text-sm font-semibold hover:bg-[#ff7a1a] transition-all duration-200 shadow-lg shadow-[#d4af37]/20"
+              className="flex-1 px-6 py-3.5 rounded-xl bg-accent text-primary text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-lg shadow-accent/20"
             >
               Save Changes
             </button>

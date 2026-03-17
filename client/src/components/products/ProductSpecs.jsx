@@ -9,13 +9,16 @@ export function ProductSpecs({ product }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 text-sm">
-      <h3 className="font-semibold mb-3">Specifications</h3>
-      <div className="grid sm:grid-cols-2 gap-2">
+    <div className="rounded-xl bg-card border border-[#262626] p-6">
+      <h3 className="text-lg font-semibold text-white mb-4">Specifications</h3>
+      <div className="grid sm:grid-cols-2 gap-3">
         {Object.entries(specs).map(([key, value]) => (
-          <div key={key} className="border rounded-lg px-3 py-2">
-            <p className="text-xs text-gray-500">{key}</p>
-            <p className="font-medium">{value}</p>
+          <div
+            key={key}
+            className="rounded-lg border border-[#262626] px-4 py-3"
+          >
+            <p className="text-xs text-muted uppercase tracking-wider">{key}</p>
+            <p className="text-white font-medium mt-0.5">{value}</p>
           </div>
         ))}
       </div>

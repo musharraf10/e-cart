@@ -4,14 +4,15 @@ import axios from "axios";
 const tokenKey = "noorfit_token";
 
 export const initializeAuth = createAsyncThunk("auth/initialize", async () => {
-  const token = typeof window !== "undefined" ? localStorage.getItem(tokenKey) : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem(tokenKey) : null;
 
   if (!token) {
     return { user: null, token: null };
   }
 
   const baseURL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+    import.meta.env.VITE_API_BASE_URL || "http://10.16.38.220:5000/api";
 
   try {
     const { data } = await axios.get(`${baseURL}/auth/me`, {

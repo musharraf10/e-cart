@@ -31,7 +31,7 @@ export function OrderDetailsPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("/account/orders")}
-          className="text-[#d4af37] hover:text-[#ff7a1a] transition-colors"
+          className="text-accent hover:opacity-80 transition-colors"
         >
           ← Back to Orders
         </button>

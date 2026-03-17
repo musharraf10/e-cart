@@ -26,7 +26,6 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
    ```
 
 2. Environment:
-
    - Copy `server/.env.example` to `.env` and adjust values.
 
 3. Run with Docker (recommended):
@@ -35,7 +34,7 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
    docker compose up --build
    ```
 
-   - API: `http://localhost:5000`
+   - API: `http://10.16.38.220:5000`
    - Client: `http://localhost:5173`
    - MongoDB: `mongodb://mongo:27017/noorfit`
 
@@ -67,4 +66,3 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
   - `mongo` (MongoDB + volume)
 
 Adjust images, ports, and env as needed for production.
-

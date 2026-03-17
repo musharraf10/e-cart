@@ -168,8 +168,8 @@ export function AdminProductFormPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-xl p-5 shadow-sm space-y-4">
-      <h1 className="text-xl font-semibold">{title}</h1>
+    <div className="max-w-3xl mx-auto bg-card rounded-xl border border-[#262626] p-6 space-y-4">
+      <h1 className="text-xl font-semibold text-white">{title}</h1>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid md:grid-cols-2 gap-3">
           <input
@@ -177,14 +177,14 @@ export function AdminProductFormPage() {
             placeholder="Name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="border rounded-lg px-3 py-2"
+            className="rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
           />
           <input
             required
             placeholder="Slug"
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            className="border rounded-lg px-3 py-2"
+            className="rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -205,7 +205,7 @@ export function AdminProductFormPage() {
             placeholder="Price"
             value={form.price}
             onChange={(e) => setForm({ ...form, price: e.target.value })}
-            className="border rounded-lg px-3 py-2"
+            className="rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
           />
           <input
             type="number"
@@ -214,7 +214,7 @@ export function AdminProductFormPage() {
             placeholder="Original Price"
             value={form.originalPrice}
             onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
-            className="border rounded-lg px-3 py-2"
+            className="rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
           />
           <input
             required
@@ -223,7 +223,7 @@ export function AdminProductFormPage() {
             placeholder="Stock"
             value={form.stock}
             onChange={(e) => setForm({ ...form, stock: e.target.value })}
-            className="border rounded-lg px-3 py-2"
+            className="rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
           />
         </div>
 
@@ -232,13 +232,13 @@ export function AdminProductFormPage() {
           <button
             type="button"
             onClick={() => setShowCategoryMenu((prev) => !prev)}
-            className="w-full border rounded-lg px-3 py-2 text-left text-sm"
+            className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-left text-sm text-white focus:outline-none focus:border-accent"
           >
             {selectedCategory?.name || "Select category"}
           </button>
 
           {showCategoryMenu && (
-            <div className="absolute z-10 mt-1 w-full border rounded-lg bg-white shadow-lg p-2 space-y-2">
+            <div className="absolute z-10 mt-1 w-full border border-[#262626] rounded-lg bg-card shadow-lg p-2 space-y-2">
               <input
                 placeholder="Search category..."
                 value={categorySearch}
@@ -250,7 +250,7 @@ export function AdminProductFormPage() {
                 type="button"
                 onClick={createCategory}
                 disabled={creatingCategory || !categorySearch.trim()}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold disabled:opacity-60"
+                className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60 focus:outline-none focus:border-accent"
               >
                 {creatingCategory
                   ? "Creating category..."
@@ -267,15 +267,15 @@ export function AdminProductFormPage() {
                       setShowCategoryMenu(false);
                       setCategorySearch("");
                     }}
-                    className="w-full text-left px-2 py-2 rounded hover:bg-gray-100 text-sm"
+                    className="w-full text-left px-2 py-2 rounded hover:bg-[#262626] text-sm text-white"
                   >
                     {category.name}
                   </button>
                 ))}
                 {filteredCategories.length === 0 && (
-                  <><p className="px-2 py-2 text-xs text-gray-500">
+                  <><p className="px-2 py-2 text-xs text-muted">
                     No categories found. Create one using the button above.
-                  </p><p className="px-2 py-2 text-xs text-gray-500">No categories found.</p></>
+                  </p><p className="px-2 py-2 text-xs text-muted">No categories found.</p></>
                 )}
               </div>
             </div>
@@ -291,8 +291,8 @@ export function AdminProductFormPage() {
                 type="button"
                 onClick={() => toggleSize(size)}
                 className={`px-3 py-1 rounded-full border text-sm ${form.sizes.includes(size)
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-gray-300"
+                    ? "border-accent bg-accent text-primary"
+                    : "border-[#262626] text-white"
                   }`}
               >
                 {size}
@@ -305,7 +305,7 @@ export function AdminProductFormPage() {
           placeholder="Colors (comma separated)"
           value={form.colors}
           onChange={(e) => setForm({ ...form, colors: e.target.value })}
-          className="w-full border rounded-lg px-3 py-2"
+          className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
         />
 
         <div className="space-y-2">
@@ -314,7 +314,7 @@ export function AdminProductFormPage() {
             <button
               type="button"
               onClick={addImageField}
-              className="text-xs px-2 py-1 border rounded-full"
+              className="text-xs px-2 py-1 border border-[#262626] rounded-full text-white hover:bg-[#262626]"
             >
               Add image
             </button>
@@ -325,12 +325,12 @@ export function AdminProductFormPage() {
                 placeholder="https://..."
                 value={url}
                 onChange={(e) => setImageAt(idx, e.target.value)}
-                className="flex-1 border rounded-lg px-3 py-2"
+                className="flex-1 rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
               />
               <button
                 type="button"
                 onClick={() => removeImageField(idx)}
-                className="px-2 py-1 border rounded-lg text-xs"
+                className="px-2 py-1 border border-[#262626] rounded-lg text-xs text-white hover:bg-[#262626]"
               >
                 Remove
               </button>
@@ -339,7 +339,7 @@ export function AdminProductFormPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-3">
-          <label className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm">
+          <label className="flex items-center justify-between border border-[#262626] rounded-lg px-3 py-2 text-sm text-white">
             <span>Visible</span>
             <input
               type="checkbox"
@@ -347,7 +347,7 @@ export function AdminProductFormPage() {
               onChange={(e) => setForm({ ...form, visible: e.target.checked })}
             />
           </label>
-          <label className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm">
+          <label className="flex items-center justify-between border border-[#262626] rounded-lg px-3 py-2 text-sm text-white">
             <span>New Drop</span>
             <input
               type="checkbox"
@@ -360,7 +360,7 @@ export function AdminProductFormPage() {
         <button
           disabled={submitting}
           type="submit"
-          className="w-full rounded-full bg-gray-900 text-white py-2 font-semibold"
+          className="w-full rounded-xl bg-accent text-primary py-2.5 font-semibold hover:opacity-90 disabled:opacity-50"
         >
           {submitting ? "Saving..." : isEdit ? "Update product" : "Create product"}
         </button>

@@ -16,15 +16,17 @@ const links = [
 
 export function AdminSidebar() {
   return (
-    <aside className="bg-white rounded-xl p-3 shadow-sm h-fit">
+    <aside className="bg-card border border-[#262626] rounded-xl p-4 h-fit sticky top-24">
       <nav className="space-y-1">
         {links.map(([to, label]) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `block rounded-lg px-3 py-2 text-sm ${
-                isActive ? "bg-gray-900 text-white" : "text-gray-700 hover:bg-gray-100"
+              `block rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-accent text-primary"
+                  : "text-muted hover:text-white hover:bg-[#262626]"
               }`
             }
           >
