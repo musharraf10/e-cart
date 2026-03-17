@@ -79,7 +79,7 @@ export function AdminProductsPage() {
 
   const toggleVisibility = async (id) => {
     try {
-      await api.patch(`/admin/products/${id}/toggle-visibility`);
+      await api.patch(`/admin/products/${id}/visibility`);
       loadProducts();
     } catch (err) {
       console.error("Toggle visibility failed:", err);
@@ -88,7 +88,7 @@ export function AdminProductsPage() {
 
   const toggleNewDrop = async (id) => {
     try {
-      await api.patch(`/admin/products/${id}/toggle-new-drop`);
+      await api.patch(`/admin/products/${id}/new-drop`);
       loadProducts();
     } catch (err) {
       console.error("Toggle new drop failed:", err);
