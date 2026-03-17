@@ -65,7 +65,7 @@ export function ProductInfo({ product, size, color, qty, setSize, setColor, setQ
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[420px] space-y-4">
       <div>
         <h1 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">{product.name}</h1>
         <div className="mt-2 flex items-center gap-2 text-sm text-muted">
@@ -76,7 +76,7 @@ export function ProductInfo({ product, size, color, qty, setSize, setColor, setQ
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-2xl font-semibold text-white">${selectedPrice.toFixed(2)}</span>
+        <span className="text-xl font-semibold text-white">${selectedPrice.toFixed(2)}</span>
         {product.originalPrice > selectedPrice && (
           <>
             <span className="text-muted line-through">${product.originalPrice.toFixed(2)}</span>
@@ -103,7 +103,7 @@ export function ProductInfo({ product, size, color, qty, setSize, setColor, setQ
         <button
           onClick={add}
           disabled={!canAdd || stock < 1 || adding}
-          className="flex-1 min-w-[140px] rounded-xl bg-accent text-primary py-3 px-6 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 min-w-[140px] h-12 rounded-xl bg-accent text-primary px-6 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {adding ? "Adding..." : "Add to cart"}
         </button>

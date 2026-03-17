@@ -42,7 +42,7 @@ export function ProductReviews({
   };
 
   return (
-    <div className="rounded-xl bg-card border border-[#262626] p-6 space-y-6">
+    <div className="mt-8 rounded-xl bg-[#171717] border border-[#262626] p-6 space-y-6">
       <h3 className="text-lg font-semibold text-white">Customer Reviews</h3>
       <div className="grid md:grid-cols-[200px,1fr] gap-6">
         <div>
