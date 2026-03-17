@@ -65,7 +65,7 @@ export function HomePage() {
               onClick={() => setActiveCategory(category._id)}
               className={`rounded-full px-4 py-2 text-sm transition-colors ${activeCategory === category._id ? "bg-accent text-primary" : "bg-card text-white hover:text-accent"}`}
             >
-              {category.name}
+              {category.name.toUpperCase()}
             </button>
           ))}
         </div>

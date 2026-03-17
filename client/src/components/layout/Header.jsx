@@ -31,8 +31,7 @@ export function Header() {
   };
 
   const navLinkClass = ({ isActive }) =>
-    `text-sm font-medium transition-colors duration-200 py-2 ${
-      isActive ? "text-[#d4af37]" : "text-white/80 hover:text-[#d4af37]"
+    `text-sm font-medium transition-colors duration-200 py-2 ${isActive ? "text-[#d4af37]" : "text-white/80 hover:text-[#d4af37]"
     }`;
 
   return (
@@ -46,7 +45,6 @@ export function Header() {
 
             <nav className="hidden md:flex items-center justify-center gap-8">
               <NavLink to="/" end className={navLinkClass}>Home</NavLink>
-              <a href="/#categories" className="text-sm font-medium text-white/80 hover:text-[#d4af37] transition-colors">Categories</a>
             </nav>
 
             <div className="hidden md:flex items-center gap-2 justify-self-end">
@@ -96,6 +94,14 @@ export function Header() {
                   <NavLink to="/account" className={({ isActive }) => `p-2 rounded-xl transition-colors ${isActive ? "text-[#d4af37]" : "text-white/80 hover:text-[#d4af37]"}`}>
                     <HiUser className="w-5 h-5" />
                   </NavLink>
+                  {user.role === "admin" && (
+                    <NavLink
+                      to="/admin/dashboard"
+                      className={navLinkClass}
+                    >
+                      Admin
+                    </NavLink>
+                  )}
                   <button type="button" onClick={handleLogout} className="p-2 rounded-xl text-white/80 hover:text-[#d4af37] transition-colors" aria-label="Logout">
                     <HiLogout className="w-5 h-5" />
                   </button>
