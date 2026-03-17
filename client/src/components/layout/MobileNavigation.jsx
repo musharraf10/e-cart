@@ -4,7 +4,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiHome,
-  HiShoppingBag,
   HiSearch,
   HiShoppingCart,
   HiUser,
@@ -18,7 +17,7 @@ import { logout } from "../../store/slices/authSlice.js";
 
 const navItems = [
   { to: "/", icon: HiHome, label: "Home" },
-  { to: "/shop", icon: HiShoppingBag, label: "Shop" },
+  { to: "/#categories", icon: HiHome, label: "Categories" },
   { to: "/", icon: HiSearch, label: "Search", search: true },
   { to: "/cart", icon: HiShoppingCart, label: "Cart" },
   { to: "/account", icon: HiUser, label: "Account", account: true },
@@ -46,7 +45,6 @@ export function MobileNavigation() {
     if (to === "/cart") return location.pathname === "/cart";
     if (to === "/account" || to.startsWith?.("/account"))
       return location.pathname.startsWith("/account");
-    if (to === "/shop") return location.pathname === "/shop";
     if (to === "/") return location.pathname === "/";
     return false;
   };
@@ -94,7 +92,7 @@ export function MobileNavigation() {
             return (
               <NavLink
                 key={to + label}
-                to={search ? "/" : to}
+                to={search ? "/" : to.replace("/#categories", "/") }
                 className={`flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl transition-all duration-200 ${
                   active ? "text-accent" : "text-muted hover:text-white"
                 }`}

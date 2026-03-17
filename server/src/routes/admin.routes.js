@@ -3,6 +3,7 @@ import { protect, admin } from "../middleware/auth.middleware.js";
 import {
   getDashboardMetrics,
   adminListProducts,
+  adminGetProductById,
   adminCreateProduct,
   adminBulkUpdateProducts,
   adminListCategories,
@@ -43,13 +44,8 @@ router.get("/notifications", adminGetNotifications);
 
 router.get("/categories", adminListCategories);
 router.post("/categories", adminCreateCategory);
-
-router.get("/categories", adminListCategories);
-router.post("/categories", adminCreateCategory);
-
-router.get("/categories", adminListCategories);
-router.post("/categories", adminCreateCategory);
 router.get("/products", adminListProducts);
+router.get("/products/:id", adminGetProductById);
 router.post("/products", adminCreateProduct);
 router.post("/products/bulk", adminBulkUpdateProducts);
 router.put("/products/:id", adminUpdateProduct);

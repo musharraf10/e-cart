@@ -276,6 +276,16 @@ export async function adminCreateCategory(req, res) {
 // Product CRUD & Actions
 // ────────────────────────────────────────────────
 
+
+export async function adminGetProductById(req, res) {
+  const product = await Product.findById(req.params.id).populate("category", "name slug");
+  if (!product) {
+    res.status(404);
+    throw new Error("Product not found");
+  }
+  res.json(product);
+}
+
 export async function adminCreateProduct(req, res) {
   const product = await Product.create(normalizeProductPayload(req.body));
   res.status(201).json(product);
