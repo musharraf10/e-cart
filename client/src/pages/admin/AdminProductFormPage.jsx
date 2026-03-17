@@ -27,6 +27,9 @@ export function AdminProductFormPage() {
   const [categories, setCategories] = useState([]);
   const [categorySearch, setCategorySearch] = useState("");
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
@@ -132,6 +135,27 @@ export function AdminProductFormPage() {
     }
   };
 
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) return;
+
+    setCreatingCategory(true);
+    try {
+      const { data } = await api.post("/admin/categories", { name: trimmedName });
+      setCategories((prev) => [...prev, data]);
+      setForm((prev) => ({ ...prev, category: data._id }));
+      setShowCreateCategoryModal(false);
+      setNewCategoryName("");
+      setShowCategoryMenu(false);
+      setCategorySearch("");
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to create category");
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto bg-card rounded-xl border border-[#262626] p-6 space-y-4">
       <h1 className="text-xl font-semibold text-white">{title}</h1>
@@ -147,9 +171,18 @@ export function AdminProductFormPage() {
 
         <div className="relative">
           <p className="text-sm font-medium mb-2">Category</p>
-          <button type="button" onClick={() => setShowCategoryMenu((prev) => !prev)} className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-left text-sm text-white">
-            {selectedCategory?.name || "Select category"}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button type="button" onClick={() => setShowCategoryMenu((prev) => !prev)} className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-left text-sm text-white">
+              {selectedCategory?.name || "Select category"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateCategoryModal(true)}
+              className="rounded-lg border border-[#d4af37] px-3 py-2 text-sm font-medium text-[#d4af37] hover:bg-[#d4af37]/10 sm:whitespace-nowrap"
+            >
+              + Add Category
+            </button>
+          </div>
           {showCategoryMenu && (
             <div className="absolute z-10 mt-1 w-full border border-[#262626] rounded-lg bg-card p-2 space-y-2">
               <input placeholder="Search category..." value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-sm text-white" />
@@ -217,6 +250,42 @@ export function AdminProductFormPage() {
           {submitting ? "Saving..." : isEdit ? "Update product" : "Create product"}
         </button>
       </form>
+
+      {showCreateCategoryModal && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-md rounded-xl border border-[#262626] bg-[#171717] p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-white">Create category</h2>
+            <form className="mt-4 space-y-4" onSubmit={handleCreateCategory}>
+              <input
+                required
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Category name"
+                className="w-full rounded-lg border border-[#262626] bg-[#171717] px-3 py-2 text-white"
+              />
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateCategoryModal(false);
+                    setNewCategoryName("");
+                  }}
+                  className="rounded-lg border border-[#262626] px-4 py-2 text-sm text-white hover:bg-[#262626]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingCategory}
+                  className="rounded-lg border border-[#d4af37] bg-[#d4af37] px-4 py-2 text-sm font-semibold text-black disabled:opacity-70"
+                >
+                  {creatingCategory ? "Creating..." : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
