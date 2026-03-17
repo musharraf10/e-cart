@@ -22,8 +22,10 @@ export function ProductDetailPage() {
     (async () => {
       const { data } = await api.get(`/products/${slug}`);
       setProduct(data);
-      if (data.sizes?.length) setSize(data.sizes[0]);
-      if (data.colors?.length) setColor(data.colors[0]);
+      if (data.variants?.length) {
+        setSize(data.variants[0].size);
+        setColor(data.variants[0].color);
+      }
 
       const reviewRes = await api.get(`/reviews/${data._id}`);
       setReviews(reviewRes.data);

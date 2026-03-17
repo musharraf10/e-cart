@@ -3,6 +3,12 @@ import { Product } from "../models/product.model.js";
 import { Coupon } from "../models/coupon.model.js";
 import { processOnlinePayment } from "../utils/payment.util.js";
 
+function findVariant(product, item) {
+  return (product.variants || []).find(
+    (v) => v.size === item.size && v.color === item.color,
+  );
+}
+
 export async function createOrder(req, res) {
   const { items, shippingAddress, paymentMethod, couponCode } = req.body;
 
@@ -13,7 +19,6 @@ export async function createOrder(req, res) {
 
   const productIds = items.map((i) => i.product);
   const products = await Product.find({ _id: { $in: productIds }, isVisible: true });
-
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
   let subtotal = 0;
@@ -22,19 +27,28 @@ export async function createOrder(req, res) {
     if (!p) {
       throw new Error("Product not found");
     }
-    if (p.inventoryCount < i.qty) {
-      throw new Error(`Insufficient inventory for ${p.name}`);
+
+    const variant = findVariant(p, i);
+    if (!variant) {
+      throw new Error(`Variant not found for ${p.name}`);
     }
-    const price = p.price;
+
+    if (variant.stock < i.qty) {
+      throw new Error(`Insufficient stock for ${p.name} (${variant.size} / ${variant.color})`);
+    }
+
+    const price = variant.price;
     subtotal += price * i.qty;
+
     return {
       product: p._id,
       name: p.name,
       image: p.images?.[0],
       price,
       qty: i.qty,
-      size: i.size,
-      color: i.color,
+      size: variant.size,
+      color: variant.color,
+      sku: variant.sku,
     };
   });
 
@@ -82,6 +96,30 @@ export async function createOrder(req, res) {
     };
   }
 
+  for (const item of orderItems) {
+    const updateResult = await Product.updateOne(
+      {
+        _id: item.product,
+        isVisible: true,
+        variants: {
+          $elemMatch: {
+            size: item.size,
+            color: item.color,
+            stock: { $gte: item.qty },
+          },
+        },
+      },
+      {
+        $inc: { "variants.$.stock": -item.qty },
+      },
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      res.status(409);
+      throw new Error(`Insufficient stock for ${item.name} (${item.size} / ${item.color})`);
+    }
+  }
+
   const order = await Order.create({
     user: req.user._id,
     items: orderItems,
@@ -94,15 +132,6 @@ export async function createOrder(req, res) {
     total,
     couponCode: appliedCouponCode,
   });
-
-  await Promise.all(
-    orderItems.map((i) =>
-      Product.findByIdAndUpdate(i.product, {
-        $inc: { inventoryCount: -i.qty },
-        $set: { inStock: true },
-      }),
-    ),
-  );
 
   res.status(201).json(order);
 }
@@ -120,4 +149,3 @@ export async function getOrderById(req, res) {
   }
   res.json(order);
 }
-

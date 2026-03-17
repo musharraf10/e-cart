@@ -22,13 +22,23 @@ function normalizeProductPayload(payload) {
     delete next.newDrop;
   }
 
-  if (next.stock !== undefined) {
-    next.inventoryCount = Number(next.stock);
-    next.inStock = Number(next.stock) > 0;
-    delete next.stock;
+  next.variants = (next.variants || []).map((variant) => ({
+    size: variant.size,
+    color: variant.color,
+    stock: Number(variant.stock) || 0,
+    price: Number(variant.price) || 0,
+    sku: variant.sku,
+  })).filter((variant) => variant.size && variant.color && variant.sku);
+
+  if (!next.price && next.variants.length) {
+    next.price = Math.min(...next.variants.map((v) => v.price));
   }
 
   return next;
+}
+
+function totalVariantStock(product) {
+  return (product.variants || []).reduce((sum, variant) => sum + (variant.stock || 0), 0);
 }
 
 export async function getDashboardMetrics(req, res) {
@@ -66,8 +76,8 @@ export async function getDashboardMetrics(req, res) {
       { $group: { _id: null, revenue: { $sum: "$total" } } },
     ]),
     Order.countDocuments({ createdAt: { $gte: startOfToday } }),
-    Product.countDocuments({ inventoryCount: { $gt: 0, $lt: 5 } }),
-    Product.countDocuments({ inventoryCount: { $lte: 0 } }),
+    Product.find(),
+    Product.find(),
     Order.find().sort({ createdAt: -1 }).limit(5).populate("user", "name"),
     User.find({ role: "customer" })
       .sort({ createdAt: -1 })
@@ -153,8 +163,11 @@ export async function getDashboardMetrics(req, res) {
     totalOrders,
     totalCustomers,
     totalProducts,
-    lowStockProducts,
-    outOfStockProducts,
+    lowStockProducts: lowStockProducts.filter((p) => {
+      const stock = totalVariantStock(p);
+      return stock > 0 && stock < 5;
+    }).length,
+    outOfStockProducts: outOfStockProducts.filter((p) => totalVariantStock(p) <= 0).length,
     recentOrders,
     newCustomerSignups,
     recentReviews,
@@ -176,14 +189,19 @@ export async function adminListProducts(req, res) {
   if (visibility === "visible") filters.isVisible = true;
   if (visibility === "hidden") filters.isVisible = false;
   if (newDrop === "true") filters.isNewDrop = true;
-  if (stockStatus === "low") filters.inventoryCount = { $gt: 0, $lt: 5 };
-  if (stockStatus === "out") filters.inventoryCount = { $lte: 0 };
-
   const products = await Product.find(filters)
     .sort({ createdAt: -1 })
     .populate("category", "name slug");
 
-  res.json(products);
+  const filteredProducts = products.filter((product) => {
+    if (!stockStatus) return true;
+    const stock = totalVariantStock(product);
+    if (stockStatus === "low") return stock > 0 && stock < 5;
+    if (stockStatus === "out") return stock <= 0;
+    return true;
+  });
+
+  res.json(filteredProducts);
 }
 
 export async function adminBulkUpdateProducts(req, res) {
@@ -322,14 +340,14 @@ export async function adminMarkFeatured(req, res) {
 
 export async function adminInventoryOverview(req, res) {
   const products = await Product.find()
-    .sort({ inventoryCount: 1 })
+    .sort({ createdAt: -1 })
     .limit(100)
     .populate("category", "name");
 
   const lowStock = products.filter(
-    (p) => p.inventoryCount > 0 && p.inventoryCount < 5,
+    (p) => totalVariantStock(p) > 0 && totalVariantStock(p) < 5,
   );
-  const outOfStock = products.filter((p) => p.inventoryCount <= 0);
+  const outOfStock = products.filter((p) => totalVariantStock(p) <= 0);
 
   res.json({
     items: products,
@@ -345,14 +363,20 @@ export async function adminUpdateProductStock(req, res) {
     throw new Error("Product not found");
   }
 
-  const newCount = Number(req.body.inventoryCount);
-  if (isNaN(newCount)) {
+  const { size, color, stock } = req.body;
+  const newCount = Number(stock);
+  if (!size || !color || Number.isNaN(newCount)) {
     res.status(400);
-    throw new Error("Invalid inventory count");
+    throw new Error("Invalid variant stock payload");
   }
 
-  product.inventoryCount = newCount;
-  product.inStock = newCount > 0;
+  const variant = product.variants.find((v) => v.size === size && v.color === color);
+  if (!variant) {
+    res.status(404);
+    throw new Error("Variant not found");
+  }
+
+  variant.stock = newCount;
   await product.save();
 
   res.json(product);
@@ -620,9 +644,7 @@ export async function adminGetAnalytics(req, res) {
 export async function adminGetNotifications(req, res) {
   const [latestOrder, lowStockItems, newUser, newReview] = await Promise.all([
     Order.findOne().sort({ createdAt: -1 }).populate("user", "name"),
-    Product.find({ inventoryCount: { $gt: 0, $lt: 5 } })
-      .sort({ inventoryCount: 1 })
-      .limit(5),
+    Product.find().limit(50),
     User.findOne({ role: "customer" }).sort({ createdAt: -1 }),
     Review.findOne().sort({ createdAt: -1 }).populate("product", "name"),
   ]);
@@ -635,10 +657,15 @@ export async function adminGetNotifications(req, res) {
       message: `New order #${latestOrder._id.toString().slice(-6)}`,
     });
   }
-  if (lowStockItems.length) {
+  const lowStockCount = lowStockItems.filter((product) => {
+    const stock = totalVariantStock(product);
+    return stock > 0 && stock < 5;
+  }).length;
+
+  if (lowStockCount) {
     notifications.push({
       type: "low_stock",
-      message: `${lowStockItems.length} items are low on stock`,
+      message: `${lowStockCount} items are low on stock`,
     });
   }
   if (newUser) {

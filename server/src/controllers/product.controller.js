@@ -2,18 +2,23 @@ import { Product } from "../models/product.model.js";
 
 function withDerivedFields(productDoc) {
   const product = productDoc.toObject ? productDoc.toObject() : productDoc;
+  const variants = product.variants || [];
+  const sizes = [...new Set(variants.map((v) => v.size).filter(Boolean))];
+  const colors = [...new Set(variants.map((v) => v.color).filter(Boolean))];
+  const inventoryCount = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+  const minVariantPrice = variants.length
+    ? Math.min(...variants.map((v) => Number(v.price) || 0))
+    : product.price;
 
   return {
     ...product,
+    price: minVariantPrice,
     ratingsAverage: product.averageRating || 0,
     ratingsCount: product.numReviews || 0,
-    variants: (product.sizes || []).flatMap((size) =>
-      (product.colors || []).map((color) => ({
-        size,
-        color,
-        stock: product.inventoryCount,
-      })),
-    ),
+    sizes,
+    colors,
+    inventoryCount,
+    variants,
   };
 }
 
@@ -34,8 +39,8 @@ export async function listProducts(req, res) {
   if (category) filters.category = category;
   if (minPrice) filters.price = { ...(filters.price || {}), $gte: Number(minPrice) };
   if (maxPrice) filters.price = { ...(filters.price || {}), $lte: Number(maxPrice) };
-  if (size) filters.sizes = size;
-  if (color) filters.colors = color;
+  if (size) filters["variants.size"] = size;
+  if (color) filters["variants.color"] = color;
   if (onlyNewDrops === "true") filters.isNewDrop = true;
 
   let sortOption = { createdAt: -1 };

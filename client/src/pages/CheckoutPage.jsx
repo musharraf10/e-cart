@@ -51,6 +51,7 @@ export function CheckoutPage() {
           qty: i.qty,
           size: i.size,
           color: i.color,
+          sku: i.sku,
         })),
         shippingAddress: address,
         paymentMethod,

@@ -13,15 +13,17 @@ export function WishlistPage() {
   }, []);
 
   const moveToCart = (p) => {
+    const defaultVariant = p.variants?.[0];
     dispatch(
       addToCart({
         product: p._id,
         name: p.name,
         image: p.images?.[0],
-        price: p.price,
+        price: defaultVariant?.price ?? p.price,
         qty: 1,
-        size: p.sizes?.[0],
-        color: p.colors?.[0],
+        size: defaultVariant?.size,
+        color: defaultVariant?.color,
+        sku: defaultVariant?.sku,
       })
     );
     api.delete(`/users/wishlist/${p._id}`).then(load);

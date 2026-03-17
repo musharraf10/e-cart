@@ -7,7 +7,8 @@ import { addToCart } from "../../store/slices/cartSlice.js";
 export function ProductCard({ product }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const hasVariants = (product.sizes?.length > 0) || (product.colors?.length > 0);
+  const hasVariants = (product.variants?.length || 0) > 1;
+  const defaultVariant = product.variants?.[0];
   const discount =
     product.originalPrice && product.originalPrice > product.price
       ? Math.round(
@@ -26,11 +27,12 @@ export function ProductCard({ product }) {
       addToCart({
         product: product._id,
         name: product.name,
-        price: product.price,
+        price: defaultVariant?.price ?? product.price,
         image: product.images?.[0],
         qty: 1,
-        size: product.sizes?.[0],
-        color: product.colors?.[0],
+        size: defaultVariant?.size,
+        color: defaultVariant?.color,
+        sku: defaultVariant?.sku,
       })
     );
   };
