@@ -24,7 +24,7 @@ export function HomePage() {
 
     Promise.all([
       api.get("/products", { params: { limit: 40, sort: "newest" } }),
-      api.get("/products", { params: { newDrop: true, limit: 12 } }),
+      api.get("/products", { params: { onlyNewDrops: true, limit: 12 } }),
       api.get("/products", { params: { sort: "rating", limit: 8 } }),
       api.get("/categories"),
     ])

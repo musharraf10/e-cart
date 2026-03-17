@@ -66,15 +66,15 @@ export function ProductCard({ product, compact = false }) {
     >
       <Link
         to={`/product/${product.slug}`}
-        className={`flex flex-col h-full rounded-xl bg-card border border-[#262626] overflow-hidden hover:border-accent/40 transition-all duration-300 ${compact ? "max-w-[240px]" : ""}`}
+        className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#262626] bg-card transition-all duration-300 hover:border-accent/40"
       >
-        <div className={`relative ${compact ? "aspect-[3/4]" : "aspect-[4/5]"} bg-[#262626] overflow-hidden flex-shrink-0`}>
+        <div className="relative aspect-[4/5] flex-shrink-0 overflow-hidden bg-[#262626]">
           {product.images?.[0] ? (
             <img
               src={product.images[0]}
               alt={product.name}
               loading="lazy"
-              className={`w-full h-full ${compact ? "object-contain p-2" : "object-cover"} transition-transform duration-300 group-hover:scale-105`}
+              className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105`}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted text-sm">NoorFit</div>
