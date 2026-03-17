@@ -61,22 +61,20 @@ export function AuthPage() {
           <button
             type="button"
             onClick={() => setMode("login")}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              isLogin
-                ? "bg-accent text-primary"
-                : "text-muted hover:text-white"
-            }`}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${isLogin
+              ? "bg-accent text-primary"
+              : "text-muted hover:text-white"
+              }`}
           >
             Sign In
           </button>
           <button
             type="button"
             onClick={() => setMode("register")}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              !isLogin
-                ? "bg-accent text-primary"
-                : "text-muted hover:text-white"
-            }`}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!isLogin
+              ? "bg-accent text-primary"
+              : "text-muted hover:text-white"
+              }`}
           >
             Register
           </button>

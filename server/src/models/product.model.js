@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const variantSchema = new mongoose.Schema(
   {
-    size: { type: String, required: true },
+    size: { type: String, required: true, set: (val) => val.toUpperCase() },
     color: { type: String, required: true },
     stock: { type: Number, required: true, min: 0 },
     price: { type: Number, required: true, min: 0 },
