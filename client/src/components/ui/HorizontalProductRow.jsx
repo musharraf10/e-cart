@@ -5,16 +5,17 @@ export function HorizontalProductRow({ products = [], className = "" }) {
 
   return (
     <div className={`-mx-4 px-4 overflow-x-auto ${className}`}>
-      <div className="flex gap-3 sm:gap-4 snap-x snap-mandatory pb-2">
+      <div className="flex gap-4 snap-x snap-mandatory pb-2">
         {products.map((p) => (
           <div
             key={p._id}
-            className="snap-start min-w-[60%] sm:min-w-[42%] md:min-w-[31%] lg:min-w-[24%]"
+            className="snap-start min-w-[72%] sm:min-w-[45%] md:min-w-[30%]"
           >
-            <ProductCard product={p} compact />
+            <ProductCard product={p} />
           </div>
         ))}
       </div>
     </div>
   );
 }
+

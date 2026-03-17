@@ -18,8 +18,8 @@ export function ProductCard({ product, compact = false }) {
   const discount =
     product.originalPrice && product.originalPrice > product.price
       ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) * 100,
-        )
+        ((product.originalPrice - product.price) / product.originalPrice) * 100,
+      )
       : 0;
 
   const handleAddToCart = (e) => {
