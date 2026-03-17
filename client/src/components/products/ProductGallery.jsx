@@ -18,7 +18,8 @@ export function ProductGallery({ images = [], alt }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <div
-        className="rounded-xl bg-card border border-[#262626] overflow-hidden aspect-[4/5] cursor-zoom-in flex items-center justify-center group"
+        className="rounded-xl bg-[#171717] border border-[#262626] overflow-hidden cursor-zoom-in flex items-center justify-center group p-4"
+        style={{ maxHeight: "500px" }}
         onMouseMove={handleMouseMove}
       >
         {active ? (
@@ -26,7 +27,7 @@ export function ProductGallery({ images = [], alt }) {
             src={active}
             alt={alt}
             loading="eager"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-125"
+            className="w-full max-h-[320px] md:max-h-[500px] object-contain transition-transform duration-300 group-hover:scale-125"
             style={{ transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` }}
           />
         ) : (
@@ -34,13 +35,13 @@ export function ProductGallery({ images = [], alt }) {
         )}
       </div>
       {safeImages.length > 1 && (
-        <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+        <div className="flex flex-wrap gap-3">
           {safeImages.map((src, idx) => (
             <button
               key={src + idx}
               type="button"
               onClick={() => setActiveIndex(idx)}
-              className={`aspect-square rounded-lg overflow-hidden border-2 transition-colors ${idx === activeIndex ? "border-accent" : "border-[#262626]"}`}
+              className={`w-[60px] h-[60px] rounded-lg overflow-hidden border-2 transition-colors ${idx === activeIndex ? "border-[#d4af37]" : "border-[#262626]"}`}
             >
               <img src={src} alt={`${alt} ${idx + 1}`} loading="lazy" className="w-full h-full object-cover" />
             </button>

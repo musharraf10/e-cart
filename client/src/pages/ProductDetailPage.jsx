@@ -52,8 +52,13 @@ export function ProductDetailPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-12 md:space-y-16">
-      <section className="grid md:grid-cols-2 gap-8 md:gap-12">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="max-w-6xl mx-auto px-4 space-y-8"
+    >
+      <section className="grid gap-10 md:grid-cols-2">
         <ProductGallery images={product.images} alt={product.name} />
         <ProductInfo
           product={product}
@@ -66,9 +71,9 @@ export function ProductDetailPage() {
         />
       </section>
 
-      <section className="rounded-xl bg-card border border-[#262626] divide-y divide-[#262626]">
+      <section className="mt-8 rounded-xl bg-[#171717] border border-[#262626] divide-y divide-[#262626] p-6">
         {panels.map((panel) => (
-          <div key={panel.key} className="p-5">
+          <div key={panel.key} className="py-5 first:pt-0 last:pb-0">
             <button
               type="button"
               onClick={() => setOpenPanel((prev) => (prev === panel.key ? "" : panel.key))}
@@ -84,7 +89,7 @@ export function ProductDetailPage() {
         ))}
       </section>
 
-      <section className="rounded-xl bg-card border border-[#262626] p-6">
+      <section className="mt-8 rounded-xl bg-[#171717] border border-[#262626] p-6">
         <h3 className="font-semibold text-white mb-4">Trust badges</h3>
         <div className="grid sm:grid-cols-3 gap-4">
           <div className="rounded-xl border border-[#262626] p-4 text-center">
@@ -107,7 +112,9 @@ export function ProductDetailPage() {
         ratingsCount={product.ratingsCount}
       />
 
-      <RelatedProducts productId={product._id} categoryId={product.category?._id || product.category} />
+      <div className="mt-8">
+        <RelatedProducts productId={product._id} categoryId={product.category?._id || product.category} />
+      </div>
     </motion.div>
   );
 }
