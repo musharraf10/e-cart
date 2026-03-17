@@ -59,7 +59,7 @@ export function ProductReviews({
           </div>
         </div>
         <div className="space-y-3 max-h-64 overflow-auto">
-          {reviews.map((r) => (
+          {[...reviews].sort((a, b) => b.rating - a.rating).slice(0, 4).map((r) => (
             <div
               key={r._id}
               className="rounded-lg border border-[#262626] p-4"
