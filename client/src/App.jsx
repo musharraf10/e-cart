@@ -31,6 +31,7 @@ import { OrderDetailsPage } from "./pages/account/OrderDetailsPage.jsx";
 import { WishlistPage } from "./pages/account/WishlistPage.jsx";
 import { AccountSettingsPage } from "./pages/account/AccountSettingsPage.jsx";
 import { AccountPage } from "./pages/AccountPage.jsx";
+import { ToastProvider } from "./components/ui/ToastProvider.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -40,8 +41,9 @@ export default function App() {
   }, [dispatch]);
 
   return (
-    <Layout>
-      <Routes>
+    <ToastProvider>
+      <Layout>
+        <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/shop" element={<Navigate to="/" replace />} />
         <Route path="/product/:slug" element={<ProductDetailPage />} />
@@ -88,7 +90,8 @@ export default function App() {
             <Route path="/admin/products/edit/:id" element={<AdminProductFormPage />} />
           </Route>
         </Route>
-      </Routes>
-    </Layout>
+        </Routes>
+      </Layout>
+    </ToastProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import api from "../api/client.js";
@@ -16,21 +16,32 @@ export function ProductDetailPage() {
   const [size, setSize] = useState("");
   const [color, setColor] = useState("");
   const [qty, setQty] = useState(1);
-  const [showDesc, setShowDesc] = useState(false);
+  const [openPanel, setOpenPanel] = useState("desc");
 
   useEffect(() => {
     (async () => {
       const { data } = await api.get(`/products/${slug}`);
       setProduct(data);
-      if (data.variants?.length) {
-        setSize(data.variants[0].size);
-        setColor(data.variants[0].color);
-      }
+      setSize("");
+      setColor(data.variants?.[0]?.color || "");
 
       const reviewRes = await api.get(`/reviews/${data._id}`);
       setReviews(reviewRes.data);
     })();
   }, [slug]);
+
+  const panels = useMemo(
+    () => [
+      {
+        key: "desc",
+        title: "Description",
+        content: product?.description || "Premium NoorFit product crafted for all-day comfort.",
+      },
+      { key: "spec", title: "Specifications", content: "Fabric, fit, and build details below." },
+      { key: "delivery", title: "Delivery Info", content: "Fast dispatch and easy returns." },
+    ],
+    [product],
+  );
 
   if (!product) {
     return (
@@ -41,12 +52,7 @@ export function ProductDetailPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-12 md:space-y-16"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-12 md:space-y-16">
       <section className="grid md:grid-cols-2 gap-8 md:gap-12">
         <ProductGallery images={product.images} alt={product.name} />
         <ProductInfo
@@ -60,45 +66,23 @@ export function ProductDetailPage() {
         />
       </section>
 
-      <section className="rounded-xl bg-card border border-[#262626] p-6">
-        <button
-          type="button"
-          onClick={() => setShowDesc((s) => !s)}
-          className="w-full flex items-center justify-between text-left font-semibold text-white"
-        >
-          Product description
-          <span className="text-muted">{showDesc ? "▲" : "▼"}</span>
-        </button>
-        {showDesc && (
-          <div className="mt-4 space-y-3 text-muted text-sm leading-relaxed">
-            <p>{product.description}</p>
-            <p>
-              <strong className="text-white">Fabric details:</strong> Breathable,
-              skin-friendly performance weave.
-            </p>
-            <p>
-              <strong className="text-white">Fit type:</strong> Everyday comfort
-              fit.
-            </p>
-            <p>
-              <strong className="text-white">Material:</strong> Premium cotton
-              blend.
-            </p>
+      <section className="rounded-xl bg-card border border-[#262626] divide-y divide-[#262626]">
+        {panels.map((panel) => (
+          <div key={panel.key} className="p-5">
+            <button
+              type="button"
+              onClick={() => setOpenPanel((prev) => (prev === panel.key ? "" : panel.key))}
+              className="w-full flex items-center justify-between text-left font-semibold text-white"
+            >
+              {panel.title}
+              <span className="text-muted">{openPanel === panel.key ? "−" : "+"}</span>
+            </button>
+            {openPanel === panel.key && panel.key === "desc" && <p className="mt-3 text-sm text-muted">{panel.content}</p>}
+            {openPanel === panel.key && panel.key === "spec" && <div className="mt-4"><ProductSpecs product={product} /></div>}
+            {openPanel === panel.key && panel.key === "delivery" && <div className="mt-4"><DeliveryEstimator /></div>}
           </div>
-        )}
+        ))}
       </section>
-
-      <ProductSpecs product={product} />
-
-      <ProductReviews
-        productId={product._id}
-        reviews={reviews}
-        setReviews={setReviews}
-        ratingsAverage={product.ratingsAverage}
-        ratingsCount={product.ratingsCount}
-      />
-
-      <DeliveryEstimator />
 
       <section className="rounded-xl bg-card border border-[#262626] p-6">
         <h3 className="font-semibold text-white mb-4">Trust badges</h3>
@@ -115,10 +99,15 @@ export function ProductDetailPage() {
         </div>
       </section>
 
-      <RelatedProducts
+      <ProductReviews
         productId={product._id}
-        categoryId={product.category?._id || product.category}
+        reviews={reviews}
+        setReviews={setReviews}
+        ratingsAverage={product.ratingsAverage}
+        ratingsCount={product.ratingsCount}
       />
+
+      <RelatedProducts productId={product._id} categoryId={product.category?._id || product.category} />
     </motion.div>
   );
 }
