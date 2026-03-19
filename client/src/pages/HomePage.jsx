@@ -6,6 +6,7 @@ import { ProductGridSkeleton } from "../components/ui/LoadingSkeleton.jsx";
 import { ProductCard } from "../components/products/ProductCard.jsx";
 import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { HorizontalProductRow } from "../components/ui/HorizontalProductRow.jsx";
+import Categories from "../pages/CategoryPage.jsx";
 import api from "../api/client.js";
 
 export function HomePage() {
@@ -52,38 +53,7 @@ export function HomePage() {
         <HeroCarousel products={heroProducts} />
       </section>
 
-      <section id="categories" className="space-y-4">
-        <SectionHeader title="Categories" subtitle="Browse by category" />
-        <div className="-mx-4 overflow-x-auto max-w-full">
-          <div className="flex w-max gap-3 px-4 pb-2">
-            {categories.map((category) => (
-              <div
-                key={category._id}
-                className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-card border border-[#262626] text-left flex-shrink-0"
-              >
-                {category.image ? (
-                  <>
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-[#262626]" />
-                )}
-                <div className="absolute inset-x-0 bottom-0 p-3">
-                  <p className="text-sm font-semibold text-white line-clamp-1">
-                    {category.name}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Categories categories={categories} />
 
       <section>
         <SectionHeader title="New Drops" subtitle="Freshly added styles" />

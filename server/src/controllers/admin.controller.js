@@ -243,11 +243,16 @@ export async function adminListCategories(req, res) {
 }
 
 export async function adminCreateCategory(req, res) {
-  const { name, description } = req.body;
+  const { name, description, image } = req.body;
 
   if (!name || !name.trim()) {
     res.status(400);
     throw new Error("Category name is required");
+  }
+
+  if (!image || !String(image).trim()) {
+    res.status(400);
+    throw new Error("Category image is required");
   }
 
   const trimmedName = name.trim();
@@ -265,6 +270,7 @@ export async function adminCreateCategory(req, res) {
   const category = await Category.create({
     name: trimmedName,
     description: description?.trim() || "",
+    image: String(image).trim(),
     slug,
     isActive: true,
   });

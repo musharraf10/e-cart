@@ -49,6 +49,7 @@ export function AdminProductFormPage() {
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryImage, setNewCategoryImage] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -176,14 +177,22 @@ export function AdminProductFormPage() {
     e.preventDefault();
     const trimmedName = newCategoryName.trim();
     if (!trimmedName) return;
+    if (!newCategoryImage || !String(newCategoryImage).trim()) {
+      alert("Category image is required");
+      return;
+    }
 
     setCreatingCategory(true);
     try {
-      const { data } = await api.post("/admin/categories", { name: trimmedName });
+      const { data } = await api.post("/admin/categories", {
+        name: trimmedName,
+        image: String(newCategoryImage).trim(),
+      });
       setCategories((prev) => [...prev, data]);
       updateFormField("category", data._id);
       setShowCreateCategoryModal(false);
       setNewCategoryName("");
+      setNewCategoryImage("");
       setShowCategoryMenu(false);
       setCategorySearch("");
     } catch (error) {
@@ -191,6 +200,16 @@ export function AdminProductFormPage() {
     } finally {
       setCreatingCategory(false);
     }
+  };
+
+  const handleNewCategoryImageFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result;
+      if (typeof result === "string") setNewCategoryImage(result);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -301,8 +320,54 @@ export function AdminProductFormPage() {
             <h2 className="text-lg font-semibold text-white">Create category</h2>
             <form className="mt-4 space-y-4" onSubmit={handleCreateCategory}>
               <input required value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Category name" className="w-full rounded-lg border border-[#262626] bg-[#171717] px-3 py-2 text-white" />
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-white">
+                  Category Image
+                </label>
+                <input
+                  type="url"
+                  placeholder="Image URL (https://...)"
+                  value={newCategoryImage}
+                  onChange={(e) => setNewCategoryImage(e.target.value)}
+                  className="w-full rounded-lg border border-[#262626] bg-[#0f0f0f] px-3 py-2 text-white"
+                />
+                <div className="flex items-center gap-3">
+                  <label className="flex-1 cursor-pointer rounded-lg border border-[#262626] bg-primary px-3 py-2 text-sm text-white text-center">
+                    Upload file
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleNewCategoryImageFile(e.target.files?.[0])}
+                    />
+                  </label>
+                  {newCategoryImage ? (
+                    <div className="h-14 w-14 rounded-xl overflow-hidden border border-[#262626] bg-[#0f0f0f] flex-shrink-0">
+                      <img
+                        src={newCategoryImage}
+                        alt="Category preview"
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                <p className="text-muted text-xs">
+                  You can use an image URL or upload a file.
+                </p>
+              </div>
+
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => { setShowCreateCategoryModal(false); setNewCategoryName(""); }} className="rounded-lg border border-[#262626] px-4 py-2 text-sm text-white hover:bg-[#262626]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateCategoryModal(false);
+                    setNewCategoryName("");
+                    setNewCategoryImage("");
+                  }}
+                  className="rounded-lg border border-[#262626] px-4 py-2 text-sm text-white hover:bg-[#262626]"
+                >
                   Cancel
                 </button>
                 <button type="submit" disabled={creatingCategory} className="rounded-lg border border-[#d4af37] bg-[#d4af37] px-4 py-2 text-sm font-semibold text-black disabled:opacity-70">
