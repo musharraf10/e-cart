@@ -25,12 +25,40 @@ export function ProductDetailPage() {
       const { data } = await api.get(`/products/${slug}`);
       setProduct(data);
       setSize("");
-      setColor(data.variants?.[0]?.color || "");
+      // Auto-select the first color that has at least 1 unit in stock.
+      // Do NOT auto-select size (size starts empty).
+      const variants = Array.isArray(data.variants) ? data.variants : [];
+      const colorsInOrder = [...new Set(variants.map((v) => v.color).filter(Boolean))];
+      const firstAvailableColor =
+        colorsInOrder.find((c) =>
+          variants
+            .filter((v) => v.color === c)
+            .some((v) => Number(v.stock || 0) > 0),
+        ) || colorsInOrder[0] || "";
+
+      setColor(firstAvailableColor);
 
       const reviewRes = await api.get(`/reviews/${data._id}`);
       setReviews(reviewRes.data);
     })();
   }, [slug]);
+
+  const galleryImages = useMemo(() => {
+    if (!product) return product?.images || [];
+    if (!color) return product.images || [];
+    const map = product.colorImages;
+
+    const colorSpecific =
+      map && typeof map.get === "function"
+        ? map.get(color)
+        : map?.[color];
+
+    if (Array.isArray(colorSpecific) && colorSpecific.length) {
+      return colorSpecific;
+    }
+
+    return product.images || [];
+  }, [product, color]);
 
   const panels = useMemo(
     () => [
@@ -61,7 +89,7 @@ export function ProductDetailPage() {
       className="max-w-6xl mx-auto px-4 space-y-8"
     >
       <section className="grid gap-10 md:grid-cols-2">
-        <ProductGallery images={product.images} alt={product.name} />
+        <ProductGallery images={galleryImages} alt={product.name} variantKey={color} />
         <ProductInfo
           product={product}
           size={size}

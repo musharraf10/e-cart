@@ -3,10 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/client.js";
 
-const steps = ["pending", "processing", "shipped", "delivered"];
+const steps = ["pending", "confirmed", "processing", "shipped", "delivered"];
 
 const statusColors = {
   pending: "bg-[#52525b] text-white",
+  confirmed: "bg-[#d4af37] text-white",
   processing: "bg-[#d4af37] text-white",
   shipped: "bg-[#3b82f6] text-white",
   delivered: "bg-[#22c55e] text-white",

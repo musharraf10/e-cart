@@ -1,7 +1,7 @@
 import { Order } from "../models/order.model.js";
 import { Product } from "../models/product.model.js";
 import { Coupon } from "../models/coupon.model.js";
-import { processOnlinePayment } from "../utils/payment.util.js";
+import { stripe } from "../utils/stripe.js";
 
 function findVariant(product, item) {
   return (product.variants || []).find(
@@ -77,22 +77,67 @@ export async function createOrder(req, res) {
 
   let paymentStatus = "pending";
   let paymentDetails;
+  let stripePaymentId;
 
   if (paymentMethod === "online") {
-    const payment = await processOnlinePayment({
-      amount: total,
-      currency: "usd",
-      orderId: req.user._id,
-    });
-    if (!payment.success) {
+    const paymentIntentId =
+      req.body.paymentIntentId || req.body.stripePaymentIntentId;
+
+    if (!paymentIntentId) {
       res.status(400);
-      throw new Error("Payment failed");
+      throw new Error("Missing paymentIntentId");
     }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      res.status(500);
+      throw new Error("Stripe not configured");
+    }
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(
+      paymentIntentId,
+    );
+
+    const expectedAmountPaise = Math.round(Number(total) * 100);
+
+    if (paymentIntent.status !== "succeeded") {
+      res.status(400);
+      throw new Error("Payment not completed");
+    }
+
+    if (paymentIntent.currency !== "inr") {
+      res.status(400);
+      throw new Error("Unsupported payment currency");
+    }
+
+    if (
+      paymentIntent.metadata?.userId &&
+      paymentIntent.metadata.userId !== String(req.user._id)
+    ) {
+      res.status(403);
+      throw new Error("Payment does not belong to this user");
+    }
+
+    if (paymentIntent.amount !== expectedAmountPaise) {
+      res.status(400);
+      throw new Error("Payment amount mismatch");
+    }
+
     paymentStatus = "paid";
+    stripePaymentId = paymentIntent.id;
     paymentDetails = {
-      provider: payment.provider,
-      transactionId: payment.transactionId,
+      provider: "stripe",
+      transactionId: paymentIntent.id,
     };
+
+    // Idempotency: if the webhook already created this order,
+    // avoid double-stock deduction and double coupon usage.
+    const existingOrder = await Order.findOne({
+      stripePaymentId: paymentIntent.id,
+      user: req.user._id,
+    });
+    if (existingOrder) {
+      return res.status(200).json(existingOrder);
+    }
   }
 
   for (const item of orderItems) {
@@ -126,6 +171,7 @@ export async function createOrder(req, res) {
     paymentMethod,
     paymentStatus,
     paymentDetails,
+    stripePaymentId,
     subtotal,
     discount,
     total,
@@ -155,4 +201,23 @@ export async function getOrderById(req, res) {
     throw new Error("Order not found");
   }
   res.json(order);
+}
+
+export async function verifyPayment(req, res) {
+  const { paymentIntentId } = req.params;
+
+  const order = await Order.findOne({
+    stripePaymentId: paymentIntentId,
+    user: req.user._id,
+  }).sort({ createdAt: -1 });
+
+  if (!order) {
+    return res.json({ exists: false, status: "processing" });
+  }
+
+  return res.json({
+    exists: true,
+    status: order.paymentStatus,
+    order,
+  });
 }

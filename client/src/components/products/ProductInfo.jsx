@@ -18,14 +18,16 @@ export function ProductInfo({ product, size, color, qty, setSize, setColor, setQ
 
   const selectedPrice = selectedVariant?.price ?? product.price;
   const hasSizeVariants = (product.variants || []).some((variant) => variant.size);
-  const canAdd = hasSizeVariants ? Boolean(selectedVariant && size) : true;
+  const hasVariantData = (product.variants || []).length > 0;
+  // Require both color + size before enabling cart for variant products.
+  const canAdd = hasVariantData ? Boolean(selectedVariant && size && color) : true;
 
   const discount =
     product.originalPrice && product.originalPrice > selectedPrice
       ? Math.round(((product.originalPrice - selectedPrice) / product.originalPrice) * 100)
       : 0;
 
-  const stock = selectedVariant?.stock ?? product.stock ?? 0;
+  const stock = selectedVariant?.stock ?? 0;
 
   const add = async () => {
     if (!canAdd) {
@@ -89,10 +91,22 @@ export function ProductInfo({ product, size, color, qty, setSize, setColor, setQ
         )}
       </div>
 
-      {stock > 0 && stock <= 3 && <p className="text-amber-400 text-sm font-medium">Only {stock} left</p>}
-      {stock < 1 && <p className="text-red-400 text-sm font-medium">Out of stock</p>}
+      {canAdd && stock > 0 && stock <= 3 && (
+        <p className="text-amber-400 text-sm font-medium">Only {stock} left</p>
+      )}
+      {canAdd && stock < 1 && (
+        <p className="text-red-400 text-sm font-medium">Out of stock</p>
+      )}
 
-      <ProductVariants variants={product.variants} size={size} color={color} setSize={setSize} setColor={setColor} />
+      <div className="bg-[#171717] border border-[#262626] rounded-xl p-4">
+        <ProductVariants
+          variants={product.variants}
+          size={size}
+          color={color}
+          setSize={setSize}
+          setColor={setColor}
+        />
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center rounded-full border border-[#262626] overflow-hidden text-sm bg-primary">

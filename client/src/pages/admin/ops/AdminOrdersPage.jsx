@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import api from "../../../api/client.js";
 
-const statuses = ["pending", "processing", "shipped", "delivered", "cancelled", "refunded"];
+const statuses = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "refunded",
+];
 
 export function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);

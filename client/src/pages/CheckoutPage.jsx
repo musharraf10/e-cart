@@ -4,8 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import api from "../api/client.js";
 import { clearCart } from "../store/slices/cartSlice.js";
+import { Elements, CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 
-export function CheckoutPage() {
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+function CheckoutPageContent() {
   const items = useSelector((s) => s.cart.items);
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [couponCode, setCouponCode] = useState("");
@@ -17,9 +21,13 @@ export function CheckoutPage() {
     postalCode: "",
     country: "",
   });
+  const [addressId, setAddressId] = useState(null);
   const [placing, setPlacing] = useState(false);
+  const [processingOrder, setProcessingOrder] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
 
@@ -37,6 +45,7 @@ export function CheckoutPage() {
           postalCode: defaultAddress.postalCode || "",
           country: defaultAddress.country || "",
         });
+        setAddressId(defaultAddress._id || null);
       })
       .catch(() => {});
   }, []);
@@ -44,25 +53,109 @@ export function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (!items.length) return;
     setPlacing(true);
+    setProcessingOrder(false);
     try {
-      await api.post("/orders", {
-        items: items.map((i) => ({
-          product: i.product,
-          qty: i.qty,
-          size: i.size,
-          color: i.color,
-          sku: i.sku,
-        })),
-        shippingAddress: address,
-        paymentMethod,
-        couponCode: couponCode || undefined,
-      });
+      const orderItems = items.map((i) => ({
+        product: i.product,
+        qty: i.qty,
+        size: i.size,
+        color: i.color,
+        sku: i.sku,
+      }));
+
+      if (paymentMethod === "online") {
+        if (!stripe || !elements) {
+          throw new Error("Stripe is not ready yet");
+        }
+
+        const card = elements.getElement(CardElement);
+        if (!card) {
+          throw new Error("Card element not found");
+        }
+
+        // Keep the saved address in sync so the webhook-created order uses
+        // the same address the user edited in checkout.
+        if (addressId) {
+          const hasRequiredFields =
+            address.line1 &&
+            address.city &&
+            address.state &&
+            address.postalCode &&
+            address.country;
+
+          if (hasRequiredFields) {
+            await api.put(`/users/addresses/${addressId}`, {
+              addressLine1: address.line1,
+              addressLine2: address.line2 || undefined,
+              city: address.city,
+              state: address.state,
+              postalCode: address.postalCode,
+              country: address.country,
+            });
+          }
+        }
+
+        const { data } = await api.post("/payments/create-payment-intent", {
+          items: orderItems,
+          totalAmount: subtotal,
+          couponCode: couponCode || undefined,
+          addressId: addressId || undefined,
+        });
+
+        const clientSecret = data?.clientSecret;
+        if (!clientSecret) {
+          throw new Error("Unable to create payment intent");
+        }
+
+        const paymentResult = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: { card },
+        });
+
+        if (paymentResult?.error) {
+          throw new Error(paymentResult.error.message || "Payment failed");
+        }
+
+        const paymentIntent = paymentResult?.paymentIntent;
+        if (!paymentIntent || paymentIntent.status !== "succeeded") {
+          throw new Error("Payment not completed");
+        }
+
+        setProcessingOrder(true);
+
+        // Webhook is the source of truth. Wait for the backend to confirm.
+        const pollForOrder = async () => {
+          const maxAttempts = 20;
+          const delayMs = 1500;
+
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const { data } = await api.get(
+              `/orders/verify-payment/${paymentIntent.id}`,
+            );
+
+            if (data?.exists && data?.order) return data.order;
+
+            await new Promise((r) => setTimeout(r, delayMs));
+          }
+
+          throw new Error("Timed out waiting for order confirmation");
+        };
+
+        await pollForOrder();
+      } else {
+        await api.post("/orders", {
+          items: orderItems,
+          shippingAddress: address,
+          paymentMethod,
+          couponCode: couponCode || undefined,
+        });
+      }
       dispatch(clearCart());
       navigate("/account");
     } catch (err) {
       alert(err.response?.data?.message || "Unable to place order");
     } finally {
       setPlacing(false);
+      setProcessingOrder(false);
     }
   };
 
@@ -159,6 +252,26 @@ export function CheckoutPage() {
               className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-2.5 text-white text-sm placeholder-muted focus:outline-none focus:border-accent"
             />
           </div>
+
+          {paymentMethod === "online" && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted">Card payment via Stripe</div>
+              <div className="rounded-xl border border-[#262626] bg-primary px-4 py-3">
+                <CardElement
+                  options={{
+                    style: {
+                      base: {
+                        fontSize: "14px",
+                        color: "#ffffff",
+                        "::placeholder": { color: "#a1a1aa" },
+                      },
+                      invalid: { color: "#ef4444" },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -178,13 +291,29 @@ export function CheckoutPage() {
         </p>
         <button
           type="button"
-          disabled={placing || !items.length}
+          disabled={
+            placing ||
+            !items.length ||
+            (paymentMethod === "online" && (!stripe || !elements))
+          }
           onClick={handlePlaceOrder}
           className="w-full rounded-xl bg-accent text-primary py-3 px-6 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {placing ? "Placing order…" : "Place order"}
+          {placing
+            ? processingOrder
+              ? "Processing your order..."
+              : "Placing order..."
+            : "Place order"}
         </button>
       </aside>
     </motion.div>
+  );
+}
+
+export function CheckoutPage() {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutPageContent />
+    </Elements>
   );
 }

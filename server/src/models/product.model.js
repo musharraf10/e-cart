@@ -19,6 +19,15 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     originalPrice: { type: Number },
     images: [{ type: String }],
+    // Optional color-specific images for each product color.
+    // Example:
+    // colorImages: { "Black": ["black1.jpg"], "White": ["white1.jpg"] }
+    // Kept optional to avoid breaking existing products.
+    colorImages: {
+      type: Map,
+      of: [String],
+      default: {},
+    },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     variants: [variantSchema],
     isVisible: { type: Boolean, default: true },

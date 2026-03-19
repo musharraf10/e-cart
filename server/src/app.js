@@ -15,6 +15,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import announcementRoutes from "./routes/announcement.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -22,7 +23,14 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(compression());
-app.use(express.json({ limit: "10mb" }));
+// Stripe webhooks require the raw request body for signature verification.
+// We skip the global JSON parser for this route and let the webhook route
+// attach `express.raw({ type: "application/json" })` instead.
+const jsonParser = express.json({ limit: "10mb" });
+app.use((req, res, next) => {
+  if (req.path === "/api/payments/webhook") return next();
+  return jsonParser(req, res, next);
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
@@ -43,6 +51,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/payments", paymentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

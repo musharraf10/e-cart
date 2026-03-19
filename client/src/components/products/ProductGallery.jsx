@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
-export function ProductGallery({ images = [], alt }) {
+export function ProductGallery({ images = [], alt, variantKey }) {
   const safeImages = useMemo(() => images.filter(Boolean), [images]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [transitionKey, setTransitionKey] = useState(0);
+
+  const imagesSignature = useMemo(() => safeImages.join("|"), [safeImages]);
 
   const active = safeImages[activeIndex];
 
@@ -15,9 +18,20 @@ export function ProductGallery({ images = [], alt }) {
     setZoomPos({ x, y });
   };
 
+  useEffect(() => {
+    // Reset selected image when switching colors (or when images change).
+    setActiveIndex(0);
+    setZoomPos({ x: 50, y: 50 });
+    setTransitionKey((k) => k + 1);
+  }, [variantKey, imagesSignature]);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <div
+      <motion.div
+        key={transitionKey}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18 }}
         className="rounded-xl bg-[#171717] border border-[#262626] overflow-hidden cursor-zoom-in flex items-center justify-center group p-4"
         style={{ maxHeight: "500px" }}
         onMouseMove={handleMouseMove}
@@ -33,7 +47,7 @@ export function ProductGallery({ images = [], alt }) {
         ) : (
           <div className="text-muted text-sm">No image</div>
         )}
-      </div>
+      </motion.div>
       {safeImages.length > 1 && (
         <div className="flex flex-wrap gap-3">
           {safeImages.map((src, idx) => (

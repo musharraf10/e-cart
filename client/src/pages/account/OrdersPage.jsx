@@ -4,6 +4,7 @@ import api from "../../api/client.js";
 
 const statusColors = {
   pending: "bg-[#52525b] text-white",
+  confirmed: "bg-[#d4af37] text-white",
   processing: "bg-[#d4af37] text-white",
   shipped: "bg-[#3b82f6] text-white",
   delivered: "bg-[#22c55e] text-white",

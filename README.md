@@ -28,6 +28,16 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
 2. Environment:
    - Copy `server/.env.example` to `.env` and adjust values.
 
+### Stripe CLI Webhooks (Local Testing)
+
+1. Install and authenticate Stripe CLI (one-time):
+   - `stripe login`
+2. Forward Stripe events to your webhook route:
+   - `stripe listen --forward-to localhost:5000/api/payments/webhook`
+3. Stripe CLI will print a line like:
+   - `STRIPE_WEBHOOK_SECRET=whsec_xxx`
+4. Paste that value into `server/.env` as `STRIPE_WEBHOOK_SECRET=...` and restart the server.
+
 3. Run with Docker (recommended):
 
    ```bash

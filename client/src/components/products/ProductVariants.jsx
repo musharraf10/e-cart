@@ -2,42 +2,67 @@ export function ProductVariants({ variants = [], size, color, setSize, setColor 
   const sizes = [...new Set(variants.map((variant) => variant.size).filter(Boolean))];
   const colors = [...new Set(variants.map((variant) => variant.color).filter(Boolean))];
 
-  const sizeStock = sizes.reduce((acc, s) => {
-    acc[s] = variants
-      .filter((variant) => variant.size === s)
-      .reduce((sum, variant) => sum + (variant.stock || 0), 0);
-    return acc;
-  }, {});
+  const orderedSizes = ["S", "M", "L", "XL"];
+  const sortedSizes = [...sizes].sort((a, b) => {
+    const ai = orderedSizes.indexOf(a);
+    const bi = orderedSizes.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 
-  const colorStock = colors.reduce((acc, c) => {
+  const hashToHue = (value) => {
+    const str = String(value || "");
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) % 360;
+    }
+    return hash;
+  };
+
+  const isOutOfStockForSize = (s) => {
+    const relevant = color
+      ? variants.filter((v) => v.size === s && v.color === color)
+      : variants.filter((v) => v.size === s);
+    return relevant.reduce((sum, v) => sum + (v.stock || 0), 0) < 1;
+  };
+
+  const isOutOfStockForColor = (c) => {
     const relevant = size
-      ? variants.filter((variant) => variant.size === size && variant.color === c)
-      : variants.filter((variant) => variant.color === c);
-    acc[c] = relevant.reduce((sum, variant) => sum + (variant.stock || 0), 0);
-    return acc;
-  }, {});
+      ? variants.filter((v) => v.color === c && v.size === size)
+      : variants.filter((v) => v.color === c);
+    return relevant.reduce((sum, v) => sum + (v.stock || 0), 0) < 1;
+  };
 
   return (
     <div className="space-y-4 text-sm">
-      {sizes.length > 0 && (
+      {colors.length > 0 && (
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted mb-2">Size</p>
-          <div className="flex flex-wrap gap-2">
-            {sizes.map((s) => {
-              const out = (sizeStock[s] || 0) < 1;
+          <p className="text-xs uppercase tracking-wider text-muted mb-2">Color</p>
+          <div className="flex flex-wrap gap-3">
+            {colors.map((c) => {
+              const out = isOutOfStockForColor(c);
+              const hue = hashToHue(c);
+              const selected = color === c;
               return (
                 <button
-                  key={s}
+                  key={c}
                   type="button"
                   disabled={out}
-                  onClick={() => setSize(s)}
-                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                    size === s
-                      ? "border-accent bg-accent/10 text-accent"
+                  onClick={() => setColor(c)}
+                  className={`h-12 px-3 rounded-xl border transition-all text-sm font-medium flex items-center gap-3 ${
+                    selected
+                      ? "border-[#a6c655] bg-[#a6c655]/10 text-[#a6c655]"
                       : "border-[#262626] text-muted hover:text-white"
-                  } ${out ? "opacity-40 cursor-not-allowed line-through" : ""}`}
+                  } ${out ? "opacity-40 cursor-not-allowed" : "hover:border-accent/40"} `}
                 >
-                  {s}
+                  <span
+                    aria-hidden="true"
+                    className="w-7 h-7 rounded-full border border-[#262626] shadow-sm inline-block"
+                    style={{ backgroundColor: `hsl(${hue}, 70%, 50%)` }}
+                  />
+                  <span className="leading-tight">{c}</span>
                 </button>
               );
             })}
@@ -45,25 +70,26 @@ export function ProductVariants({ variants = [], size, color, setSize, setColor 
         </div>
       )}
 
-      {colors.length > 0 && (
+      {sortedSizes.length > 0 && (
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted mb-2">Color</p>
-          <div className="flex flex-wrap gap-2">
-            {colors.map((c) => {
-              const out = (colorStock[c] || 0) < 1;
+          <p className="text-xs uppercase tracking-wider text-muted mb-2">Size</p>
+          <div className="flex flex-wrap gap-3">
+            {sortedSizes.map((s) => {
+              const out = isOutOfStockForSize(s);
+              const selected = size === s;
               return (
                 <button
-                  key={c}
+                  key={s}
                   type="button"
                   disabled={out}
-                  onClick={() => setColor(c)}
-                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                    color === c
-                      ? "border-accent bg-accent/10 text-accent"
+                  onClick={() => setSize(s)}
+                  className={`min-w-[64px] px-3 py-2 rounded-lg border transition-all text-sm font-medium ${
+                    selected
+                      ? "border-[#a6c655] bg-[#a6c655]/10 text-[#a6c655]"
                       : "border-[#262626] text-muted hover:text-white"
-                  } ${out ? "opacity-40 cursor-not-allowed" : ""}`}
+                  } ${out ? "opacity-40 cursor-not-allowed line-through" : ""}`}
                 >
-                  {c}
+                  {s}
                 </button>
               );
             })}

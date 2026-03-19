@@ -20,6 +20,7 @@ const defaultForm = {
   variants: [createVariant()],
   category: "",
   images: [""],
+  colorImages: {},
   visible: true,
   newDrop: false,
 };
@@ -65,6 +66,23 @@ export function AdminProductFormPage() {
     api
       .get(`/admin/products/${editId}`)
       .then(({ data: product }) => {
+        const loadedColorImages =
+          product.colorImages && typeof product.colorImages.get === "function"
+            ? Object.fromEntries(product.colorImages.entries())
+            : product.colorImages || {};
+
+        const normalizedColorImages = Object.entries(loadedColorImages || {}).reduce(
+          (acc, [key, value]) => {
+            const k = String(key || "").trim();
+            const cleaned = (value || [])
+              .map((img) => (typeof img === "string" ? img.trim() : ""))
+              .filter(Boolean);
+            if (k && cleaned.length) acc[k] = cleaned;
+            return acc;
+          },
+          {},
+        );
+
         setForm({
           name: product.name || "",
           slug: product.slug || "",
@@ -77,6 +95,7 @@ export function AdminProductFormPage() {
               ? product.category?._id || ""
               : product.category || "",
           images: product.images?.length ? product.images : [""],
+          colorImages: normalizedColorImages,
           visible: product.isVisible ?? true,
           newDrop: product.isNewDrop ?? false,
         });
@@ -91,6 +110,17 @@ export function AdminProductFormPage() {
   const filteredCategories = categories.filter((category) =>
     category.name.toLowerCase().includes(categorySearch.toLowerCase()),
   );
+
+  const variantColors = useMemo(() => {
+    const set = new Set(
+      (form.variants || [])
+        .map((v) => v.color)
+        .filter(Boolean)
+        .map((c) => String(c).trim())
+        .filter(Boolean),
+    );
+    return Array.from(set).sort();
+  }, [form.variants]);
 
   const updateFormField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -134,6 +164,47 @@ export function AdminProductFormPage() {
     });
   };
 
+  const updateColorImagesFor = (colorName, nextImages) => {
+    setForm((prev) => ({
+      ...prev,
+      colorImages: {
+        ...(prev.colorImages || {}),
+        [colorName]: nextImages,
+      },
+    }));
+  };
+
+  const addColorImageField = (colorName) => {
+    const current = form.colorImages?.[colorName] || [];
+    updateColorImagesFor(colorName, [...current.filter(Boolean), ""]);
+  };
+
+  const removeColorImageField = (colorName, idx) => {
+    const current = form.colorImages?.[colorName] || [""];
+    const next = current.filter((_, i) => i !== idx);
+    updateColorImagesFor(colorName, next.length ? next : [""]);
+  };
+
+  const setColorImageAt = (colorName, idx, value) => {
+    const current = form.colorImages?.[colorName] || [""];
+    updateColorImagesFor(
+      colorName,
+      current.map((img, i) => (i === idx ? value : img)),
+    );
+  };
+
+  const readFilesAsDataUrls = (files) =>
+    Promise.all(
+      Array.from(files || []).map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          }),
+      ),
+    );
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -155,6 +226,16 @@ export function AdminProductFormPage() {
         .filter((variant) => variant.size && variant.color && variant.sku),
       category: form.category || undefined,
       images: form.images.map((img) => img.trim()).filter(Boolean),
+      colorImages: Object.entries(form.colorImages || {}).reduce(
+        (acc, [colorName, imageList]) => {
+          const cleaned = (imageList || [])
+            .map((img) => (typeof img === "string" ? img.trim() : ""))
+            .filter(Boolean);
+          if (cleaned.length) acc[colorName] = cleaned;
+          return acc;
+        },
+        {},
+      ),
       isVisible: form.visible,
       isNewDrop: form.newDrop,
     };
@@ -296,6 +377,108 @@ export function AdminProductFormPage() {
               <img key={image} src={image} alt="Preview" className="h-14 w-14 rounded-md object-cover border border-[#262626]" />
             ))}
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Color Images</p>
+            <p className="text-muted text-xs">
+              Optional per-color gallery
+            </p>
+          </div>
+
+          {variantColors.length === 0 ? (
+            <p className="text-muted text-sm">
+              Add at least one variant color to configure color images.
+            </p>
+          ) : (
+            variantColors.map((colorName) => {
+              const imageList = form.colorImages?.[colorName] || [""];
+              const hue = (() => {
+                const str = String(colorName || "");
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) % 360;
+                return hash;
+              })();
+
+              const addUploadedFiles = async (files) => {
+                const dataUrls = (await readFilesAsDataUrls(files))
+                  .map((x) => (typeof x === "string" ? x : ""))
+                  .filter(Boolean);
+                if (!dataUrls.length) return;
+                const current = (form.colorImages?.[colorName] || []).filter(Boolean).map((x) => String(x).trim()).filter(Boolean);
+                updateColorImagesFor(colorName, [...current, ...dataUrls]);
+              };
+
+              return (
+                <div key={colorName} className="border border-[#262626] rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="w-5 h-5 rounded-full border border-[#262626] shadow-sm inline-block"
+                        style={{ backgroundColor: `hsl(${hue}, 70%, 50%)` }}
+                      />
+                      <span className="text-sm font-medium text-white">{colorName}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addColorImageField(colorName)}
+                      className="text-xs px-2 py-1 border border-[#262626] rounded-full text-white hover:bg-[#262626]"
+                    >
+                      + Add Image
+                    </button>
+                  </div>
+
+                  {imageList.map((url, idx) => (
+                    <div key={`${colorName}-image-${idx}`} className="flex gap-2 items-center">
+                      <input
+                        placeholder="https://..."
+                        value={url}
+                        onChange={(e) => setColorImageAt(colorName, idx, e.target.value)}
+                        className="flex-1 rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeColorImageField(colorName, idx)}
+                        className="text-xs text-red-400"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2 flex-wrap pt-1">
+                    {imageList.filter(Boolean).map((image) => (
+                      <img
+                        key={image}
+                        src={image}
+                        alt={`${colorName} preview`}
+                        className="h-14 w-14 rounded-md object-cover border border-[#262626]"
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer rounded-lg border border-[#262626] bg-primary px-3 py-2 text-sm text-white">
+                      Upload images
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (files?.length) addUploadedFiles(files);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-3">
