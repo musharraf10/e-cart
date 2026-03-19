@@ -13,9 +13,6 @@ export function HomePage() {
   const [newDrops, setNewDrops] = useState([]);
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +21,7 @@ export function HomePage() {
 
     Promise.all([
       api.get("/products", { params: { limit: 40, sort: "newest" } }),
-      api.get("/products", { params: { newDrop: true, limit: 12 } }),
+      api.get("/products", { params: { onlyNewDrops: true, limit: 12 } }),
       api.get("/products", { params: { sort: "rating", limit: 8 } }),
       api.get("/categories"),
     ])
@@ -44,77 +41,47 @@ export function HomePage() {
 
   const heroProducts = useMemo(() => allProducts.slice(0, 4), [allProducts]);
 
-  const filterMatch = useMemo(
-    () => categories.find((c) => c.name.toLowerCase() === activeFilter.toLowerCase()),
-    [activeFilter, categories],
-  );
-
-  const listingProducts = useMemo(() => {
-    let data = [...allProducts];
-
-    if (activeFilter !== "All") {
-      data = data.filter((product) => {
-        const categoryName = product.category?.name || "";
-        const categoryId = product.category?._id || product.category;
-
-        if (filterMatch) {
-          return categoryId === filterMatch._id || categoryName.toLowerCase() === activeFilter.toLowerCase();
-        }
-
-        return categoryName.toLowerCase().includes(activeFilter.toLowerCase());
-      });
-    }
-
-    if (sortBy === "price-low") data.sort((a, b) => (a.price || 0) - (b.price || 0));
-    if (sortBy === "price-high") data.sort((a, b) => (b.price || 0) - (a.price || 0));
-    if (sortBy === "rating") data.sort((a, b) => (b.ratingsAverage || 0) - (a.ratingsAverage || 0));
-
-    return data;
-  }, [allProducts, activeFilter, sortBy, filterMatch]);
-
   return (
-    <div className="space-y-12">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18 }}
+      className="space-y-12"
+    >
       <section>
         <HeroCarousel products={heroProducts} />
       </section>
 
       <section id="categories" className="space-y-4">
-        <SectionHeader title="Categories" subtitle="Browse and filter without leaving home" />
-        <div className="md:hidden -mx-4 px-4 overflow-x-auto">
-          <div className="flex gap-3 pb-2">
+        <SectionHeader title="Categories" subtitle="Browse by category" />
+        <div className="-mx-4 overflow-x-auto max-w-full">
+          <div className="flex w-max gap-3 px-4 pb-2">
             {categories.map((category) => (
-              <button
+              <div
                 key={category._id}
-                type="button"
-                onClick={() => setActiveFilter(category.name)}
-                className="min-w-[150px] rounded-xl overflow-hidden bg-card border border-[#262626] text-left"
+                className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-card border border-[#262626] text-left flex-shrink-0"
               >
-                <div className="aspect-[4/3] bg-[#262626]">
-                  {category.image ? (
-                    <img src={category.image} alt={category.name} className="w-full h-full object-cover" loading="lazy" />
-                  ) : null}
+                {category.image ? (
+                  <>
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-[#262626]" />
+                )}
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <p className="text-sm font-semibold text-white line-clamp-1">
+                    {category.name}
+                  </p>
                 </div>
-                <p className="px-3 py-2 text-sm text-white">{category.name}</p>
-              </button>
+              </div>
             ))}
           </div>
-        </div>
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {categories.map((category) => (
-            <button
-              key={category._id}
-              type="button"
-              onClick={() => setActiveFilter(category.name)}
-              className="rounded-xl overflow-hidden bg-card border border-[#262626] text-left hover:border-accent/40 transition-colors"
-            >
-              <div className="aspect-[5/3] bg-[#262626]">
-                {category.image ? (
-                  <img src={category.image} alt={category.name} className="w-full h-full object-cover" loading="lazy" />
-                ) : null}
-              </div>
-              <p className="px-4 py-3 font-medium text-white">{category.name.toUpperCase()}</p>
-            </button>
-          ))}
         </div>
       </section>
 
@@ -128,7 +95,7 @@ export function HomePage() {
         {loading ? (
           <ProductGridSkeleton count={8} />
         ) : (
-          <ProductGrid className="grid-cols-2 lg:grid-cols-4">
+          <ProductGrid>
             {trendingProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}
@@ -137,25 +104,12 @@ export function HomePage() {
       </section>
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <SectionHeader title="Shop All" subtitle="Dynamic listing with instant filters" />
-          <select
-            className="rounded-xl border border-[#262626] bg-card px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="newest">Newest</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="rating">Top Rated</option>
-          </select>
-        </div>
-
+        <SectionHeader title="All Products" subtitle="Explore everything in NoorFit" />
         {loading ? (
           <ProductGridSkeleton count={8} />
-        ) : listingProducts.length ? (
+        ) : allProducts.length ? (
           <ProductGrid>
-            {listingProducts.map((product) => (
+            {allProducts.map((product) => (
               <motion.div key={product._id} layout>
                 <ProductCard product={product} />
               </motion.div>
@@ -163,29 +117,10 @@ export function HomePage() {
           </ProductGrid>
         ) : (
           <div className="rounded-xl bg-card border border-[#262626] py-10 text-center text-muted">
-            No products found for this filter.
+            No products found.
           </div>
         )}
       </section>
-
-      {showMobileFilters && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-primary/80" onClick={() => setShowMobileFilters(false)} aria-hidden />
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            className="absolute bottom-0 left-0 right-0 rounded-t-2xl bg-card border border-[#262626] p-4 space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-white font-semibold">Filters</h3>
-              <button type="button" onClick={() => setShowMobileFilters(false)} className="text-muted">
-                <HiX className="w-5 h-5" />
-              </button>
-            </div>
-
-          </motion.div>
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 }

@@ -7,12 +7,12 @@ export function AccountLayout() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="py-6 md:py-8"
+      className="py-4 md:py-8"
     >
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid lg:grid-cols-[260px,1fr] gap-8 lg:gap-12">
+      <div className="max-w-7xl mx-auto px-0 md:px-4">
+        <div className="grid lg:grid-cols-[260px,1fr] gap-0 lg:gap-12">
           <AccountSidebar />
-          <main className="min-h-[400px]">
+          <main className="min-h-[400px] px-4 lg:px-0">
             <Outlet />
           </main>
         </div>

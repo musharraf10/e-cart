@@ -11,7 +11,7 @@ const links = [
 
 export function AccountSidebar() {
   return (
-    <aside className="lg:sticky lg:top-24 h-fit">
+    <aside className="hidden lg:block lg:sticky lg:top-24 h-fit">
       <div className="mb-6 lg:mb-8">
         <h2 className="text-white text-lg font-semibold tracking-tight">
           My Account

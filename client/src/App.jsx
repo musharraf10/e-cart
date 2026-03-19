@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { Layout } from "./components/layout/Layout.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
+import { SearchPage } from "./pages/SearchPage.jsx";
 import { ProductDetailPage } from "./pages/ProductDetailPage.jsx";
 import { CartPage } from "./pages/CartPage.jsx";
 import { CheckoutPage } from "./pages/CheckoutPage.jsx";
@@ -46,6 +47,7 @@ export default function App() {
         <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/shop" element={<Navigate to="/" replace />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route path="/product/:slug" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
@@ -53,7 +55,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/account" element={<AccountLayout />}>
-            <Route index element={<Navigate to="profile" replace />} />
+            <Route index element={<AccountPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="addresses" element={<AddressPage />} />
             <Route path="orders" element={<OrdersPage />} />
@@ -80,8 +82,6 @@ export default function App() {
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
           </Route>
-
-          <Route path="/account/*" element={<AccountPage />} />
 
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminDashboardPage />} />

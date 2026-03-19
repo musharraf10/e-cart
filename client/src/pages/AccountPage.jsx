@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import api from "../api/client.js";
+import { HiChevronRight, HiClipboardList, HiCog, HiHeart, HiLocationMarker, HiUser } from "react-icons/hi";
 
 export function AccountPage() {
   const user = useSelector((s) => s.auth.user);
@@ -24,19 +25,81 @@ export function AccountPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-8"
+      transition={{ duration: 0.18 }}
+      className="space-y-4"
     >
-      <div>
-        <h1 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
-          Hi, {user.name}
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold text-white tracking-tight">
+          My Account
         </h1>
-        <p className="text-muted text-sm mt-1">Welcome to your account</p>
-      </div>
+        <p className="text-muted text-sm">
+          Manage your profile and preferences
+        </p>
+      </header>
 
-      <section className="rounded-xl bg-card border border-[#262626] p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">
-          Order history
-        </h2>
+      <section className="bg-[#171717] border border-[#262626] rounded-xl p-4">
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-full bg-[#262626] border border-[#303030] flex items-center justify-center overflow-hidden flex-shrink-0">
+            {user.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <span className="text-xl">👤</span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-white font-semibold truncate">{user.name}</p>
+            <p className="text-muted text-sm truncate">{user.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/account/profile")}
+            className="h-10 px-4 rounded-xl bg-[#262626] text-white text-sm font-medium active:scale-95 transition-transform"
+          >
+            Edit Profile
+          </button>
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        {[
+          { to: "/account/orders", icon: HiClipboardList, label: "Orders" },
+          { to: "/account/addresses", icon: HiLocationMarker, label: "Addresses" },
+          { to: "/account/wishlist", icon: HiHeart, label: "Wishlist" },
+          { to: "/account/settings", icon: HiCog, label: "Settings" },
+        ].map(({ to, icon: Icon, label }) => (
+          <Link
+            key={to}
+            to={to}
+            className="flex items-center justify-between gap-3 bg-[#171717] border border-[#262626] rounded-xl p-4 active:scale-95 transition-transform"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="h-10 w-10 rounded-xl bg-[#0f0f0f] border border-[#262626] inline-flex items-center justify-center flex-shrink-0">
+                <Icon className="w-5 h-5 text-muted" />
+              </span>
+              <span className="text-white font-medium truncate">{label}</span>
+            </div>
+            <HiChevronRight className="w-5 h-5 text-muted flex-shrink-0" />
+          </Link>
+        ))}
+      </section>
+
+      <section className="rounded-xl bg-card border border-[#262626] p-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="text-base font-semibold text-white">
+            Recent orders
+          </h2>
+          <Link
+            to="/account/orders"
+            className="text-sm text-accent font-medium active:scale-95 transition-transform"
+          >
+            View all
+          </Link>
+        </div>
         {orders.length === 0 ? (
           <p className="text-muted text-sm">
             You have no orders yet.{" "}
@@ -47,7 +110,7 @@ export function AccountPage() {
           </p>
         ) : (
           <div className="space-y-3">
-            {orders.map((o) => (
+            {orders.slice(0, 3).map((o) => (
               <Link
                 key={o._id}
                 to={`/account/orders/${o._id}`}
@@ -62,11 +125,7 @@ export function AccountPage() {
                     {new Date(o.createdAt).toLocaleDateString()} · {o.status}
                   </p>
                 </div>
-                <span className="text-muted text-xs uppercase tracking-wide">
-                  {o.paymentMethod === "cod"
-                    ? "Cash on delivery"
-                    : "Online"}
-                </span>
+                <HiChevronRight className="w-5 h-5 text-muted flex-shrink-0" />
               </Link>
             ))}
           </div>

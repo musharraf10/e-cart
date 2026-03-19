@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import api from "../api/client.js";
 import { setCredentials } from "../store/slices/authSlice.js";
+import { useToast } from "../components/ui/ToastProvider.jsx";
 
 export function AuthPage() {
   const [mode, setMode] = useState("login");
@@ -13,6 +14,7 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { notify } = useToast();
 
   const isLogin = mode === "login";
 
@@ -23,7 +25,12 @@ export function AuthPage() {
       const endpoint = isLogin ? "/auth/login" : "/auth/register";
       const { data } = await api.post(endpoint, form);
       dispatch(setCredentials(data));
-      navigate("/");
+      const role = data?.user?.role;
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       alert(err.response?.data?.message || "Authentication failed");
     } finally {
@@ -35,10 +42,10 @@ export function AuthPage() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.25 }}
       className="w-full max-w-md"
     >
-      <div className="relative rounded-2xl bg-card border border-[#262626] p-8 md:p-10 shadow-card">
+      <div className="relative rounded-2xl bg-card border border-[#262626] p-6 sm:p-8 md:p-10 shadow-card">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
             <span className="text-primary font-bold text-lg">N</span>
@@ -57,8 +64,24 @@ export function AuthPage() {
             : "Create your account today"}
         </p>
 
+        <div className="mt-6 space-y-3">
+          <button
+            type="button"
+            onClick={() =>
+              notify("Google sign-in UI added. Enable OAuth to activate.", "error")
+            }
+            className="w-full h-12 rounded-xl border border-[#262626] bg-primary text-white text-sm font-semibold active:scale-95 transition-transform"
+          >
+            Continue with Google
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#262626]" />
+            <span className="text-xs text-muted">or</span>
+            <div className="h-px flex-1 bg-[#262626]" />
+          </div>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
           {!isLogin && (
             <div>
               <label className="block text-muted text-xs uppercase tracking-wider mb-1.5">
@@ -131,7 +154,7 @@ export function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-accent text-primary py-3.5 text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity mt-6"
+            className="w-full h-12 rounded-xl bg-accent text-primary text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity mt-2 active:scale-95"
           >
             {loading ? "Please wait…" : isLogin ? "Sign In" : "Create Account"}
           </button>

@@ -7,7 +7,9 @@ import { ProductInfo } from "../components/products/ProductInfo.jsx";
 import { ProductSpecs } from "../components/products/ProductSpecs.jsx";
 import { ProductReviews } from "../components/products/ProductReviews.jsx";
 import { DeliveryEstimator } from "../components/products/DeliveryEstimator.jsx";
+import { ProductQandA } from "../components/products/ProductQandA.jsx";
 import { RelatedProducts } from "../components/products/RelatedProducts.jsx";
+import { RecommendedProducts } from "../components/products/RecommendedProducts.jsx";
 
 export function ProductDetailPage() {
   const { slug } = useParams();
@@ -113,8 +115,15 @@ export function ProductDetailPage() {
       />
 
       <div className="mt-8">
-        <RelatedProducts productId={product._id} categoryId={product.category?._id || product.category} />
+        <RelatedProducts
+          productId={product._id}
+          categoryId={product.category?._id || product.category}
+        />
       </div>
+
+      <ProductQandA productId={product._id} />
+
+      <RecommendedProducts excludeProductId={product._id} />
     </motion.div>
   );
 }

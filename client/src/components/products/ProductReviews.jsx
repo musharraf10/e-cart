@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { HiStar } from "react-icons/hi";
 import api from "../../api/client.js";
 
 export function ProductReviews({
@@ -13,6 +14,7 @@ export function ProductReviews({
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const breakdown = useMemo(() => {
     const map = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -20,6 +22,12 @@ export function ProductReviews({
       map[r.rating] += 1;
     });
     return map;
+  }, [reviews]);
+
+  const sorted = useMemo(() => {
+    const safe = [...reviews];
+    safe.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return safe;
   }, [reviews]);
 
   const submit = async (e) => {
@@ -42,35 +50,100 @@ export function ProductReviews({
   };
 
   return (
-    <div className="mt-8 rounded-xl bg-[#171717] border border-[#262626] p-6 space-y-6">
-      <h3 className="text-lg font-semibold text-white">Customer Reviews</h3>
-      <div className="grid md:grid-cols-[200px,1fr] gap-6">
+    <section className="mt-8 rounded-xl bg-[#171717] border border-[#262626] p-6 space-y-6">
+      <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-3xl font-semibold text-white">
-            {(ratingsAverage || 0).toFixed(1)}
+          <h3 className="text-lg font-semibold text-white">Customer Reviews</h3>
+          <p className="text-muted text-sm mt-1">
+            {ratingsCount || 0} review{(ratingsCount || 0) === 1 ? "" : "s"}
           </p>
-          <p className="text-muted text-sm">{ratingsCount || 0} reviews</p>
-          <div className="mt-3 space-y-1 text-xs text-muted">
-            {[5, 4, 3, 2, 1].map((n) => (
-              <p key={n}>
-                {n}★: {breakdown[n]}
-              </p>
-            ))}
+        </div>
+        {sorted.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="text-sm text-accent font-medium active:scale-95 transition-transform"
+          >
+            {showAll ? "Show less" : "See all"}
+          </button>
+        )}
+      </div>
+
+      <div className="grid md:grid-cols-[220px,1fr] gap-6">
+        <div className="rounded-xl border border-[#262626] bg-primary p-4">
+          <div className="flex items-center gap-2">
+            <p className="text-3xl font-semibold text-white">
+              {(ratingsAverage || 0).toFixed(1)}
+            </p>
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <HiStar
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i <= Math.round(ratingsAverage || 0)
+                      ? "text-accent"
+                      : "text-[#262626]"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          <p className="text-muted text-sm mt-1">
+            Based on {ratingsCount || 0} review{(ratingsCount || 0) === 1 ? "" : "s"}
+          </p>
+
+          <div className="mt-4 space-y-2">
+            {[5, 4, 3, 2, 1].map((n) => {
+              const count = breakdown[n] || 0;
+              const total = reviews.length || 1;
+              const pct = Math.round((count / total) * 100);
+              return (
+                <div key={n} className="flex items-center gap-2">
+                  <span className="text-xs text-muted w-10">{n}★</span>
+                  <div className="flex-1 h-2 rounded-full bg-[#0f0f0f] border border-[#262626] overflow-hidden">
+                    <div
+                      className="h-full bg-accent"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted w-10 text-right">{pct}%</span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <div className="space-y-3 max-h-64 overflow-auto">
-          {[...reviews].sort((a, b) => b.rating - a.rating).slice(0, 4).map((r) => (
+
+        <div className="space-y-3">
+          {(showAll ? sorted : sorted.slice(0, 3)).map((r) => (
             <div
               key={r._id}
-              className="rounded-lg border border-[#262626] p-4"
+              className="rounded-xl border border-[#262626] bg-primary p-4"
             >
-              <p className="text-white font-medium text-sm">
-                {r.user?.name || "Customer"} · {r.rating}★
-              </p>
-              <p className="text-muted text-xs mt-0.5">
-                {new Date(r.createdAt).toLocaleDateString()}
-              </p>
-              <p className="text-muted text-sm mt-2">{r.comment}</p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-white font-medium text-sm truncate">
+                    {r.user?.name || "Customer"}
+                  </p>
+                  <p className="text-muted text-xs mt-0.5">
+                    {new Date(r.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <HiStar
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i <= Number(r.rating) ? "text-accent" : "text-[#262626]"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              {r.comment ? (
+                <p className="text-white/90 text-sm mt-3 leading-relaxed">
+                  {r.comment}
+                </p>
+              ) : null}
             </div>
           ))}
           {reviews.length === 0 && (
@@ -103,7 +176,7 @@ export function ProductReviews({
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-xl bg-accent text-primary px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+            className="rounded-xl bg-accent text-primary px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-50 active:scale-95 transition-transform"
           >
             {submitting ? "Submitting…" : "Submit review"}
           </button>
@@ -111,6 +184,6 @@ export function ProductReviews({
       ) : (
         <p className="text-muted text-sm">Sign in to write a review.</p>
       )}
-    </div>
+    </section>
   );
 }

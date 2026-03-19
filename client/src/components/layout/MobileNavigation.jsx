@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,8 +17,7 @@ import { logout } from "../../store/slices/authSlice.js";
 
 const navItems = [
   { to: "/", icon: HiHome, label: "Home" },
-  { to: "/#categories", icon: HiHome, label: "Categories" },
-  { to: "/", icon: HiSearch, label: "Search", search: true },
+  { to: "/search", icon: HiSearch, label: "Search" },
   { to: "/cart", icon: HiShoppingCart, label: "Cart" },
   { to: "/account", icon: HiUser, label: "Account", account: true },
 ];
@@ -40,9 +39,11 @@ export function MobileNavigation() {
     s.cart.items.reduce((sum, i) => sum + i.qty, 0)
   );
   const user = useSelector((s) => s.auth.user);
+  const activeAccountPath = useMemo(() => location.pathname, [location.pathname]);
 
   const isActive = (to) => {
     if (to === "/cart") return location.pathname === "/cart";
+    if (to === "/search") return location.pathname === "/search";
     if (to === "/account" || to.startsWith?.("/account"))
       return location.pathname.startsWith("/account");
     if (to === "/") return location.pathname === "/";
@@ -69,7 +70,7 @@ export function MobileNavigation() {
         aria-label="Mobile navigation"
       >
         <div className="flex items-center justify-around h-16 px-2">
-          {navItems.map(({ to, icon: Icon, label, search, account }) => {
+          {navItems.map(({ to, icon: Icon, label, account }) => {
             const active = isActive(to);
             const isCart = to === "/cart";
             if (account) {
@@ -92,7 +93,7 @@ export function MobileNavigation() {
             return (
               <NavLink
                 key={to + label}
-                to={search ? "/" : to.replace("/#categories", "/") }
+                to={to}
                 className={`flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl transition-all duration-200 ${
                   active ? "text-accent" : "text-muted hover:text-white"
                 }`}
@@ -128,7 +129,7 @@ export function MobileNavigation() {
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "tween", duration: 0.25 }}
+              transition={{ type: "tween", duration: 0.22 }}
               className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-2xl bg-card border border-[#262626] border-b-0 shadow-xl safe-area-pb"
             >
               <div className="flex items-center justify-between p-4 border-b border-[#262626]">
@@ -144,13 +145,17 @@ export function MobileNavigation() {
               </div>
               <div className="p-4 pb-8 max-h-[70vh] overflow-auto">
                 {user ? (
-                  <div className="space-y-1">
+                  <div className="space-y-4">
                     {accountLinks.map(({ to, icon: Icon, label }) => (
                       <Link
                         key={to}
                         to={to}
                         onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-4 py-3 text-white hover:bg-[#262626] transition-colors"
+                        className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors active:scale-95 ${
+                          activeAccountPath === to
+                            ? "bg-accent/10 border border-accent/30 text-white"
+                            : "text-white hover:bg-[#262626]"
+                        }`}
                       >
                         <Icon className="w-5 h-5 text-muted" />
                         {label}
@@ -159,7 +164,7 @@ export function MobileNavigation() {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-400 hover:bg-red-900/20 transition-colors"
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-400 hover:bg-red-900/20 transition-colors active:scale-95"
                     >
                       <HiLogout className="w-5 h-5" />
                       Logout
@@ -171,7 +176,7 @@ export function MobileNavigation() {
                     <Link
                       to="/auth"
                       onClick={() => setAccountOpen(false)}
-                      className="block rounded-xl bg-accent text-primary py-3 text-center text-sm font-semibold"
+                      className="block rounded-xl bg-accent text-primary py-3 text-center text-sm font-semibold active:scale-95 transition-transform"
                     >
                       Sign in
                     </Link>

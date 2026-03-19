@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { HiHeart, HiOutlineHeart } from "react-icons/hi";
+import { HiHeart, HiOutlineHeart, HiPlus } from "react-icons/hi";
 import api from "../../api/client.js";
 import { addToCart } from "../../store/slices/cartSlice.js";
 import { useToast } from "../ui/ToastProvider.jsx";
@@ -60,21 +60,22 @@ export function ProductCard({ product, compact = false }) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={compact ? { scale: 1.01 } : { scale: 1.03 }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.99 }}
       transition={{ duration: 0.2 }}
       className="group h-full flex flex-col"
     >
       <Link
         to={`/product/${product.slug}`}
-        className={`flex flex-col h-full rounded-xl bg-card border border-[#262626] overflow-hidden hover:border-accent/40 transition-all duration-300 ${compact ? "max-w-[240px]" : ""}`}
+        className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-[#262626] bg-card transition-colors duration-200 hover:border-accent/40"
       >
-        <div className={`relative ${compact ? "aspect-[3/4]" : "aspect-[4/5]"} bg-[#262626] overflow-hidden flex-shrink-0`}>
+        <div className="relative aspect-square flex-shrink-0 overflow-hidden bg-[#262626]">
           {product.images?.[0] ? (
             <img
               src={product.images[0]}
               alt={product.name}
               loading="lazy"
-              className={`w-full h-full ${compact ? "object-contain p-2" : "object-cover"} transition-transform duration-300 group-hover:scale-105`}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted text-sm">NoorFit</div>
@@ -96,43 +97,40 @@ export function ProductCard({ product, compact = false }) {
           <button
             type="button"
             onClick={handleWishlist}
-            className="absolute top-3 right-3 rounded-full border border-[#262626] bg-primary/90 p-2 text-white"
+            className="absolute top-2.5 right-2.5 rounded-full border border-[#262626] bg-primary/90 p-2 text-white active:scale-[0.98] transition-transform"
             aria-label="Add to wishlist"
           >
             {wishlisted ? <HiHeart className="w-4 h-4 text-accent" /> : <HiOutlineHeart className="w-4 h-4" />}
           </button>
-
-          <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-3">
-            <div className="w-full grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="rounded-lg bg-accent text-primary px-3 py-2 text-xs font-semibold"
-              >
-                Add to Cart
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigate(`/product/${product.slug}`);
-                }}
-                className="rounded-lg border border-[#262626] bg-primary/90 text-white px-3 py-2 text-xs font-semibold"
-              >
-                {hasVariants ? "Select Size" : "View"}
-              </button>
-            </div>
-          </div>
         </div>
 
-        <div className={`flex flex-col flex-1 ${compact ? "p-3" : "p-4"}`}>
-          <h3 className={`font-medium text-white line-clamp-2 ${compact ? "text-xs" : "text-sm"}`}>{product.name}</h3>
-          <div className="flex items-center gap-2 mt-2">
-            <span className={`text-white font-semibold ${compact ? "text-sm" : "text-base"}`}>${Number(product.price || 0).toFixed(2)}</span>
-            {product.originalPrice && product.originalPrice > product.price && (
-              <span className="text-muted text-xs line-through">${product.originalPrice.toFixed(2)}</span>
-            )}
+        <div className={`flex flex-col flex-1 ${compact ? "p-3" : "p-3.5"}`}>
+          <h3 className={`font-medium text-white line-clamp-2 ${compact ? "text-xs" : "text-sm"}`}>
+            {product.name}
+          </h3>
+          <div className="mt-2 flex items-end justify-between gap-2">
+            <div className="flex flex-col gap-0.5">
+              <span
+                className={`text-white font-semibold ${
+                  compact ? "text-sm" : "text-base"
+                }`}
+              >
+                ${Number(product.price || 0).toFixed(2)}
+              </span>
+              <span className="text-muted text-xs h-4 leading-4">
+                {product.originalPrice && product.originalPrice > product.price
+                  ? `$${product.originalPrice.toFixed(2)}`
+                  : ""}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="h-9 w-9 rounded-xl bg-accent text-primary inline-flex items-center justify-center active:scale-[0.98] transition-transform"
+              aria-label="Quick add"
+            >
+              <HiPlus className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </Link>

@@ -7,10 +7,16 @@ module.exports = {
         card: "#171717",
         muted: "#a1a1aa",
         border: "#262626",
-        accent: "#d4af37",
+        accent: "#a6c655",
       },
       fontFamily: {
-        sans: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        sans: [
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
+        ],
       },
       borderRadius: {
         xl: "16px",
