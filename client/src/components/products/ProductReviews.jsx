@@ -13,6 +13,8 @@ export function ProductReviews({
   const user = useSelector((s) => s.auth.user);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
@@ -30,18 +32,51 @@ export function ProductReviews({
     return safe;
   }, [reviews]);
 
+  const getUserId = (u) => {
+    if (!u) return null;
+    if (typeof u === "string") return u;
+    if (typeof u === "object") {
+      return u._id || u.id || null;
+    }
+    return null;
+  };
+
+  const myReview = useMemo(() => {
+    if (!user) return null;
+    return reviews.find(
+      (r) => String(getUserId(r.user)) === String(getUserId(user)),
+    );
+  }, [reviews, user]);
+
   const submit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post(`/reviews/${productId}`, {
-        rating: Number(rating),
-        comment,
-      });
+      const ratingNumber = Number(rating);
+
+      if (images.length > 0) {
+        const formData = new FormData();
+        formData.append("rating", String(ratingNumber));
+        if (comment.trim()) formData.append("comment", comment.trim());
+        // Backend expects field name: "images"
+        images.forEach((file) => formData.append("images", file));
+
+        await api.post(`/reviews/${productId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        await api.post(`/reviews/${productId}`, {
+          rating: ratingNumber,
+          comment,
+        });
+      }
       const { data } = await api.get(`/reviews/${productId}`);
       setReviews(data);
       setComment("");
       setRating(5);
+      imagePreviews.forEach((src) => URL.revokeObjectURL(src));
+      setImages([]);
+      setImagePreviews([]);
     } catch (err) {
       alert(err.response?.data?.message || "Unable to submit review");
     } finally {
@@ -127,6 +162,11 @@ export function ProductReviews({
                   <p className="text-muted text-xs mt-0.5">
                     {new Date(r.createdAt).toLocaleDateString()}
                   </p>
+                  {r.isVerified && (
+                    <span className="mt-2 inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                      Verified Purchase
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   {[1, 2, 3, 4, 5].map((i) => (
@@ -144,6 +184,23 @@ export function ProductReviews({
                   {r.comment}
                 </p>
               ) : null}
+              {Array.isArray(r.images) && r.images.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {r.images.slice(0, 6).map((img) => (
+                    <div
+                      key={img}
+                      className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden"
+                    >
+                      <img
+                        src={img}
+                        alt="Review upload"
+                        className="w-full h-20 object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {reviews.length === 0 && (
@@ -152,9 +209,9 @@ export function ProductReviews({
         </div>
       </div>
 
-      {user ? (
+      {user && !myReview ? (
         <form onSubmit={submit} className="space-y-3 border-t border-[#262626] pt-6">
-          <p className="text-white font-medium text-sm">Write a review</p>
+          <p className="text-white font-medium text-sm">Rate & review</p>
           <select
             className="rounded-xl border border-[#262626] bg-primary px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent"
             value={rating}
@@ -173,6 +230,43 @@ export function ProductReviews({
             onChange={(e) => setComment(e.target.value)}
             rows={3}
           />
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted">
+              Photos (optional, up to 5)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="block w-full text-sm text-muted rounded-xl border border-[#262626] bg-primary px-3 py-2 focus:outline-none focus:border-accent"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []).slice(0, 5);
+                // revoke old previews to avoid memory leaks
+                imagePreviews.forEach((p) => URL.revokeObjectURL(p));
+                setImages(files);
+                setImagePreviews(files.map((f) => URL.createObjectURL(f)));
+              }}
+            />
+            {imagePreviews.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {imagePreviews.map((src, idx) => (
+                  <div
+                    key={src}
+                    className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden"
+                  >
+                    <img
+                      src={src}
+                      alt={`Preview ${idx + 1}`}
+                      className="w-full h-20 object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             type="submit"
             disabled={submitting}
@@ -181,6 +275,13 @@ export function ProductReviews({
             {submitting ? "Submitting…" : "Submit review"}
           </button>
         </form>
+      ) : user && myReview ? (
+        <div className="border-t border-[#262626] pt-6">
+          <p className="text-white font-medium text-sm">Thanks for your review!</p>
+          <p className="text-muted text-sm mt-1">
+            You can only submit one review per product.
+          </p>
+        </div>
       ) : (
         <p className="text-muted text-sm">Sign in to write a review.</p>
       )}

@@ -5,6 +5,7 @@ import { Review } from "../models/review.model.js";
 import { Category } from "../models/category.model.js";
 import { User } from "../models/user.model.js";
 import { Coupon } from "../models/coupon.model.js";
+import { Announcement } from "../models/announcement.model.js";
 import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
@@ -539,8 +540,135 @@ export async function adminListCoupons(req, res) {
 }
 
 export async function adminCreateCoupon(req, res) {
-  const coupon = await Coupon.create(req.body);
+  const payload = {
+    code: req.body.code,
+    discountType: req.body.discountType,
+    value: Number(req.body.value),
+    minOrder: Number(req.body.minOrder) || 0,
+    expiry: req.body.expiry,
+    usageLimit:
+      req.body.usageLimit === "" || req.body.usageLimit == null
+        ? undefined
+        : Number(req.body.usageLimit),
+    active: req.body.active ?? true,
+  };
+
+  const coupon = await Coupon.create(payload);
   res.status(201).json(coupon);
+}
+
+export async function adminUpdateCoupon(req, res) {
+  const payload = {
+    code: req.body.code,
+    discountType: req.body.discountType,
+    value: Number(req.body.value),
+    minOrder: Number(req.body.minOrder) || 0,
+    expiry: req.body.expiry,
+    usageLimit:
+      req.body.usageLimit === "" || req.body.usageLimit == null
+        ? undefined
+        : Number(req.body.usageLimit),
+    active: req.body.active,
+  };
+
+  const coupon = await Coupon.findByIdAndUpdate(req.params.id, payload, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!coupon) {
+    res.status(404);
+    throw new Error("Coupon not found");
+  }
+
+  res.json(coupon);
+}
+
+export async function adminToggleCouponActive(req, res) {
+  const coupon = await Coupon.findById(req.params.id);
+  if (!coupon) {
+    res.status(404);
+    throw new Error("Coupon not found");
+  }
+  coupon.active = !coupon.active;
+  await coupon.save();
+  res.json(coupon);
+}
+
+export async function adminDeleteCoupon(req, res) {
+  const coupon = await Coupon.findByIdAndDelete(req.params.id);
+  if (!coupon) {
+    res.status(404);
+    throw new Error("Coupon not found");
+  }
+  res.json({ message: "Coupon deleted" });
+}
+
+// ────────────────────────────────────────────────
+// Announcements
+// ────────────────────────────────────────────────
+
+export async function adminListAnnouncements(req, res) {
+  const announcements = await Announcement.find().sort({ createdAt: -1 });
+  res.json(announcements);
+}
+
+export async function adminCreateAnnouncement(req, res) {
+  const payload = {
+    text: req.body.text,
+    type: req.body.type || "general",
+    active: req.body.active ?? true,
+  };
+  const announcement = await Announcement.create(payload);
+  res.status(201).json(announcement);
+}
+
+export async function adminUpdateAnnouncement(req, res) {
+  const payload = {
+    text: req.body.text,
+    type: req.body.type || "general",
+    active: req.body.active,
+  };
+
+  const announcement = await Announcement.findByIdAndUpdate(
+    req.params.id,
+    payload,
+    { new: true, runValidators: true },
+  );
+
+  if (!announcement) {
+    res.status(404);
+    throw new Error("Announcement not found");
+  }
+
+  res.json(announcement);
+}
+
+export async function adminToggleAnnouncement(req, res) {
+  const announcement = await Announcement.findById(req.params.id);
+  if (!announcement) {
+    res.status(404);
+    throw new Error("Announcement not found");
+  }
+  announcement.active = !announcement.active;
+  await announcement.save();
+  res.json(announcement);
+}
+
+export async function adminDeleteAnnouncement(req, res) {
+  const announcement = await Announcement.findByIdAndDelete(req.params.id);
+  if (!announcement) {
+    res.status(404);
+    throw new Error("Announcement not found");
+  }
+  res.json({ message: "Announcement deleted" });
+}
+
+export async function listActiveAnnouncements(req, res) {
+  const active = await Announcement.find({ active: true })
+    .sort({ createdAt: -1 })
+    .lean();
+  res.json(active);
 }
 
 export async function adminCreateDrop(req, res) {

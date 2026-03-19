@@ -58,3 +58,36 @@ body {
 .carousel-scroll::-webkit-scrollbar {
   display: none;
 }
+
+.announcement-bar {
+  background-color: #a6c655;
+  color: #000000;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.announcement-track {
+  display: inline-flex;
+  gap: 48px;
+  animation: announcement-marquee 25s linear infinite;
+  will-change: transform;
+}
+
+.announcement-text {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@keyframes announcement-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

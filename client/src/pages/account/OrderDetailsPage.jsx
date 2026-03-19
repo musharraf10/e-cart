@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import api from "../../api/client.js";
 
 const steps = ["pending", "processing", "shipped", "delivered"];
@@ -15,11 +16,134 @@ const statusColors = {
 export function OrderDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const user = useSelector((s) => s.auth.user);
   const [order, setOrder] = useState(null);
+  const [reviewedByProductId, setReviewedByProductId] = useState({});
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  const [reviewModal, setReviewModal] = useState({
+    open: false,
+    productId: null,
+    productName: "",
+  });
+
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
+    images: [],
+    imagePreviews: [],
+  });
 
   useEffect(() => {
     api.get(`/orders/${id}`).then(({ data }) => setOrder(data));
   }, [id]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadReviewStatus = async () => {
+      if (!order || order.status !== "delivered" || !user) return;
+      const productIds = Array.from(
+        new Set(
+          (order.items || [])
+            .map((i) => i.product)
+            .filter(Boolean)
+            .map(String),
+        ),
+      );
+      if (!productIds.length) return;
+
+      setLoadingReviews(true);
+      try {
+        const results = await Promise.all(
+          productIds.map((pid) => api.get(`/reviews/${pid}`)),
+        );
+
+        const next = {};
+        results.forEach(({ data }, idx) => {
+          const pid = productIds[idx];
+          const getUserId = (u) => {
+            if (!u) return null;
+            if (typeof u === "string") return u;
+            if (typeof u === "object") return u._id || u.id || null;
+            return null;
+          };
+          const hasReview = (data || []).some(
+            (r) => String(getUserId(r.user)) === String(getUserId(user)),
+          );
+          next[pid] = hasReview;
+        });
+
+        if (mounted) setReviewedByProductId(next);
+      } finally {
+        if (mounted) setLoadingReviews(false);
+      }
+    };
+
+    loadReviewStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [order, user]);
+
+  const openReviewModal = (item) => {
+    const productId = item.product || item._id;
+    setReviewModal({
+      open: true,
+      productId: productId ? String(productId) : null,
+      productName: item.name || "",
+    });
+    setReviewForm({
+      rating: 5,
+      comment: "",
+      images: [],
+      imagePreviews: [],
+    });
+  };
+
+  const closeReviewModal = () => {
+    // revoke previews to avoid memory leaks
+    reviewForm.imagePreviews.forEach((p) => URL.revokeObjectURL(p));
+    setReviewModal({ open: false, productId: null, productName: "" });
+    setReviewForm({
+      rating: 5,
+      comment: "",
+      images: [],
+      imagePreviews: [],
+    });
+  };
+
+  const submitReviewFromOrder = async (e) => {
+    e.preventDefault();
+    if (!reviewModal.productId) return;
+
+    try {
+      if (reviewForm.images.length > 0) {
+        const formData = new FormData();
+        formData.append("rating", String(Number(reviewForm.rating)));
+        if (reviewForm.comment.trim())
+          formData.append("comment", reviewForm.comment.trim());
+        reviewForm.images.forEach((file) => formData.append("images", file));
+
+        await api.post(`/reviews/${reviewModal.productId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        await api.post(`/reviews/${reviewModal.productId}`, {
+          rating: Number(reviewForm.rating),
+          comment: reviewForm.comment,
+        });
+      }
+
+      setReviewedByProductId((prev) => ({
+        ...prev,
+        [String(reviewModal.productId)]: true,
+      }));
+      closeReviewModal();
+      alert("Thank you! Your review has been submitted.");
+    } catch (err) {
+      alert(err.response?.data?.message || "Unable to submit review");
+    }
+  };
 
   if (!order)
     return (
@@ -73,6 +197,26 @@ export function OrderDetailsPage() {
                     <p className="text-white font-medium mt-2">
                       ${item.price.toFixed(2)}
                     </p>
+
+                    {order.status === "delivered" && user && (
+                      <div className="mt-4 flex items-center gap-3">
+                        {loadingReviews ? (
+                          <span className="text-xs text-[#a1a1aa]">Checking review status…</span>
+                        ) : reviewedByProductId[String(item.product)] ? (
+                          <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-300">
+                            Reviewed
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openReviewModal(item)}
+                            className="rounded-xl bg-accent text-primary px-4 py-2 text-sm font-semibold hover:opacity-90 active:scale-95 transition-transform"
+                          >
+                            Rate & Review
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -191,6 +335,111 @@ export function OrderDetailsPage() {
           </div>
         </div>
       </div>
+
+      {reviewModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className="w-full max-w-2xl rounded-2xl border border-[#262626] bg-[#0f0f0f] p-6 shadow-xl">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-white text-lg font-semibold">Rate & Review</h2>
+                <p className="text-[#a1a1aa] text-sm mt-1">
+                  {reviewModal.productName || "Product"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeReviewModal}
+                className="rounded-xl border border-[#262626] px-3 py-1.5 text-sm text-muted hover:text-white hover:bg-[#262626]"
+                aria-label="Close"
+              >
+                Close
+              </button>
+            </div>
+
+            <form onSubmit={submitReviewFromOrder} className="space-y-3">
+              <select
+                className="rounded-xl border border-[#262626] bg-primary px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent w-full"
+                value={reviewForm.rating}
+                onChange={(e) =>
+                  setReviewForm((f) => ({ ...f, rating: e.target.value }))
+                }
+              >
+                {[5, 4, 3, 2, 1].map((n) => (
+                  <option key={n} value={n}>
+                    {n} Stars
+                  </option>
+                ))}
+              </select>
+
+              <textarea
+                className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent resize-none"
+                placeholder="Optional review text"
+                value={reviewForm.comment}
+                onChange={(e) =>
+                  setReviewForm((f) => ({ ...f, comment: e.target.value }))
+                }
+                rows={3}
+              />
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted">
+                  Photos (optional, up to 5)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="block w-full text-sm text-muted"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []).slice(0, 5);
+                    // revoke old previews to avoid memory leaks
+                    reviewForm.imagePreviews.forEach((p) => URL.revokeObjectURL(p));
+                    const previews = files.map((f) => URL.createObjectURL(f));
+                    setReviewForm((f) => ({
+                      ...f,
+                      images: files,
+                      imagePreviews: previews,
+                    }));
+                  }}
+                />
+                {reviewForm.imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {reviewForm.imagePreviews.map((src, idx) => (
+                      <div
+                        key={src}
+                        className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden"
+                      >
+                        <img
+                          src={src}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-full h-20 object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeReviewModal}
+                  className="rounded-xl border border-[#262626] px-4 py-2 text-sm text-muted hover:text-white hover:bg-[#262626]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-accent text-primary px-5 py-2 text-sm font-semibold hover:opacity-90 active:scale-95 transition-transform"
+                >
+                  Submit review
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

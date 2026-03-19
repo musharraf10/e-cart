@@ -41,26 +41,46 @@ export async function createReview(req, res) {
     throw new Error("Product not found");
   }
 
-  const hasPurchased = await Order.exists({
+  // Verified purchase: only delivered orders allow reviews.
+  const hasDeliveredOrder = await Order.exists({
     user: req.user._id,
+    status: "delivered",
     items: { $elemMatch: { product: product._id } },
   });
 
-  if (!hasPurchased) {
+  if (!hasDeliveredOrder) {
     res.status(403);
-    throw new Error("You can only review products you purchased");
+    throw new Error("You can only review products you received (delivered)");
   }
 
-  const review = await Review.create({
-    product: productId,
-    user: req.user._id,
-    rating,
-    comment,
-  });
+  const images =
+    Array.isArray(req.files) && req.files.length
+      ? req.files
+          .map((f) => (f?.filename ? `/uploads/reviews/${f.filename}` : null))
+          .filter(Boolean)
+      : [];
 
-  await recalculateProductRatings(productId);
+  try {
+    const review = await Review.create({
+      product: productId,
+      user: req.user._id,
+      rating,
+      comment,
+      images,
+      isVerified: true,
+    });
 
-  res.status(201).json(review);
+    await recalculateProductRatings(productId);
+
+    res.status(201).json(review);
+  } catch (err) {
+    // Unique index: one review per user per product.
+    if (err && err.code === 11000) {
+      res.status(409);
+      throw new Error("You already reviewed this product");
+    }
+    throw err;
+  }
 }
 
 export { recalculateProductRatings };

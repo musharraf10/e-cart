@@ -57,18 +57,17 @@ export async function createOrder(req, res) {
   if (couponCode) {
     const coupon = await Coupon.findOne({
       code: couponCode.toUpperCase(),
-      isActive: true,
-      validFrom: { $lte: new Date() },
-      validTo: { $gte: new Date() },
+      active: true,
+      expiry: { $gte: new Date() },
     });
-    if (coupon && subtotal >= coupon.minOrderValue) {
+    const isWithinUsageLimit =
+      !coupon?.usageLimit || (coupon.usedCount || 0) < coupon.usageLimit;
+
+    if (coupon && isWithinUsageLimit && subtotal >= (coupon.minOrder || 0)) {
       if (coupon.discountType === "percentage") {
-        discount = (subtotal * coupon.discountValue) / 100;
+        discount = (subtotal * coupon.value) / 100;
       } else {
-        discount = coupon.discountValue;
-      }
-      if (coupon.maxDiscountValue) {
-        discount = Math.min(discount, coupon.maxDiscountValue);
+        discount = coupon.value;
       }
       appliedCouponCode = coupon.code;
     }
@@ -132,6 +131,14 @@ export async function createOrder(req, res) {
     total,
     couponCode: appliedCouponCode,
   });
+
+  // Track coupon usage after successful order creation
+  if (appliedCouponCode) {
+    await Coupon.updateOne(
+      { code: appliedCouponCode },
+      { $inc: { usedCount: 1 } },
+    );
+  }
 
   res.status(201).json(order);
 }

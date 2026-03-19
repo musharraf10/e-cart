@@ -26,6 +26,9 @@ import {
   adminDeleteReview,
   adminListCoupons,
   adminCreateCoupon,
+  adminUpdateCoupon,
+  adminToggleCouponActive,
+  adminDeleteCoupon,
   adminListDrops,
   adminCreateDrop,
   adminActivateDrop,
@@ -33,7 +36,13 @@ import {
   adminUpdateReturnStatus,
   adminGetAnalytics,
   adminGetNotifications,
+  adminListAnnouncements,
+  adminCreateAnnouncement,
+  adminUpdateAnnouncement,
+  adminToggleAnnouncement,
+  adminDeleteAnnouncement,
 } from "../controllers/admin.controller.js";
+import { answerProductQuestion } from "../controllers/qa.controller.js";
 
 const router = express.Router();
 
@@ -71,6 +80,15 @@ router.delete("/reviews/:id", adminDeleteReview);
 
 router.get("/coupons", adminListCoupons);
 router.post("/coupons", adminCreateCoupon);
+router.put("/coupons/:id", adminUpdateCoupon);
+router.patch("/coupons/:id/toggle", adminToggleCouponActive);
+router.delete("/coupons/:id", adminDeleteCoupon);
+
+router.get("/announcements", adminListAnnouncements);
+router.post("/announcements", adminCreateAnnouncement);
+router.put("/announcements/:id", adminUpdateAnnouncement);
+router.patch("/announcements/:id/toggle", adminToggleAnnouncement);
+router.delete("/announcements/:id", adminDeleteAnnouncement);
 
 router.get("/drops", adminListDrops);
 router.post("/drops", adminCreateDrop);
@@ -80,5 +98,8 @@ router.get("/returns", adminListReturns);
 router.patch("/returns/:id/status", adminUpdateReturnStatus);
 
 router.get("/analytics", adminGetAnalytics);
+
+// Q&A: answers (admin-only via router.use(protect, admin))
+router.patch("/questions/:id/answer", answerProductQuestion);
 
 export default router;

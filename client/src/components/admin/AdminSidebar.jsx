@@ -1,16 +1,17 @@
 import { NavLink } from "react-router-dom";
 
 const links = [
-  ["/admin/dashboard", "Dashboard Overview"],
-  ["/admin/products", "Product Management"],
-  ["/admin/inventory", "Inventory Management"],
-  ["/admin/orders", "Order Management"],
-  ["/admin/customers", "Customer Management"],
-  ["/admin/reviews", "Review Moderation"],
-  ["/admin/coupons", "Coupons / Promotions"],
-  ["/admin/drops", "New Drops Scheduling"],
-  ["/admin/returns", "Disputes & Returns"],
-  ["/admin/analytics", "Analytics & Reports"],
+  ["/admin/dashboard", "Dashboard"],
+  ["/admin/products", "Products"],
+  ["/admin/orders", "Orders"],
+  ["/admin/inventory", "Inventory"],
+  ["/admin/customers", "Customers"],
+  ["/admin/coupons", "Coupons"],
+  ["/admin/announcements", "Announcements"],
+  ["/admin/reviews", "Reviews"],
+  ["/admin/drops", "Drops"],
+  ["/admin/returns", "Returns"],
+  ["/admin/analytics", "Analytics"],
   ["/admin/settings", "Settings"],
 ];
 

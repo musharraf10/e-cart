@@ -6,6 +6,10 @@ const reviewSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String },
+    // Optional images uploaded by the user (stored as URLs)
+    images: { type: [String], default: [] },
+    // Ensures UI can label reviews as verified based on delivered orders
+    isVerified: { type: Boolean, default: false },
     isHidden: { type: Boolean, default: false },
   },
   { timestamps: true },

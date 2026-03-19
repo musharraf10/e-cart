@@ -20,6 +20,7 @@ import { AdminCouponsPage } from "./pages/admin/ops/AdminCouponsPage.jsx";
 import { AdminDropsPage } from "./pages/admin/ops/AdminDropsPage.jsx";
 import { AdminReturnsPage } from "./pages/admin/ops/AdminReturnsPage.jsx";
 import { AdminAnalyticsPage } from "./pages/admin/ops/AdminAnalyticsPage.jsx";
+import { AdminAnnouncementsPage } from "./pages/admin/ops/AdminAnnouncementsPage.jsx";
 import { AdminSettingsPage } from "./pages/admin/ops/AdminSettingsPage.jsx";
 import { ProtectedRoute } from "./components/routes/ProtectedRoute.jsx";
 import { AdminRoute } from "./components/routes/AdminRoute.jsx";
@@ -74,8 +75,9 @@ export default function App() {
               <Route path="inventory" element={<AdminInventoryPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="customers" element={<AdminCustomersPage />} />
-              <Route path="reviews" element={<AdminReviewsPage />} />
               <Route path="coupons" element={<AdminCouponsPage />} />
+              <Route path="announcements" element={<AdminAnnouncementsPage />} />
+              <Route path="reviews" element={<AdminReviewsPage />} />
               <Route path="drops" element={<AdminDropsPage />} />
               <Route path="returns" element={<AdminReturnsPage />} />
               <Route path="analytics" element={<AdminAnalyticsPage />} />
