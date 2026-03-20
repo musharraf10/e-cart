@@ -59,21 +59,26 @@ export function ProductDetailPage() {
     return normalize(images);
   }, [product, color]);
 
-  // Reset size whenever the user picks a different color.
-  // Then auto-select the first in-stock size for that color.
+  // Keep size selection stable when the user picks a different color.
+  // If the selected size is unavailable for that color, auto-select the first in-stock size.
   useEffect(() => {
-    if (!product) return;
+    if (!product || !color) return;
 
-    setSize("");
-
-    const available = (product.variants || []).filter(
-      (v) => v.color === color && Number(v.stock) > 0,
+    const variants = product.variants || [];
+    const selectedSizeStillAvailable = variants.some(
+      (v) => v.color === color && v.size === size && Number(v.stock || 0) > 0,
     );
 
-    if (available.length) {
-      setSize(available.size);
+    if (selectedSizeStillAvailable) {
+      return;
     }
-  }, [color, product]);
+
+    const firstAvailableVariant = variants.find(
+      (v) => v.color === color && Number(v.stock || 0) > 0,
+    );
+
+    setSize(firstAvailableVariant?.size || "");
+  }, [color, product, size]);
 
   const panels = useMemo(
     () => [

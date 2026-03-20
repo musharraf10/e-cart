@@ -1,15 +1,9 @@
 export function ProductVariants({ variants = [], size, color, setSize, setColor }) {
-  const variantsForSelectedColor = color
-    ? variants.filter((variant) => variant.color === color)
-    : variants;
-
-  const sizes = [
-    ...new Set(variantsForSelectedColor.map((variant) => variant.size).filter(Boolean)),
-  ];
+  const allSizes = [...new Set(variants.map((variant) => variant.size).filter(Boolean))];
   const colors = [...new Set(variants.map((variant) => variant.color).filter(Boolean))];
 
   const orderedSizes = ["S", "M", "L", "XL"];
-  const sortedSizes = [...sizes].sort((a, b) => {
+  const sortedSizes = [...allSizes].sort((a, b) => {
     const ai = orderedSizes.indexOf(a);
     const bi = orderedSizes.indexOf(b);
     if (ai === -1 && bi === -1) return a.localeCompare(b);
@@ -28,10 +22,12 @@ export function ProductVariants({ variants = [], size, color, setSize, setColor 
   };
 
   const isOutOfStockForSize = (s) => {
-    const relevant = color
-      ? variants.filter((v) => v.size === s && v.color === color)
-      : variants.filter((v) => v.size === s);
-    return relevant.reduce((sum, v) => sum + (v.stock || 0), 0) < 1;
+    const relevant = variants.filter((v) => v.size === s && v.color === color);
+
+    return (
+      relevant.length === 0 ||
+      relevant.reduce((sum, v) => sum + (v.stock || 0), 0) < 1
+    );
   };
 
   const isOutOfStockForColor = (c) => {
@@ -89,13 +85,14 @@ export function ProductVariants({ variants = [], size, color, setSize, setColor 
                   type="button"
                   disabled={out}
                   onClick={() => setSize(s)}
-                  className={`min-w-[64px] px-3 py-2 rounded-lg border transition-all text-sm font-medium ${
+                  className={`min-w-[88px] px-3 py-2 rounded-lg border transition-all text-sm font-medium ${
                     selected
                       ? "border-[#a6c655] bg-[#a6c655]/10 text-[#a6c655]"
                       : "border-[#262626] text-muted hover:text-white"
                   } ${out ? "opacity-40 cursor-not-allowed line-through" : ""}`}
                 >
-                  {s}
+                  <span className="block">{s}</span>
+                  {out && <span className="block text-[10px] uppercase tracking-wide">Out of Stock</span>}
                 </button>
               );
             })}
