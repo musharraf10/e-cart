@@ -55,7 +55,9 @@ export function MobileNavigation() {
               type="button"
               onClick={() => handleNavClick(to)}
               className={`flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl transition-all duration-200 ${
-                active ? "text-accent" : "text-muted hover:text-white"
+                active
+                  ? "bg-accent/10 text-accent"
+                  : "text-muted hover:text-white"
               }`}
               aria-current={active ? "page" : undefined}
             >

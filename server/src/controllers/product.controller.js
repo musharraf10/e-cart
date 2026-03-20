@@ -26,22 +26,41 @@ function withDerivedFields(productDoc, options = {}) {
   };
 }
 
-async function getRequestWishlistProductIds(req) {
+async function getRequestUserId(req) {
   let token;
   if (req.headers.authorization?.startsWith("Bearer ")) {
     token = req.headers.authorization.split(" ")[1];
   }
 
-  if (!token) return [];
+  if (!token) return null;
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select("wishlist");
-    if (!user) return [];
-    return (user.wishlist || []).map((id) => String(id));
+    return decoded.id || null;
   } catch {
-    return [];
+    return null;
   }
+}
+
+async function getRequestWishlistProductIds(req) {
+  const userId = await getRequestUserId(req);
+  if (!userId) return [];
+
+  const user = await User.findById(userId).select("wishlist");
+  if (!user) return [];
+  return (user.wishlist || []).map((id) => String(id));
+}
+
+async function getRequestWishlistState(req, productId) {
+  const userId = await getRequestUserId(req);
+  if (!userId) return false;
+
+  const isWishlisted = await User.exists({
+    _id: userId,
+    wishlist: productId,
+  });
+
+  return Boolean(isWishlisted);
 }
 
 export async function listProducts(req, res) {
@@ -87,10 +106,7 @@ export async function listProducts(req, res) {
 }
 
 export async function getProductBySlug(req, res) {
-  const [product, wishlistedProductIds] = await Promise.all([
-    Product.findOne({ slug: req.params.slug }).populate("category", "name slug"),
-    getRequestWishlistProductIds(req),
-  ]);
+  const product = await Product.findOne({ slug: req.params.slug }).populate("category", "name slug");
 
   if (!product || !product.isVisible) {
     res.status(404);
@@ -102,7 +118,12 @@ export async function getProductBySlug(req, res) {
     ? Object.fromEntries(product.colorImages)
     : {};
 
-  res.json(withDerivedFields(plainProduct, { wishlistedProductIds }));
+  const isWishlisted = await getRequestWishlistState(req, product._id);
+
+  res.json({
+    ...withDerivedFields(plainProduct),
+    isWishlisted,
+  });
 }
 
 export async function getRelatedProducts(req, res) {

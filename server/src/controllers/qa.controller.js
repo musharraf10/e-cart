@@ -18,6 +18,7 @@ export async function listProductQuestions(req, res) {
       answeredBy: q.answeredBy?.name || null,
       askedBy: q.user?.name || null,
       createdAt: q.createdAt,
+      helpfulCount: q.helpfulCount || 0,
     })),
   );
 }
@@ -46,6 +47,7 @@ export async function createProductQuestion(req, res) {
     answeredBy: null,
     askedBy: req.user?.name || null,
     createdAt: q.createdAt,
+    helpfulCount: q.helpfulCount || 0,
   });
 }
 
@@ -81,6 +83,34 @@ export async function answerProductQuestion(req, res) {
     answeredBy: updated.answeredBy?.name || null,
     askedBy: null,
     createdAt: updated.createdAt,
+    helpfulCount: updated.helpfulCount || 0,
+  });
+}
+
+export async function markQuestionHelpful(req, res) {
+  const updated = await ProductQuestion.findByIdAndUpdate(
+    req.params.id,
+    { $inc: { helpfulCount: 1 } },
+    { new: true },
+  )
+    .populate("answeredBy", "name")
+    .populate("user", "name")
+    .lean();
+
+  if (!updated) {
+    res.status(404);
+    throw new Error("Question not found");
+  }
+
+  res.json({
+    _id: updated._id,
+    question: updated.question,
+    answer: updated.answer || null,
+    verified: Boolean(updated.verified && updated.answer),
+    answeredBy: updated.answeredBy?.name || null,
+    askedBy: updated.user?.name || null,
+    createdAt: updated.createdAt,
+    helpfulCount: updated.helpfulCount || 0,
   });
 }
 

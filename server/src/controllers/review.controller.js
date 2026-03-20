@@ -40,7 +40,7 @@ async function resolveRequestUser(req) {
   }
 }
 
-async function checkCanReview(productId, userId) {
+async function hasDeliveredPurchase(productId, userId) {
   if (!userId) return false;
 
   return Boolean(
@@ -50,6 +50,10 @@ async function checkCanReview(productId, userId) {
       items: { $elemMatch: { product: productId } },
     }),
   );
+}
+
+async function checkCanReview(productId, userId) {
+  return hasDeliveredPurchase(productId, userId);
 }
 
 export async function listProductReviews(req, res) {
@@ -82,11 +86,21 @@ export async function createReview(req, res) {
     throw new Error("Product not found");
   }
 
-  const hasDeliveredOrder = await checkCanReview(product._id, req.user._id);
+  const hasDeliveredOrder = await hasDeliveredPurchase(product._id, req.user._id);
 
   if (!hasDeliveredOrder) {
     res.status(403);
     throw new Error("You can only review products you received (delivered)");
+  }
+
+  const existingReview = await Review.findOne({
+    user: req.user._id,
+    product: productId,
+  }).select("_id");
+
+  if (existingReview) {
+    res.status(400);
+    throw new Error("You already reviewed this product");
   }
 
   const images =
@@ -103,7 +117,8 @@ export async function createReview(req, res) {
       rating,
       comment,
       images,
-      isVerified: true,
+      isVerified: hasDeliveredOrder,
+      isVerifiedPurchase: hasDeliveredOrder,
     });
 
     await recalculateProductRatings(productId);
@@ -118,4 +133,4 @@ export async function createReview(req, res) {
   }
 }
 
-export { recalculateProductRatings, checkCanReview };
+export { recalculateProductRatings, checkCanReview, hasDeliveredPurchase };
