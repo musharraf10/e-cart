@@ -24,9 +24,10 @@ export function ProductDetailPage() {
     (async () => {
       const { data } = await api.get(`/products/${slug}`);
       setProduct(data);
+
       setSize("");
       // Auto-select the first color that has at least 1 unit in stock.
-      // Do NOT auto-select size (size starts empty).
+      // Size is set/reset in the color-change effect below.
       const variants = Array.isArray(data.variants) ? data.variants : [];
       const colorsInOrder = [...new Set(variants.map((v) => v.color).filter(Boolean))];
       const firstAvailableColor =
@@ -44,21 +45,35 @@ export function ProductDetailPage() {
   }, [slug]);
 
   const galleryImages = useMemo(() => {
-    if (!product) return product?.images || [];
-    if (!color) return product.images || [];
-    const map = product.colorImages;
+    if (!product) return [];
+    const normalize = (val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val.filter(Boolean);
+      if (typeof val === "string") return val ? [val] : [];
+      if (typeof val === "object") return Object.values(val).filter(Boolean);
+      return [];
+    };
 
-    const colorSpecific =
-      map && typeof map.get === "function"
-        ? map.get(color)
-        : map?.[color];
-
-    if (Array.isArray(colorSpecific) && colorSpecific.length) {
-      return colorSpecific;
-    }
-
-    return product.images || [];
+    const selectedColor = String(color || "").trim();
+    const images = product.colorImages?.[selectedColor] || product.images || [];
+    return normalize(images);
   }, [product, color]);
+
+  // Reset size whenever the user picks a different color.
+  // Then auto-select the first in-stock size for that color.
+  useEffect(() => {
+    if (!product) return;
+
+    setSize("");
+
+    const available = (product.variants || []).filter(
+      (v) => v.color === color && Number(v.stock) > 0,
+    );
+
+    if (available.length) {
+      setSize(available[0].size);
+    }
+  }, [color, product]);
 
   const panels = useMemo(
     () => [
@@ -89,7 +104,12 @@ export function ProductDetailPage() {
       className="max-w-6xl mx-auto px-4 space-y-8"
     >
       <section className="grid gap-10 md:grid-cols-2">
-        <ProductGallery images={galleryImages} alt={product.name} variantKey={color} />
+        <ProductGallery
+          key={color}
+          images={galleryImages}
+          alt={product.name}
+          variantKey={color}
+        />
         <ProductInfo
           product={product}
           size={size}

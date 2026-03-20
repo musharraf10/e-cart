@@ -1,5 +1,11 @@
 export function ProductVariants({ variants = [], size, color, setSize, setColor }) {
-  const sizes = [...new Set(variants.map((variant) => variant.size).filter(Boolean))];
+  const variantsForSelectedColor = color
+    ? variants.filter((variant) => variant.color === color)
+    : variants;
+
+  const sizes = [
+    ...new Set(variantsForSelectedColor.map((variant) => variant.size).filter(Boolean)),
+  ];
   const colors = [...new Set(variants.map((variant) => variant.color).filter(Boolean))];
 
   const orderedSizes = ["S", "M", "L", "XL"];

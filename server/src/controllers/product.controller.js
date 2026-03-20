@@ -69,7 +69,15 @@ export async function getProductBySlug(req, res) {
     res.status(404);
     throw new Error("Product not found");
   }
-  res.json(withDerivedFields(product));
+
+  // Ensure `colorImages` (Mongoose Map) is serialized as a plain object.
+  // This makes frontend indexing by color reliable.
+  const plainProduct = product.toObject ? product.toObject() : product;
+  plainProduct.colorImages = product.colorImages
+    ? Object.fromEntries(product.colorImages)
+    : {};
+
+  res.json(withDerivedFields(plainProduct));
 }
 
 export async function getRelatedProducts(req, res) {
