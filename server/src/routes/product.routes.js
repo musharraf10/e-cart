@@ -10,6 +10,7 @@ import {
   listProductQuestions,
   createProductQuestion,
   answerProductQuestion,
+  markQuestionHelpful,
 } from "../controllers/qa.controller.js";
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.get("/related/:productId", getRelatedProducts);
 router.get("/:productId/questions", listProductQuestions);
 router.post("/:productId/questions", protect, createProductQuestion);
 router.patch("/questions/:id/answer", protect, answerProductQuestion);
+router.patch("/questions/:id/helpful", markQuestionHelpful);
 router.get("/:slug", getProductBySlug);
 
 export default router;

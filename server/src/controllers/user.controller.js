@@ -105,7 +105,7 @@ export async function addToWishlist(req, res) {
   const user = await User.findById(req.user._id);
   const productId = req.params.productId;
 
-  if (!user.wishlist.some((id) => String(id) === productId)) {
+  if (!user.wishlist.includes(productId) && !user.wishlist.some((id) => String(id) === productId)) {
     user.wishlist.push(productId);
     await user.save();
   }
