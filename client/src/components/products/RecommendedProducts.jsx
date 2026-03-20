@@ -4,6 +4,7 @@ import { SectionHeader } from "../ui/SectionHeader.jsx";
 import { ProductGridSkeleton } from "../ui/LoadingSkeleton.jsx";
 import { ProductGrid } from "../ui/ProductGrid.jsx";
 import { ProductCard } from "./ProductCard.jsx";
+import { expandProductsByVariant } from "../../utils/productVariants.js";
 
 export function RecommendedProducts({ excludeProductId }) {
   const [items, setItems] = useState([]);
@@ -27,7 +28,9 @@ export function RecommendedProducts({ excludeProductId }) {
     };
   }, [excludeProductId]);
 
-  if (!loading && items.length === 0) return null;
+  const expandedItems = expandProductsByVariant(items).slice(0, 8);
+
+  if (!loading && expandedItems.length === 0) return null;
 
   return (
     <section className="mt-8">
@@ -36,8 +39,8 @@ export function RecommendedProducts({ excludeProductId }) {
         <ProductGridSkeleton count={4} />
       ) : (
         <ProductGrid>
-          {items.map((product) => (
-            <ProductCard key={product._id} product={product} />
+          {expandedItems.map((product) => (
+            <ProductCard key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} product={product} />
           ))}
         </ProductGrid>
       )}

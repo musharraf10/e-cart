@@ -3,6 +3,7 @@ import api from "../../api/client.js";
 import { SectionHeader } from "../ui/SectionHeader.jsx";
 import { ProductGridSkeleton } from "../ui/LoadingSkeleton.jsx";
 import { HorizontalProductRow } from "../ui/HorizontalProductRow.jsx";
+import { expandProductsByVariant } from "../../utils/productVariants.js";
 
 export function RelatedProducts({ productId, categoryId }) {
   const [related, setRelated] = useState([]);
@@ -27,12 +28,14 @@ export function RelatedProducts({ productId, categoryId }) {
     };
   }, [productId, categoryId]);
 
-  if (related.length === 0 && !loading) return null;
+  const expandedRelated = expandProductsByVariant(related).slice(0, 8);
+
+  if (expandedRelated.length === 0 && !loading) return null;
 
   return (
     <section>
       <SectionHeader title="Related products" />
-      {loading ? <ProductGridSkeleton count={4} /> : <HorizontalProductRow products={related} />}
+      {loading ? <ProductGridSkeleton count={4} /> : <HorizontalProductRow products={expandedRelated} />}
     </section>
   );
 }

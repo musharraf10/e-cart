@@ -2,11 +2,16 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const cartKey = "noorfit_cart";
 
+const normalizeCartItem = (item = {}) => ({
+  ...item,
+  image: item.image || "",
+});
+
 const getInitialCart = () => {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(cartKey);
-    return stored ? JSON.parse(stored) : [];
+    return stored ? JSON.parse(stored).map(normalizeCartItem) : [];
   } catch {
     return [];
   }
@@ -27,17 +32,19 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     addToCart(state, action) {
+      const payload = normalizeCartItem(action.payload);
       const existing = state.items.find(
         (i) =>
-          i.product === action.payload.product &&
-          i.sku === action.payload.sku &&
-          i.size === action.payload.size &&
-          i.color === action.payload.color,
+          i.product === payload.product &&
+          i.sku === payload.sku &&
+          i.size === payload.size &&
+          i.color === payload.color,
       );
       if (existing) {
-        existing.qty += action.payload.qty;
+        existing.qty += payload.qty;
+        existing.image = payload.image || existing.image;
       } else {
-        state.items.push(action.payload);
+        state.items.push(payload);
       }
       persist(state.items);
     },

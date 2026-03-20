@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import api from "../api/client.js";
 import { ProductGallery } from "../components/products/ProductGallery.jsx";
@@ -10,9 +10,11 @@ import { DeliveryEstimator } from "../components/products/DeliveryEstimator.jsx"
 import { ProductQandA } from "../components/products/ProductQandA.jsx";
 import { RelatedProducts } from "../components/products/RelatedProducts.jsx";
 import { RecommendedProducts } from "../components/products/RecommendedProducts.jsx";
+import { getColorImageSet, getProductColors } from "../utils/productVariants.js";
 
 export function ProductDetailPage() {
   const { slug } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [canReview, setCanReview] = useState(false);
@@ -25,53 +27,59 @@ export function ProductDetailPage() {
     (async () => {
       const { data } = await api.get(`/products/${slug}`);
       setProduct(data);
-
+      setQty(1);
       setSize("");
-      const variants = Array.isArray(data.variants) ? data.variants : [];
-      const colorsInOrder = [...new Set(variants.map((v) => v.color).filter(Boolean))];
-      const firstAvailableColor =
-        colorsInOrder.find((c) =>
-          variants
-            .filter((v) => v.color === c)
-            .some((v) => Number(v.stock || 0) > 0),
-        ) || colorsInOrder[0] || "";
 
-      setColor(firstAvailableColor);
+      const colors = getProductColors(data);
+      const queryColor = searchParams.get("color") || "";
+      const requestedColor = colors.find((entry) => entry === queryColor);
+      const firstAvailableColor =
+        colors.find((entry) =>
+          (data.variants || [])
+            .filter((variant) => variant.color === entry)
+            .some((variant) => Number(variant.stock || 0) > 0),
+        ) || colors[0] || "";
+      const safeColor = requestedColor || firstAvailableColor;
+
+      setColor(safeColor);
+
+      if (safeColor && safeColor !== queryColor) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("color", safeColor);
+        setSearchParams(nextParams, { replace: true });
+      }
 
       const reviewRes = await api.get(`/reviews/${data._id}`);
       setReviews(reviewRes.data?.reviews || []);
       setCanReview(Boolean(reviewRes.data?.canReview));
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  useEffect(() => {
+    if (!product || !color) return;
+
+    setQty(1);
+
+    const available = (product.variants || []).filter(
+      (variant) => variant.color === color && Number(variant.stock || 0) > 0,
+    );
+
+    setSize((currentSize) => {
+      const stillValid = available.some((variant) => variant.size === currentSize);
+      if (stillValid) return currentSize;
+      return available[0]?.size || "";
+    });
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("color", color);
+    setSearchParams(nextParams, { replace: true });
+  }, [color, product, searchParams, setSearchParams]);
 
   const galleryImages = useMemo(() => {
     if (!product) return [];
-    const normalize = (val) => {
-      if (!val) return [];
-      if (Array.isArray(val)) return val.filter(Boolean);
-      if (typeof val === "string") return val ? [val] : [];
-      if (typeof val === "object") return Object.values(val).filter(Boolean);
-      return [];
-    };
-
-    const selectedColor = String(color || "").trim();
-    const images = product.colorImages?.[selectedColor] || product.images || [];
-    return normalize(images);
+    return getColorImageSet(product, color);
   }, [product, color]);
-
-  useEffect(() => {
-    if (!product) return;
-
-    setSize("");
-
-    const available = (product.variants || []).filter(
-      (v) => v.color === color && Number(v.stock) > 0,
-    );
-
-    if (available.length) {
-      setSize(available[0].size);
-    }
-  }, [color, product]);
 
   const panels = useMemo(
     () => [
@@ -102,12 +110,17 @@ export function ProductDetailPage() {
       className="max-w-6xl mx-auto px-4 space-y-8"
     >
       <section className="grid gap-10 md:grid-cols-2">
-        <ProductGallery
-          key={color}
-          images={galleryImages}
-          alt={product.name}
-          variantKey={color}
-        />
+        <div className="space-y-4">
+          <ProductGallery
+            key={color}
+            images={galleryImages}
+            alt={color ? `${product.name} in ${color}` : product.name}
+            variantKey={color}
+          />
+          {(!galleryImages || galleryImages.length === 0) && (
+            <p className="text-sm text-muted">This color has no dedicated images yet, so fallback product media is shown.</p>
+          )}
+        </div>
         <ProductInfo
           product={product}
           size={size}
