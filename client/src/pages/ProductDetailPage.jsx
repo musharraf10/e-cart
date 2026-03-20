@@ -15,6 +15,7 @@ export function ProductDetailPage() {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [canReview, setCanReview] = useState(false);
   const [size, setSize] = useState("");
   const [color, setColor] = useState("");
   const [qty, setQty] = useState(1);
@@ -26,8 +27,6 @@ export function ProductDetailPage() {
       setProduct(data);
 
       setSize("");
-      // Auto-select the first color that has at least 1 unit in stock.
-      // Size is set/reset in the color-change effect below.
       const variants = Array.isArray(data.variants) ? data.variants : [];
       const colorsInOrder = [...new Set(variants.map((v) => v.color).filter(Boolean))];
       const firstAvailableColor =
@@ -40,7 +39,8 @@ export function ProductDetailPage() {
       setColor(firstAvailableColor);
 
       const reviewRes = await api.get(`/reviews/${data._id}`);
-      setReviews(reviewRes.data);
+      setReviews(reviewRes.data?.reviews || []);
+      setCanReview(Boolean(reviewRes.data?.canReview));
     })();
   }, [slug]);
 
@@ -59,8 +59,6 @@ export function ProductDetailPage() {
     return normalize(images);
   }, [product, color]);
 
-  // Reset size whenever the user picks a different color.
-  // Then auto-select the first in-stock size for that color.
   useEffect(() => {
     if (!product) return;
 
@@ -71,7 +69,7 @@ export function ProductDetailPage() {
     );
 
     if (available.length) {
-      setSize(available.size);
+      setSize(available[0].size);
     }
   }, [color, product]);
 
@@ -118,6 +116,9 @@ export function ProductDetailPage() {
           setSize={setSize}
           setColor={setColor}
           setQty={setQty}
+          onWishlistChange={(isWishlisted) => {
+            setProduct((prev) => (prev ? { ...prev, isWishlisted } : prev));
+          }}
         />
       </section>
 
@@ -160,6 +161,7 @@ export function ProductDetailPage() {
         setReviews={setReviews}
         ratingsAverage={product.ratingsAverage}
         ratingsCount={product.ratingsCount}
+        canReview={canReview}
       />
 
       <div className="mt-8">

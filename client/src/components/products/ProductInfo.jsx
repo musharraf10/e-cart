@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { HiStar, HiOutlineHeart, HiHeart } from "react-icons/hi";
 import api from "../../api/client.js";
@@ -15,12 +15,18 @@ export function ProductInfo({
   setSize,
   setColor,
   setQty,
+  onWishlistChange,
 }) {
   const dispatch = useDispatch();
   const { notify } = useToast();
 
   const [adding, setAdding] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(Boolean(product?.isWishlisted));
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+
+  useEffect(() => {
+    setLiked(Boolean(product?.isWishlisted));
+  }, [product?.isWishlisted, product?._id]);
 
   const selectedVariant = (product.variants || []).find(
     (variant) => variant.size === size && variant.color === color
@@ -36,10 +42,10 @@ export function ProductInfo({
   const discount =
     product.originalPrice && product.originalPrice > selectedPrice
       ? Math.round(
-        ((product.originalPrice - selectedPrice) /
-          product.originalPrice) *
-        100
-      )
+          ((product.originalPrice - selectedPrice) /
+            product.originalPrice) *
+            100
+        )
       : 0;
 
   const stock = selectedVariant?.stock ?? 0;
@@ -75,19 +81,32 @@ export function ProductInfo({
     setTimeout(() => setAdding(false), 600);
   };
 
-  const addWishlist = async () => {
+  const toggleWishlist = async () => {
+    if (wishlistLoading) return;
+
+    const nextLiked = !liked;
+    setWishlistLoading(true);
+
     try {
-      await api.post(`/users/wishlist/${product._id}`);
-      notify("Added to wishlist");
-      setLiked(true);
+      if (liked) {
+        await api.delete(`/users/wishlist/${product._id}`);
+        notify("Removed from wishlist");
+      } else {
+        await api.post(`/users/wishlist/${product._id}`);
+        notify("Added to wishlist");
+      }
+
+      setLiked(nextLiked);
+      onWishlistChange?.(nextLiked);
     } catch {
-      notify("Please sign in to add wishlist", "error");
+      notify("Please sign in to manage wishlist", "error");
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
   return (
     <div className="max-w-[420px] space-y-5">
-      {/* Title */}
       <div>
         <h1 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
           {product.name}
@@ -100,7 +119,6 @@ export function ProductInfo({
         </div>
       </div>
 
-      {/* Price */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xl font-semibold text-white">
           ${selectedPrice.toFixed(2)}
@@ -121,7 +139,6 @@ export function ProductInfo({
         )}
       </div>
 
-      {/* Stock */}
       {canAdd && stock > 0 && stock <= 3 && (
         <p className="text-amber-400 text-sm font-medium">
           Only {stock} left
@@ -134,7 +151,6 @@ export function ProductInfo({
         </p>
       )}
 
-      {/* Variants */}
       <div className="bg-[#171717] border border-[#262626] rounded-xl p-4">
         <ProductVariants
           variants={product.variants}
@@ -145,9 +161,7 @@ export function ProductInfo({
         />
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-3 w-full">
-        {/* Quantity */}
         <div className="flex items-center rounded-xl border border-[#262626] overflow-hidden text-sm bg-primary h-12">
           <button
             type="button"
@@ -169,10 +183,13 @@ export function ProductInfo({
             +
           </button>
         </div>
-        {/* Wishlist */}
+
         <button
-          onClick={addWishlist}
-          className="h-12 w-12 flex items-center justify-center rounded-xl border border-[#262626] text-white hover:bg-card transition active:scale-90"
+          type="button"
+          onClick={toggleWishlist}
+          disabled={wishlistLoading}
+          aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
+          className="h-12 w-12 flex items-center justify-center rounded-xl border border-[#262626] text-white hover:bg-card transition active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {liked ? (
             <HiHeart className="w-5 h-5 text-red-500" />
@@ -181,7 +198,6 @@ export function ProductInfo({
           )}
         </button>
 
-        {/* Add to Cart */}
         <button
           onClick={add}
           disabled={!canAdd || stock < 1 || adding}
@@ -189,9 +205,6 @@ export function ProductInfo({
         >
           {adding ? "Adding..." : "Add to cart"}
         </button>
-
-
-
       </div>
 
       <ProductAssurances />
