@@ -10,6 +10,7 @@ const reviewSchema = new mongoose.Schema(
     images: { type: [String], default: [] },
     // Ensures UI can label reviews as verified based on delivered orders
     isVerified: { type: Boolean, default: false },
+    isVerifiedPurchase: { type: Boolean, default: false },
     isHidden: { type: Boolean, default: false },
   },
   { timestamps: true },

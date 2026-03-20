@@ -167,7 +167,7 @@ export function ProductReviews({
                     <p className="text-white font-semibold text-sm md:text-base truncate">
                       {r.user?.name || "Customer"}
                     </p>
-                    {r.isVerified && (
+                    {r.isVerifiedPurchase === true && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
                         <HiBadgeCheck className="w-3.5 h-3.5" />
                         Verified Buyer

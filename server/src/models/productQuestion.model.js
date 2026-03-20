@@ -23,6 +23,7 @@ const productQuestionSchema = new mongoose.Schema(
 
     // Used by UI to visually highlight admin answers
     verified: { type: Boolean, default: false },
+    helpfulCount: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

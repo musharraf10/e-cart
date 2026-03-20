@@ -16,6 +16,7 @@ export function ProductQandA({ productId }) {
   const [loading, setLoading] = useState(true);
   const [answerDraft, setAnswerDraft] = useState("");
   const [answerSubmitting, setAnswerSubmitting] = useState(false);
+  const [helpfulLoadingId, setHelpfulLoadingId] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -143,30 +144,21 @@ export function ProductQandA({ productId }) {
                 </div>
               </button>
 
-              <div className="mt-4 rounded-xl border border-[#2f2f2f] bg-[#1d1d1d] p-4">
+              <div className="mt-4 rounded-xl border border-[#2f2f2f] bg-[#1d1d1d] p-4 space-y-3">
                 {item.answer ? (
                   <>
                     <p className={`text-sm leading-6 text-white/90 ${!isOpen && item.answer.length > 180 ? "line-clamp-3" : ""}`}>
                       <span className="text-accent font-semibold mr-1">A:</span>
                       {item.answer}
                     </p>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {item.verified && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-emerald-300 font-semibold">
-                            <HiCheckCircle className="w-3.5 h-3.5" />
-                            Verified answer
-                          </span>
-                        )}
-                        {item.answeredBy && <span>Answered by {item.answeredBy}</span>}
-                      </div>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[#323232] px-3 py-1.5 hover:border-accent/50 hover:text-white transition-colors"
-                      >
-                        <HiOutlineThumbUp className="w-4 h-4" />
-                        Helpful
-                      </button>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                      {item.verified && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-emerald-300 font-semibold">
+                          <HiCheckCircle className="w-3.5 h-3.5" />
+                          Verified answer
+                        </span>
+                      )}
+                      {item.answeredBy && <span>Answered by {item.answeredBy}</span>}
                     </div>
                   </>
                 ) : (
@@ -222,6 +214,44 @@ export function ProductQandA({ productId }) {
                     )}
                   </div>
                 )}
+
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#2f2f2f] pt-3 text-xs text-muted">
+                  <button
+                    type="button"
+                    disabled={helpfulLoadingId === item._id}
+                    onClick={async () => {
+                      const optimisticCount = Number(item.helpfulCount || 0) + 1;
+                      setHelpfulLoadingId(item._id);
+                      setItems((prev) =>
+                        prev.map((q) =>
+                          q._id === item._id ? { ...q, helpfulCount: optimisticCount } : q,
+                        ),
+                      );
+
+                      try {
+                        const { data } = await api.patch(`/products/questions/${item._id}/helpful`);
+                        setItems((prev) =>
+                          prev.map((q) => (q._id === item._id ? data : q)),
+                        );
+                      } catch {
+                        setItems((prev) =>
+                          prev.map((q) =>
+                            q._id === item._id
+                              ? { ...q, helpfulCount: Math.max(0, optimisticCount - 1) }
+                              : q,
+                          ),
+                        );
+                        notify("Unable to record feedback", "error");
+                      } finally {
+                        setHelpfulLoadingId(null);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[#323232] px-3 py-1.5 hover:border-accent/50 hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <HiOutlineThumbUp className="w-4 h-4" />
+                    Helpful ({item.helpfulCount || 0})
+                  </button>
+                </div>
               </div>
             </article>
           );
