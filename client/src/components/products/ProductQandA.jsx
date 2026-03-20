@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { HiCheckCircle, HiChevronDown, HiChevronUp } from "react-icons/hi";
+import { useEffect, useMemo, useState } from "react";
+import { HiCheckCircle, HiChevronDown, HiChevronUp, HiOutlineThumbUp } from "react-icons/hi";
 import api from "../../api/client.js";
 import { useToast } from "../ui/ToastProvider.jsx";
 import { useSelector } from "react-redux";
@@ -35,7 +35,6 @@ export function ProductQandA({ productId }) {
   }, [productId]);
 
   const displayedItems = expanded ? items : items.slice(0, 3);
-
   const openItem = items.find((i) => i._id === activeId) || null;
 
   useEffect(() => {
@@ -43,13 +42,18 @@ export function ProductQandA({ productId }) {
     setAnswerDraft(openItem.answer || "");
   }, [activeId, openItem?.answer]);
 
+  const itemCountLabel = useMemo(() => {
+    const count = items.length;
+    return `${count} question${count === 1 ? "" : "s"}`;
+  }, [items.length]);
+
   return (
-    <section className="mt-8 rounded-xl bg-[#171717] border border-[#262626] p-6 space-y-5">
+    <section className="mt-8 rounded-2xl bg-[#171717] border border-[#262626] p-6 space-y-5 shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Questions & Answers</h3>
           <p className="text-muted text-sm mt-1">
-            Ask about sizing, fabric, fit, or delivery.
+            {itemCountLabel}. Ask about sizing, fabric, fit, or delivery.
           </p>
         </div>
         {items.length > 3 && (
@@ -87,7 +91,7 @@ export function ProductQandA({ productId }) {
               notify("Unable to submit question", "error");
             });
         }}
-        className="flex gap-3"
+        className="flex flex-col sm:flex-row gap-3"
       >
         <input
           value={question}
@@ -103,127 +107,126 @@ export function ProductQandA({ productId }) {
         </button>
       </form>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {loading && <p className="text-muted text-sm">Loading questions…</p>}
         {!loading && items.length === 0 && (
           <p className="text-muted text-sm">No questions yet. Be the first to ask.</p>
         )}
         {displayedItems.map((item) => {
           const isOpen = activeId === item._id;
+          const hasLongQuestion = item.question?.length > 180;
+          const shouldClamp = hasLongQuestion && !isOpen;
           return (
-            <div
+            <article
               key={item._id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveId((prev) => (prev === item._id ? null : item._id))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setActiveId((prev) => (prev === item._id ? null : item._id));
-                }
-              }}
-              className="w-full text-left rounded-xl border border-[#262626] bg-primary p-4 active:scale-95 transition-transform"
+              className="rounded-2xl border border-[#2a2a2a] bg-gradient-to-b from-[#181818] to-[#121212] p-5"
             >
-              <p className="text-white font-medium">
-                Q: <span className="font-semibold">{item.question}</span>
-              </p>
-              {!isOpen && item.answer && (
-                <div className="mt-2 space-y-1">
-                  <p className="text-muted text-sm">
-                    A: <span className="text-white/90">{item.answer}</span>
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-muted">
-                    {item.verified && (
-                      <span className="inline-flex items-center gap-1 text-accent">
-                        <HiCheckCircle className="w-4 h-4" />
-                        Verified
-                      </span>
-                    )}
-                    {item.answeredBy && (
-                      <span className="capitalize">{item.answeredBy}</span>
-                    )}
+              <button
+                type="button"
+                onClick={() => setActiveId((prev) => (prev === item._id ? null : item._id))}
+                className="w-full text-left"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-2">
+                    <p className={`text-white font-medium leading-6 ${shouldClamp ? "line-clamp-2" : ""}`}>
+                      <span className="text-accent font-semibold mr-1">Q:</span>
+                      {item.question}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                      <span>{item.askedBy || "Customer"}</span>
+                      <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
+                  <span className="mt-1 text-muted">
+                    {isOpen ? <HiChevronUp className="w-5 h-5" /> : <HiChevronDown className="w-5 h-5" />}
+                  </span>
                 </div>
-              )}
-              {isOpen && (
-                <div className="mt-2">
-                  {item.answer ? (
-                    <>
-                      <p className="text-muted">
-                        A: <span className="text-white/90">{item.answer}</span>
-                      </p>
-                      <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+              </button>
+
+              <div className="mt-4 rounded-xl border border-[#2f2f2f] bg-[#1d1d1d] p-4">
+                {item.answer ? (
+                  <>
+                    <p className={`text-sm leading-6 text-white/90 ${!isOpen && item.answer.length > 180 ? "line-clamp-3" : ""}`}>
+                      <span className="text-accent font-semibold mr-1">A:</span>
+                      {item.answer}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
+                      <div className="flex flex-wrap items-center gap-2">
                         {item.verified && (
-                          <span className="inline-flex items-center gap-1 text-accent">
-                            <HiCheckCircle className="w-4 h-4" />
-                            Verified
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-emerald-300 font-semibold">
+                            <HiCheckCircle className="w-3.5 h-3.5" />
+                            Verified answer
                           </span>
                         )}
-                        {item.answeredBy && <span className="capitalize">{item.answeredBy}</span>}
+                        {item.answeredBy && <span>Answered by {item.answeredBy}</span>}
                       </div>
-                    </>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-muted text-sm">No answer yet.</p>
-                      {user && (
-                        <div className="space-y-2">
-                          <textarea
-                            value={answerDraft}
-                            onChange={(e) => setAnswerDraft(e.target.value)}
-                            placeholder="Write an answer"
-                            rows={3}
-                            className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent resize-none"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={answerSubmitting}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!answerDraft.trim()) return;
-                                try {
-                                  setAnswerSubmitting(true);
-                                  const endpoint = isAdmin
-                                    ? `/admin/questions/${item._id}/answer`
-                                    : `/products/questions/${item._id}/answer`;
-                                  const { data } = await api.patch(endpoint, {
-                                    answer: answerDraft,
-                                  });
-
-                                  setItems((prev) =>
-                                    prev.map((q) =>
-                                      String(q._id) === String(data._id) ? data : q,
-                                    ),
-                                  );
-                                  notify("Answer submitted.");
-                                } catch {
-                                  notify("Unable to submit answer", "error");
-                                } finally {
-                                  setAnswerSubmitting(false);
-                                }
-                              }}
-                              className="rounded-xl bg-accent text-primary px-4 py-2 text-sm font-semibold hover:opacity-90 active:scale-95 transition-transform disabled:opacity-60"
-                            >
-                              {answerSubmitting ? "Submitting…" : "Submit answer"}
-                            </button>
-                            {isAdmin && (
-                              <span className="text-[11px] text-muted">
-                                Admin answers get a Verified badge.
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#323232] px-3 py-1.5 hover:border-accent/50 hover:text-white transition-colors"
+                      >
+                        <HiOutlineThumbUp className="w-4 h-4" />
+                        Helpful
+                      </button>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-muted text-sm">No answer yet.</p>
+                    {user && isOpen && (
+                      <div className="space-y-2">
+                        <textarea
+                          value={answerDraft}
+                          onChange={(e) => setAnswerDraft(e.target.value)}
+                          placeholder="Write an answer"
+                          rows={3}
+                          className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent resize-none"
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={answerSubmitting}
+                            onClick={async () => {
+                              if (!answerDraft.trim()) return;
+                              try {
+                                setAnswerSubmitting(true);
+                                const endpoint = isAdmin
+                                  ? `/admin/questions/${item._id}/answer`
+                                  : `/products/questions/${item._id}/answer`;
+                                const { data } = await api.patch(endpoint, {
+                                  answer: answerDraft,
+                                });
+
+                                setItems((prev) =>
+                                  prev.map((q) =>
+                                    String(q._id) === String(data._id) ? data : q,
+                                  ),
+                                );
+                                notify("Answer submitted.");
+                              } catch {
+                                notify("Unable to submit answer", "error");
+                              } finally {
+                                setAnswerSubmitting(false);
+                              }
+                            }}
+                            className="rounded-xl bg-accent text-primary px-4 py-2 text-sm font-semibold hover:opacity-90 active:scale-95 transition-transform disabled:opacity-60"
+                          >
+                            {answerSubmitting ? "Submitting…" : "Submit answer"}
+                          </button>
+                          {isAdmin && (
+                            <span className="text-[11px] text-muted">
+                              Admin answers get a Verified badge.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </article>
           );
         })}
       </div>
     </section>
   );
 }
-

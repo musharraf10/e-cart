@@ -1,6 +1,8 @@
+import jwt from "jsonwebtoken";
 import { Review } from "../models/review.model.js";
 import { Product } from "../models/product.model.js";
 import { Order } from "../models/order.model.js";
+import { User } from "../models/user.model.js";
 
 async function recalculateProductRatings(productId) {
   const visibleReviews = await Review.find({ product: productId, isHidden: false });
@@ -20,15 +22,54 @@ async function recalculateProductRatings(productId) {
   await product.save();
 }
 
-export async function listProductReviews(req, res) {
-  const reviews = await Review.find({
-    product: req.params.productId,
-    isHidden: false,
-  })
-    .populate("user", "name")
-    .sort({ createdAt: -1 });
+async function resolveRequestUser(req) {
+  if (req.user?._id) return req.user;
 
-  res.json(reviews);
+  let token;
+  if (req.headers.authorization?.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return await User.findById(decoded.id).select("-password");
+  } catch {
+    return null;
+  }
+}
+
+async function checkCanReview(productId, userId) {
+  if (!userId) return false;
+
+  return Boolean(
+    await Order.exists({
+      user: userId,
+      status: "delivered",
+      items: { $elemMatch: { product: productId } },
+    }),
+  );
+}
+
+export async function listProductReviews(req, res) {
+  const [reviews, user] = await Promise.all([
+    Review.find({
+      product: req.params.productId,
+      isHidden: false,
+    })
+      .populate("user", "name")
+      .sort({ createdAt: -1 })
+      .lean(),
+    resolveRequestUser(req),
+  ]);
+
+  const canReview = await checkCanReview(req.params.productId, user?._id);
+
+  res.json({
+    reviews,
+    canReview,
+  });
 }
 
 export async function createReview(req, res) {
@@ -41,12 +82,7 @@ export async function createReview(req, res) {
     throw new Error("Product not found");
   }
 
-  // Verified purchase: only delivered orders allow reviews.
-  const hasDeliveredOrder = await Order.exists({
-    user: req.user._id,
-    status: "delivered",
-    items: { $elemMatch: { product: product._id } },
-  });
+  const hasDeliveredOrder = await checkCanReview(product._id, req.user._id);
 
   if (!hasDeliveredOrder) {
     res.status(403);
@@ -74,7 +110,6 @@ export async function createReview(req, res) {
 
     res.status(201).json(review);
   } catch (err) {
-    // Unique index: one review per user per product.
     if (err && err.code === 11000) {
       res.status(409);
       throw new Error("You already reviewed this product");
@@ -83,4 +118,4 @@ export async function createReview(req, res) {
   }
 }
 
-export { recalculateProductRatings };
+export { recalculateProductRatings, checkCanReview };

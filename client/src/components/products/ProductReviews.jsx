@@ -1,7 +1,20 @@
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { HiStar } from "react-icons/hi";
+import { HiBadgeCheck, HiStar } from "react-icons/hi";
 import api from "../../api/client.js";
+
+function StarRow({ rating, size = "w-4 h-4" }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((value) => (
+        <HiStar
+          key={value}
+          className={`${size} ${value <= Math.round(Number(rating) || 0) ? "text-accent" : "text-[#3a3a3a]"}`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function ProductReviews({
   productId,
@@ -9,6 +22,7 @@ export function ProductReviews({
   setReviews,
   ratingsAverage,
   ratingsCount,
+  canReview,
 }) {
   const user = useSelector((s) => s.auth.user);
   const [rating, setRating] = useState(5);
@@ -26,6 +40,13 @@ export function ProductReviews({
     return map;
   }, [reviews]);
 
+
+  const displayAverage = useMemo(() => {
+    if (!reviews.length) return Number(ratingsAverage) || 0;
+    return reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length;
+  }, [ratingsAverage, reviews]);
+
+  const displayCount = reviews.length || ratingsCount || 0;
   const sorted = useMemo(() => {
     const safe = [...reviews];
     safe.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -35,9 +56,7 @@ export function ProductReviews({
   const getUserId = (u) => {
     if (!u) return null;
     if (typeof u === "string") return u;
-    if (typeof u === "object") {
-      return u._id || u.id || null;
-    }
+    if (typeof u === "object") return u._id || u.id || null;
     return null;
   };
 
@@ -58,7 +77,6 @@ export function ProductReviews({
         const formData = new FormData();
         formData.append("rating", String(ratingNumber));
         if (comment.trim()) formData.append("comment", comment.trim());
-        // Backend expects field name: "images"
         images.forEach((file) => formData.append("images", file));
 
         await api.post(`/reviews/${productId}`, formData, {
@@ -71,7 +89,7 @@ export function ProductReviews({
         });
       }
       const { data } = await api.get(`/reviews/${productId}`);
-      setReviews(data);
+      setReviews(data.reviews || []);
       setComment("");
       setRating(5);
       imagePreviews.forEach((src) => URL.revokeObjectURL(src));
@@ -85,12 +103,12 @@ export function ProductReviews({
   };
 
   return (
-    <section className="mt-8 rounded-xl bg-[#171717] border border-[#262626] p-6 space-y-6">
+    <section className="mt-8 rounded-2xl bg-[#171717] border border-[#262626] p-6 space-y-6 shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Customer Reviews</h3>
           <p className="text-muted text-sm mt-1">
-            {ratingsCount || 0} review{(ratingsCount || 0) === 1 ? "" : "s"}
+            {displayCount} review{displayCount === 1 ? "" : "s"}
           </p>
         </div>
         {sorted.length > 3 && (
@@ -105,29 +123,21 @@ export function ProductReviews({
       </div>
 
       <div className="grid md:grid-cols-[220px,1fr] gap-6">
-        <div className="rounded-xl border border-[#262626] bg-primary p-4">
-          <div className="flex items-center gap-2">
+        <div className="rounded-2xl border border-[#2d2d2d] bg-primary p-5">
+          <div className="flex items-center gap-3">
             <p className="text-3xl font-semibold text-white">
-              {(ratingsAverage || 0).toFixed(1)}
+              {displayAverage.toFixed(1)}
             </p>
-            <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <HiStar
-                  key={i}
-                  className={`w-4 h-4 ${
-                    i <= Math.round(ratingsAverage || 0)
-                      ? "text-accent"
-                      : "text-[#262626]"
-                  }`}
-                />
-              ))}
+            <div>
+              <StarRow rating={displayAverage} />
+              <p className="text-xs text-muted mt-1">Overall product rating</p>
             </div>
           </div>
-          <p className="text-muted text-sm mt-1">
-            Based on {ratingsCount || 0} review{(ratingsCount || 0) === 1 ? "" : "s"}
+          <p className="text-muted text-sm mt-4">
+            Based on {displayCount} verified customer reviews.
           </p>
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-5 space-y-2.5">
             {[5, 4, 3, 2, 1].map((n) => {
               const count = breakdown[n] || 0;
               const total = reviews.length || 1;
@@ -135,11 +145,8 @@ export function ProductReviews({
               return (
                 <div key={n} className="flex items-center gap-2">
                   <span className="text-xs text-muted w-10">{n}★</span>
-                  <div className="flex-1 h-2 rounded-full bg-[#0f0f0f] border border-[#262626] overflow-hidden">
-                    <div
-                      className="h-full bg-accent"
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="flex-1 h-2 rounded-full bg-[#101010] border border-[#262626] overflow-hidden">
+                    <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="text-xs text-muted w-10 text-right">{pct}%</span>
                 </div>
@@ -148,44 +155,42 @@ export function ProductReviews({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {(showAll ? sorted : sorted.slice(0, 3)).map((r) => (
-            <div
+            <article
               key={r._id}
-              className="rounded-xl border border-[#262626] bg-primary p-4"
+              className="rounded-2xl border border-[#2a2a2a] bg-gradient-to-b from-[#181818] to-[#121212] p-5 space-y-3"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-white font-medium text-sm truncate">
-                    {r.user?.name || "Customer"}
-                  </p>
-                  <p className="text-muted text-xs mt-0.5">
-                    {new Date(r.createdAt).toLocaleDateString()}
-                  </p>
-                  {r.isVerified && (
-                    <span className="mt-2 inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
-                      Verified Purchase
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <HiStar
-                      key={i}
-                      className={`w-4 h-4 ${
-                        i <= Number(r.rating) ? "text-accent" : "text-[#262626]"
-                      }`}
-                    />
-                  ))}
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-2 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-white font-semibold text-sm md:text-base truncate">
+                      {r.user?.name || "Customer"}
+                    </p>
+                    {r.isVerified && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+                        <HiBadgeCheck className="w-3.5 h-3.5" />
+                        Verified Buyer
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
+                    <span>{new Date(r.createdAt).toLocaleDateString()}</span>
+                    <StarRow rating={r.rating} size="w-4 h-4" />
+                  </div>
                 </div>
               </div>
+
               {r.comment ? (
-                <p className="text-white/90 text-sm mt-3 leading-relaxed">
+                <p className="text-sm leading-6 text-white/90 whitespace-pre-line">
                   {r.comment}
                 </p>
-              ) : null}
+              ) : (
+                <p className="text-sm text-muted">Customer left a rating without a written review.</p>
+              )}
+
               {Array.isArray(r.images) && r.images.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 pt-1">
                   {r.images.slice(0, 6).map((img) => (
                     <div
                       key={img}
@@ -201,7 +206,7 @@ export function ProductReviews({
                   ))}
                 </div>
               )}
-            </div>
+            </article>
           ))}
           {reviews.length === 0 && (
             <p className="text-muted text-sm">No reviews yet.</p>
@@ -210,71 +215,83 @@ export function ProductReviews({
       </div>
 
       {user && !myReview ? (
-        <form onSubmit={submit} className="space-y-3 border-t border-[#262626] pt-6">
-          <p className="text-white font-medium text-sm">Rate & review</p>
-          <select
-            className="rounded-xl border border-[#262626] bg-primary px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent"
-            value={rating}
-            onChange={(e) => setRating(e.target.value)}
-          >
-            {[5, 4, 3, 2, 1].map((n) => (
-              <option key={n} value={n}>
-                {n} Stars
-              </option>
-            ))}
-          </select>
-          <textarea
-            className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent resize-none"
-            placeholder="Share your feedback"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={3}
-          />
-
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted">
-              Photos (optional, up to 5)
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="block w-full text-sm text-muted rounded-xl border border-[#262626] bg-primary px-3 py-2 focus:outline-none focus:border-accent"
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []).slice(0, 5);
-                // revoke old previews to avoid memory leaks
-                imagePreviews.forEach((p) => URL.revokeObjectURL(p));
-                setImages(files);
-                setImagePreviews(files.map((f) => URL.createObjectURL(f)));
-              }}
+        canReview ? (
+          <form onSubmit={submit} className="space-y-3 border-t border-[#262626] pt-6">
+            <p className="text-white font-medium text-sm">Write a review</p>
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <StarRow rating={rating} />
+              <span>Select your rating</span>
+            </div>
+            <select
+              className="rounded-xl border border-[#262626] bg-primary px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent"
+              value={rating}
+              onChange={(e) => setRating(e.target.value)}
+            >
+              {[5, 4, 3, 2, 1].map((n) => (
+                <option key={n} value={n}>
+                  {n} Stars
+                </option>
+              ))}
+            </select>
+            <textarea
+              className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent resize-none"
+              placeholder="Share your feedback"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
             />
-            {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                {imagePreviews.map((src, idx) => (
-                  <div
-                    key={src}
-                    className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden"
-                  >
-                    <img
-                      src={src}
-                      alt={`Preview ${idx + 1}`}
-                      className="w-full h-20 object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-xl bg-accent text-primary px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-50 active:scale-95 transition-transform"
-          >
-            {submitting ? "Submitting…" : "Submit review"}
-          </button>
-        </form>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted">
+                Photos (optional, up to 5)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="block w-full text-sm text-muted rounded-xl border border-[#262626] bg-primary px-3 py-2 focus:outline-none focus:border-accent"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []).slice(0, 5);
+                  imagePreviews.forEach((p) => URL.revokeObjectURL(p));
+                  setImages(files);
+                  setImagePreviews(files.map((f) => URL.createObjectURL(f)));
+                }}
+              />
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {imagePreviews.map((src, idx) => (
+                    <div
+                      key={src}
+                      className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden"
+                    >
+                      <img
+                        src={src}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-20 object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-xl bg-accent text-primary px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-50 active:scale-95 transition-transform"
+            >
+              {submitting ? "Submitting…" : "Submit review"}
+            </button>
+          </form>
+        ) : (
+          <div className="border-t border-[#262626] pt-6 rounded-2xl bg-primary/60 px-4 py-4">
+            <p className="text-white font-medium text-sm">Purchase this product to write a review</p>
+            <p className="text-muted text-sm mt-1">
+              Reviews unlock after your order is delivered.
+            </p>
+          </div>
+        )
       ) : user && myReview ? (
         <div className="border-t border-[#262626] pt-6">
           <p className="text-white font-medium text-sm">Thanks for your review!</p>

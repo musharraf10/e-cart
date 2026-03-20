@@ -1,6 +1,9 @@
+import jwt from "jsonwebtoken";
 import { Product } from "../models/product.model.js";
+import { User } from "../models/user.model.js";
 
-function withDerivedFields(productDoc) {
+function withDerivedFields(productDoc, options = {}) {
+  const { wishlistedProductIds = [] } = options;
   const product = productDoc.toObject ? productDoc.toObject() : productDoc;
   const variants = product.variants || [];
   const sizes = [...new Set(variants.map((v) => v.size).filter(Boolean))];
@@ -19,7 +22,26 @@ function withDerivedFields(productDoc) {
     colors,
     inventoryCount,
     variants,
+    isWishlisted: wishlistedProductIds.includes(String(product._id)),
   };
+}
+
+async function getRequestWishlistProductIds(req) {
+  let token;
+  if (req.headers.authorization?.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (!token) return [];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select("wishlist");
+    if (!user) return [];
+    return (user.wishlist || []).map((id) => String(id));
+  } catch {
+    return [];
+  }
 }
 
 export async function listProducts(req, res) {
@@ -50,13 +72,14 @@ export async function listProducts(req, res) {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const [items, total] = await Promise.all([
+  const [items, total, wishlistedProductIds] = await Promise.all([
     Product.find(filters).populate("category", "name slug").sort(sortOption).skip(skip).limit(Number(limit)),
     Product.countDocuments(filters),
+    getRequestWishlistProductIds(req),
   ]);
 
   res.json({
-    items: items.map(withDerivedFields),
+    items: items.map((item) => withDerivedFields(item, { wishlistedProductIds })),
     page: Number(page),
     totalPages: Math.ceil(total / Number(limit)),
     total,
@@ -64,20 +87,22 @@ export async function listProducts(req, res) {
 }
 
 export async function getProductBySlug(req, res) {
-  const product = await Product.findOne({ slug: req.params.slug }).populate("category", "name slug");
+  const [product, wishlistedProductIds] = await Promise.all([
+    Product.findOne({ slug: req.params.slug }).populate("category", "name slug"),
+    getRequestWishlistProductIds(req),
+  ]);
+
   if (!product || !product.isVisible) {
     res.status(404);
     throw new Error("Product not found");
   }
 
-  // Ensure `colorImages` (Mongoose Map) is serialized as a plain object.
-  // This makes frontend indexing by color reliable.
   const plainProduct = product.toObject ? product.toObject() : product;
   plainProduct.colorImages = product.colorImages
     ? Object.fromEntries(product.colorImages)
     : {};
 
-  res.json(withDerivedFields(plainProduct));
+  res.json(withDerivedFields(plainProduct, { wishlistedProductIds }));
 }
 
 export async function getRelatedProducts(req, res) {
@@ -95,7 +120,7 @@ export async function getRelatedProducts(req, res) {
     .limit(Number(req.query.limit || 4))
     .sort({ averageRating: -1, createdAt: -1 });
 
-  res.json({ items: items.map(withDerivedFields) });
+  res.json({ items: items.map((item) => withDerivedFields(item)) });
 }
 
 export async function searchProducts(req, res) {
@@ -110,5 +135,5 @@ export async function searchProducts(req, res) {
     $or: [{ name: regex }, { description: regex }],
   }).limit(20);
 
-  res.json({ items: items.map(withDerivedFields) });
+  res.json({ items: items.map((item) => withDerivedFields(item)) });
 }
