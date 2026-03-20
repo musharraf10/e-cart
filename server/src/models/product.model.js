@@ -3,10 +3,10 @@ import mongoose from "mongoose";
 const variantSchema = new mongoose.Schema(
   {
     size: { type: String, required: true, set: (val) => val.toUpperCase() },
-    color: { type: String, required: true },
+    color: { type: String, required: true, trim: true },
     stock: { type: Number, required: true, min: 0 },
     price: { type: Number, required: true, min: 0 },
-    sku: { type: String, required: true },
+    sku: { type: String, required: true, trim: true },
   },
   { _id: false },
 );
@@ -19,10 +19,6 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     originalPrice: { type: Number },
     images: [{ type: String }],
-    // Optional color-specific images for each product color.
-    // Example:
-    // colorImages: { "Black": ["black1.jpg"], "White": ["white1.jpg"] }
-    // Kept optional to avoid breaking existing products.
     colorImages: {
       type: Map,
       of: [String],
@@ -38,5 +34,22 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+productSchema.pre("validate", function validateVariantImages(next) {
+  const colors = [...new Set((this.variants || []).map((variant) => variant.color).filter(Boolean))];
+  const colorImageEntries = this.colorImages instanceof Map ? this.colorImages : new Map(Object.entries(this.colorImages || {}));
+
+  colors.forEach((color) => {
+    const colorGallery = colorImageEntries.get(color) || [];
+    if (!Array.isArray(colorGallery) || colorGallery.filter(Boolean).length === 0) {
+      if ((this.images || []).length > 0) {
+        colorImageEntries.set(color, [...this.images]);
+      }
+    }
+  });
+
+  this.colorImages = colorImageEntries;
+  next();
+});
 
 export const Product = mongoose.model("Product", productSchema);

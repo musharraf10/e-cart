@@ -10,6 +10,24 @@ import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 
+function normalizeColorImages(colorImages = {}, variants = [], fallbackImages = []) {
+  const entries = Object.entries(colorImages || {}).map(([color, images]) => ([
+    String(color || "").trim(),
+    Array.isArray(images) ? images.filter(Boolean) : (images ? [images] : []),
+  ])).filter(([color]) => color);
+
+  const normalized = Object.fromEntries(entries);
+  const colors = [...new Set((variants || []).map((variant) => String(variant.color || "").trim()).filter(Boolean))];
+
+  colors.forEach((color) => {
+    if (!normalized[color] || normalized[color].length === 0) {
+      normalized[color] = Array.isArray(fallbackImages) ? fallbackImages.filter(Boolean) : [];
+    }
+  });
+
+  return normalized;
+}
+
 function normalizeProductPayload(payload) {
   const next = { ...payload };
 
@@ -30,6 +48,9 @@ function normalizeProductPayload(payload) {
     price: Number(variant.price) || 0,
     sku: variant.sku,
   })).filter((variant) => variant.size && variant.color && variant.sku);
+
+  next.images = Array.isArray(next.images) ? next.images.filter(Boolean) : [];
+  next.colorImages = normalizeColorImages(next.colorImages, next.variants, next.images);
 
   if (!next.price && next.variants.length) {
     next.price = Math.min(...next.variants.map((v) => v.price));

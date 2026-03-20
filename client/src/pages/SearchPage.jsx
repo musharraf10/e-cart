@@ -6,6 +6,7 @@ import api from "../api/client.js";
 import { ProductGrid } from "../components/ui/ProductGrid.jsx";
 import { ProductGridSkeleton } from "../components/ui/LoadingSkeleton.jsx";
 import { ProductCard } from "../components/products/ProductCard.jsx";
+import { expandProductsByVariant } from "../utils/productVariants.js";
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export function SearchPage() {
     if (sortBy === "price-high") data.sort((a, b) => (b.price || 0) - (a.price || 0));
     if (sortBy === "rating") data.sort((a, b) => (b.ratingsAverage || 0) - (a.ratingsAverage || 0));
 
-    return data;
+    return expandProductsByVariant(data);
   }, [allProducts, q, activeCategory, onlyNewDrops, sortBy, categories]);
 
   return (
@@ -179,7 +180,7 @@ export function SearchPage() {
       ) : filtered.length ? (
         <ProductGrid>
           {filtered.map((product) => (
-            <ProductCard key={product._id} product={product} compact />
+            <ProductCard key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} product={product} compact />
           ))}
         </ProductGrid>
       ) : (

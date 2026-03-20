@@ -6,14 +6,14 @@ export function HeroCarousel({ products = [] }) {
   const slides = useMemo(
     () =>
       (products || [])
-        .filter((p) => p && (p.images?.[0] || p.name))
+        .filter((p) => p && (p.displayImage || p.images?.[0] || p.name))
         .slice(0, 4)
         .map((p) => ({
-          id: p._id,
+          id: p.variantKey || `${p._id}-${p.displayColor || "default"}`,
           title: p.name,
-          subtitle: p.category?.name || "New drop",
-          image: p.images?.[0],
-          href: `/product/${p.slug}`,
+          subtitle: p.displayColor ? `${p.category?.name || "New drop"} · ${p.displayColor}` : (p.category?.name || "New drop"),
+          image: p.displayImage || p.images?.[0],
+          href: p.routeTo || `/product/${p.slug}`,
         })),
     [products],
   );

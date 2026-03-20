@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 function withDerivedFields(productDoc, options = {}) {
   const { wishlistedProductIds = [] } = options;
   const product = productDoc.toObject ? productDoc.toObject() : productDoc;
+  product.colorImages = product.colorImages instanceof Map ? Object.fromEntries(product.colorImages) : (product.colorImages || {});
   const variants = product.variants || [];
   const sizes = [...new Set(variants.map((v) => v.size).filter(Boolean))];
   const colors = [...new Set(variants.map((v) => v.color).filter(Boolean))];

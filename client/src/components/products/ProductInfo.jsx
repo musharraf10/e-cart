@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { HiStar, HiOutlineHeart, HiHeart } from "react-icons/hi";
 import api from "../../api/client.js";
@@ -6,6 +6,7 @@ import { addToCart } from "../../store/slices/cartSlice.js";
 import { ProductVariants } from "./ProductVariants.jsx";
 import { ProductAssurances } from "./ProductAssurances.jsx";
 import { useToast } from "../ui/ToastProvider.jsx";
+import { getColorImageSet } from "../../utils/productVariants.js";
 
 export function ProductInfo({
   product,
@@ -28,24 +29,20 @@ export function ProductInfo({
     setLiked(Boolean(product?.isWishlisted));
   }, [product?.isWishlisted, product?._id]);
 
-  const selectedVariant = (product.variants || []).find(
-    (variant) => variant.size === size && variant.color === color
+  const selectedVariant = useMemo(
+    () => (product.variants || []).find((variant) => variant.size === size && variant.color === color),
+    [color, product.variants, size],
   );
 
   const selectedPrice = selectedVariant?.price ?? product.price;
+  const selectedImage = getColorImageSet(product, color)[0] || product.images?.[0] || "";
   const hasVariantData = (product.variants || []).length > 0;
 
-  const canAdd = hasVariantData
-    ? Boolean(selectedVariant && size && color)
-    : true;
+  const canAdd = hasVariantData ? Boolean(selectedVariant && size && color) : true;
 
   const discount =
     product.originalPrice && product.originalPrice > selectedPrice
-      ? Math.round(
-        ((product.originalPrice - selectedPrice) /
-          product.originalPrice) *
-        100
-      )
+      ? Math.round(((product.originalPrice - selectedPrice) / product.originalPrice) * 100)
       : 0;
 
   const stock = selectedVariant?.stock ?? 0;
@@ -68,12 +65,12 @@ export function ProductInfo({
         product: product._id,
         name: product.name,
         price: selectedPrice,
-        image: product.images?.[0],
+        image: selectedImage,
         qty,
         size,
         color,
         sku: selectedVariant?.sku,
-      })
+      }),
     );
 
     notify("Added to cart");
@@ -117,6 +114,9 @@ export function ProductInfo({
           <span>{(product.ratingsAverage || 0).toFixed(1)}</span>
           <span>({product.ratingsCount || 0} reviews)</span>
         </div>
+        <p className="mt-2 text-sm text-muted">
+          Selected color: <span className="font-medium text-white">{color || "Not selected"}</span>
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -151,7 +151,7 @@ export function ProductInfo({
         </p>
       )}
 
-      <div className="bg-[#171717] border border-[#262626] rounded-xl p-4">
+      <div className="bg-[#171717] border border-[#262626] rounded-xl p-4 transition-all duration-200">
         <ProductVariants
           variants={product.variants}
           size={size}
@@ -165,7 +165,7 @@ export function ProductInfo({
         <div className="flex items-center rounded-xl border border-[#262626] overflow-hidden text-sm bg-primary h-12">
           <button
             type="button"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
+            onClick={() => setQty((currentQty) => Math.max(1, currentQty - 1))}
             className="px-4 h-full text-muted hover:text-white"
           >
             −
@@ -177,7 +177,7 @@ export function ProductInfo({
 
           <button
             type="button"
-            onClick={() => setQty((q) => q + 1)}
+            onClick={() => setQty((currentQty) => currentQty + 1)}
             className="px-4 h-full text-muted hover:text-white"
           >
             +
@@ -206,6 +206,10 @@ export function ProductInfo({
           {adding ? "Adding..." : "Add to cart"}
         </button>
       </div>
+
+      {selectedImage ? (
+        <p className="text-xs text-muted">Cart will use the selected color image for this SKU.</p>
+      ) : null}
 
       <ProductAssurances />
     </div>
