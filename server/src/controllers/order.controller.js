@@ -10,13 +10,32 @@ function findVariant(product, item) {
   );
 }
 
+function isStripeCompatibleHttpUrl(value) {
+  if (!value || String(value).length > 2048) {
+    return false;
+  }
+
+  try {
+    const url = new URL(String(value));
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function getBaseUrl(req) {
-  return (
-    process.env.STORE_URL
-    || process.env.CLIENT_URL
-    || req.headers.origin
-    || "http://localhost:5173"
-  );
+  const candidates = [
+    process.env.STORE_URL,
+    process.env.CLIENT_URL,
+    req.headers.origin,
+    "http://localhost:5173",
+  ];
+
+  return candidates.find(isStripeCompatibleHttpUrl) || "http://localhost:5173";
+}
+
+function getStripeImageUrls(image) {
+  return isStripeCompatibleHttpUrl(image) ? [String(image)] : [];
 }
 
 async function buildOrderPayload({ items, couponCode, shippingAddress }) {
@@ -139,7 +158,7 @@ async function createStripeCheckoutSession({ req, order }) {
         unit_amount: Math.round(Number(item.price) * 100),
         product_data: {
           name: item.name,
-          images: item.image ? [item.image] : [],
+          images: getStripeImageUrls(item.image),
           metadata: {
             productId: String(item.product),
             sku: item.sku || "",
