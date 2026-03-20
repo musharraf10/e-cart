@@ -29,7 +29,7 @@ export function Header() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQ.trim()) {
-      navigate(`/?q=${encodeURIComponent(searchQ.trim())}`);
+      navigate(`/search?q=${encodeURIComponent(searchQ.trim())}`);
       setSearchOpen(false);
       setSearchQ("");
     }

@@ -7,6 +7,8 @@ import { SearchPage } from "./pages/SearchPage.jsx";
 import { ProductDetailPage } from "./pages/ProductDetailPage.jsx";
 import { CartPage } from "./pages/CartPage.jsx";
 import { CheckoutPage } from "./pages/CheckoutPage.jsx";
+import { SuccessPage } from "./pages/SuccessPage.jsx";
+import { CancelPage } from "./pages/CancelPage.jsx";
 import { AuthPage } from "./pages/AuthPage.jsx";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage.jsx";
 import { AdminProductsPage } from "./pages/admin/AdminProductsPage.jsx";
@@ -52,6 +54,8 @@ export default function App() {
         <Route path="/product/:slug" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/success" element={<SuccessPage />} />
+        <Route path="/cancel" element={<CancelPage />} />
         <Route path="/auth" element={<AuthPage />} />
 
         <Route element={<ProtectedRoute />}>
