@@ -10,7 +10,7 @@ export function HorizontalProductRow({ products = [], className = "" }) {
       <div className="flex gap-3 snap-x snap-mandatory pb-2 sm:gap-4">
         {products.map((p) => (
           <div
-            key={p._id}
+            key={p.variantKey || `${p._id}-${p.displayColor || "default"}`}
             className="snap-start min-w-[75%] sm:min-w-[48%] md:min-w-[32%] lg:min-w-[24%]"
           >
             <ProductCard product={p} />
@@ -20,4 +20,3 @@ export function HorizontalProductRow({ products = [], className = "" }) {
     </div>
   );
 }
-

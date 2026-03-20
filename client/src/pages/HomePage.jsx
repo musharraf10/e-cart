@@ -8,6 +8,7 @@ import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { HorizontalProductRow } from "../components/ui/HorizontalProductRow.jsx";
 import Categories from "../pages/CategoryPage.jsx";
 import api from "../api/client.js";
+import { expandProductsByVariant } from "../utils/productVariants.js";
 
 export function HomePage() {
   const [allProducts, setAllProducts] = useState([]);
@@ -40,7 +41,10 @@ export function HomePage() {
     };
   }, []);
 
-  const heroProducts = useMemo(() => allProducts.slice(0, 4), [allProducts]);
+  const heroProducts = useMemo(() => expandProductsByVariant(allProducts).slice(0, 4), [allProducts]);
+  const expandedNewDrops = useMemo(() => expandProductsByVariant(newDrops), [newDrops]);
+  const expandedTrendingProducts = useMemo(() => expandProductsByVariant(trendingProducts), [trendingProducts]);
+  const expandedAllProducts = useMemo(() => expandProductsByVariant(allProducts), [allProducts]);
 
   return (
     <motion.div
@@ -57,7 +61,7 @@ export function HomePage() {
 
       <section>
         <SectionHeader title="New Drops" subtitle="Freshly added styles" />
-        {loading ? <ProductGridSkeleton count={4} /> : <HorizontalProductRow products={newDrops} />}
+        {loading ? <ProductGridSkeleton count={4} /> : <HorizontalProductRow products={expandedNewDrops} />}
       </section>
 
       <section>
@@ -66,8 +70,8 @@ export function HomePage() {
           <ProductGridSkeleton count={8} />
         ) : (
           <ProductGrid>
-            {trendingProducts.map((product) => (
-              <ProductCard key={product._id} product={product} />
+            {expandedTrendingProducts.map((product) => (
+              <ProductCard key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} product={product} />
             ))}
           </ProductGrid>
         )}
@@ -77,10 +81,10 @@ export function HomePage() {
         <SectionHeader title="All Products" subtitle="Explore everything in NoorFit" />
         {loading ? (
           <ProductGridSkeleton count={8} />
-        ) : allProducts.length ? (
+        ) : expandedAllProducts.length ? (
           <ProductGrid>
-            {allProducts.map((product) => (
-              <motion.div key={product._id} layout>
+            {expandedAllProducts.map((product) => (
+              <motion.div key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} layout>
                 <ProductCard product={product} />
               </motion.div>
             ))}

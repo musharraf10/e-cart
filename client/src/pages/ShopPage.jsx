@@ -6,6 +6,7 @@ import { ProductCard } from "../components/products/ProductCard.jsx";
 import { ProductGrid } from "../components/ui/ProductGrid.jsx";
 import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { ProductGridSkeleton } from "../components/ui/LoadingSkeleton.jsx";
+import { expandProductsByVariant } from "../utils/productVariants.js";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -108,6 +109,7 @@ export function ShopPage() {
   };
 
   const hasActiveFilters = category || minPrice || maxPrice || size || color;
+  const expandedItems = useMemo(() => expandProductsByVariant(items), [items]);
 
   return (
     <motion.div
@@ -224,7 +226,7 @@ export function ShopPage() {
         ) : (
           <>
             <AnimatePresence mode="wait">
-              {items.length === 0 ? (
+              {expandedItems.length === 0 ? (
                 <motion.div
                   key="empty"
                   initial={{ opacity: 0 }}
@@ -243,8 +245,8 @@ export function ShopPage() {
                 </motion.div>
               ) : (
                 <ProductGrid key="grid">
-                  {items.map((p) => (
-                    <ProductCard key={p._id} product={p} />
+                  {expandedItems.map((p) => (
+                    <ProductCard key={p.variantKey || `${p._id}-${p.displayColor || "default"}`} product={p} />
                   ))}
                 </ProductGrid>
               )}
