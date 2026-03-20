@@ -79,7 +79,7 @@ export function Header() {
             </nav>
 
             <div className="flex items-center gap-2 justify-self-end">
-              {!isAdminRoute && (
+              {/* {!isAdminRoute && (
                 <NavLink
                   to="/cart"
                   className={({ isActive }) =>
@@ -96,7 +96,7 @@ export function Header() {
                   )}
                 </NavLink>
 
-              )}
+              )} */}
 
               {!isAdminRoute && (
                 <>
