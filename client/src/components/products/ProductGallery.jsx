@@ -25,7 +25,6 @@ export function ProductGallery({ images = [], alt, variantKey }) {
     setTransitionKey((k) => k + 1);
   }, [variantKey, imagesSignature]);
 
-  console.log("IMAGES RECEIVED:", images)
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
