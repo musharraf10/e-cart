@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
-import { HiArrowLeft, HiSearch, HiShoppingCart, HiUser, HiLogout, HiHeart } from "react-icons/hi";
+import { HiArrowLeft, HiSearch, HiShoppingCart, HiUser, HiLogout } from "react-icons/hi";
 import { logout } from "../../store/slices/authSlice.js";
 import { MobileNavigation } from "./MobileNavigation.jsx";
 
@@ -16,31 +16,13 @@ export function Header() {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
 
   const isHome = location.pathname === "/";
   const isSearchPage = location.pathname === "/search";
   const isAdminRoute = location.pathname.startsWith("/admin");
 
-  useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [location.pathname]);
-
   const handleLogout = () => {
     dispatch(logout());
-    setMenuOpen(false);
     navigate("/");
   };
 
@@ -83,9 +65,8 @@ export function Header() {
               <button
                 type="button"
                 onClick={() => navigate("/search")}
-                className={`h-11 w-full rounded-xl border border-[#262626] bg-card px-3 flex items-center gap-2 text-left ${
-                  isSearchPage ? "opacity-0 pointer-events-none" : "opacity-100"
-                }`}
+                className={`h-11 w-full rounded-xl border border-[#262626] bg-card px-3 flex items-center gap-2 text-left ${isSearchPage ? "opacity-0 pointer-events-none" : "opacity-100"
+                  }`}
                 aria-label="Open search"
               >
                 <HiSearch className="w-5 h-5 text-muted" />
@@ -102,8 +83,7 @@ export function Header() {
                 <NavLink
                   to="/cart"
                   className={({ isActive }) =>
-                    `relative p-2 rounded-xl transition-colors ${
-                      isActive ? "text-accent" : "text-white/80 hover:text-accent"
+                    `relative p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
                     }`
                   }
                   aria-label="Cart"
@@ -115,55 +95,22 @@ export function Header() {
                     </span>
                   )}
                 </NavLink>
+
               )}
 
               {!isAdminRoute && (
                 <>
                   {user ? (
-                    <div className="relative" ref={menuRef}>
-                      <button
-                        type="button"
-                        onClick={() => setMenuOpen((prev) => !prev)}
-                        className={`p-2 rounded-xl transition-colors ${menuOpen ? "text-accent" : "text-white/80 hover:text-accent"}`}
-                        aria-label="Open account menu"
-                        aria-expanded={menuOpen}
-                      >
-                        <HiUser className="w-6 h-6" />
-                      </button>
-                      <AnimatePresence>
-                        {menuOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 8 }}
-                            className="absolute right-0 top-[calc(100%+8px)] w-52 rounded-2xl border border-[#262626] bg-card p-2 shadow-2xl"
-                          >
-                            <Link
-                              to="/account/profile"
-                              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white hover:bg-[#262626]"
-                            >
-                              <HiUser className="w-4 h-4 text-muted" />
-                              Account
-                            </Link>
-                            <Link
-                              to="/account/wishlist"
-                              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white hover:bg-[#262626]"
-                            >
-                              <HiHeart className="w-4 h-4 text-muted" />
-                              Wishlist
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={handleLogout}
-                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-400 hover:bg-red-900/20"
-                            >
-                              <HiLogout className="w-4 h-4" />
-                              Logout
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    <NavLink
+                      to="/account"
+                      className={({ isActive }) =>
+                        `p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
+                        }`
+                      }
+                      aria-label="Account"
+                    >
+                      <HiUser className="w-6 h-6" />
+                    </NavLink>
                   ) : (
                     <NavLink
                       to="/auth"
@@ -222,6 +169,24 @@ export function Header() {
                     </button>
                   )}
                 </AnimatePresence>
+
+                {user && !isAdminRoute ? (
+                  <div className="flex items-center gap-2">
+                    {user.role === "admin" && (
+                      <NavLink
+                        to="/admin/dashboard"
+                        className={navLinkClass}
+                      >
+                        Admin
+                      </NavLink>
+                    )}
+                    <button type="button" onClick={handleLogout} className="p-2 rounded-xl text-white/80 hover:text-[#d4af37] transition-colors" aria-label="Logout">
+                      <HiLogout className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div />
+                )}
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import api from "../api/client.js";
-import { HiChevronRight, HiClipboardList, HiCog, HiHeart, HiLocationMarker, HiUser } from "react-icons/hi";
+import { HiChevronRight, HiClipboardList, HiCog, HiHeart, HiLocationMarker, HiUser, HiLogout } from "react-icons/hi";
 
 export function AccountPage() {
   const user = useSelector((s) => s.auth.user);
@@ -71,6 +71,7 @@ export function AccountPage() {
           { to: "/account/addresses", icon: HiLocationMarker, label: "Addresses" },
           { to: "/account/wishlist", icon: HiHeart, label: "Wishlist" },
           { to: "/account/settings", icon: HiCog, label: "Settings" },
+          { to: "/account/settings", icon: HiLogout, label: "Logout" },
         ].map(({ to, icon: Icon, label }) => (
           <Link
             key={to}

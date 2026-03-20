@@ -103,7 +103,7 @@ export function ProductReviews({
   };
 
   return (
-    <section className="mt-8 rounded-2xl bg-[#171717] border border-[#262626] p-6 space-y-6 shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
+    <section className="mt-8 rounded-2xl p-6 space-y-6 shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Customer Reviews</h3>
@@ -123,7 +123,7 @@ export function ProductReviews({
       </div>
 
       <div className="grid md:grid-cols-[220px,1fr] gap-6">
-        <div className="rounded-2xl border border-[#2d2d2d] bg-primary p-5">
+        <div className="rounded-2xl  p-5">
           <div className="flex items-center gap-3">
             <p className="text-3xl font-semibold text-white">
               {displayAverage.toFixed(1)}
@@ -285,12 +285,7 @@ export function ProductReviews({
             </button>
           </form>
         ) : (
-          <div className="border-t border-[#262626] pt-6 rounded-2xl bg-primary/60 px-4 py-4">
-            <p className="text-white font-medium text-sm">Purchase this product to write a review</p>
-            <p className="text-muted text-sm mt-1">
-              Reviews unlock after your order is delivered.
-            </p>
-          </div>
+          <></>
         )
       ) : user && myReview ? (
         <div className="border-t border-[#262626] pt-6">

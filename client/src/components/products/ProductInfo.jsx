@@ -42,10 +42,10 @@ export function ProductInfo({
   const discount =
     product.originalPrice && product.originalPrice > selectedPrice
       ? Math.round(
-          ((product.originalPrice - selectedPrice) /
-            product.originalPrice) *
-            100
-        )
+        ((product.originalPrice - selectedPrice) /
+          product.originalPrice) *
+        100
+      )
       : 0;
 
   const stock = selectedVariant?.stock ?? 0;
