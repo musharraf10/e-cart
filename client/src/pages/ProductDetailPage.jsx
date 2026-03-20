@@ -71,7 +71,7 @@ export function ProductDetailPage() {
     );
 
     if (available.length) {
-      setSize(available[0].size);
+      setSize(available.size);
     }
   }, [color, product]);
 
