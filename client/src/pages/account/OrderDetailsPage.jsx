@@ -229,9 +229,6 @@ export function OrderDetailsPage() {
               Shipping Address
             </h2>
             <div className="space-y-2 text-sm">
-              <p className="text-white font-semibold">
-                {order.shippingAddress?.name}
-              </p>
               <p className="text-[#a1a1aa]">
                 {order.shippingAddress?.line1}
               </p>
@@ -242,7 +239,7 @@ export function OrderDetailsPage() {
               )}
               <p className="text-[#a1a1aa]">
                 {order.shippingAddress?.city}, {order.shippingAddress?.state}{" "}
-                {order.shippingAddress?.zip}
+                {order.shippingAddress?.postalCode}
               </p>
               <p className="text-[#a1a1aa]">{order.shippingAddress?.country}</p>
             </div>
