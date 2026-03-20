@@ -37,10 +37,13 @@ const orderSchema = new mongoose.Schema(
       transactionId: String,
     },
     stripePaymentId: String,
+    stripeSessionId: String,
     subtotal: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     total: { type: Number, required: true },
     couponCode: String,
+    stockDeducted: { type: Boolean, default: false },
+    couponApplied: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["pending", "processing", "confirmed", "shipped", "delivered", "cancelled"],

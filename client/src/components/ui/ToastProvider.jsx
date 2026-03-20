@@ -29,8 +29,8 @@ export function ToastProvider({ children }) {
               exit={{ opacity: 0, y: -14, scale: 0.96 }}
               className={`pointer-events-auto rounded-xl border px-4 py-3 text-sm shadow-card ${
                 toast.type === "error"
-                  ? "border-red-700/60 bg-[#2a1111] text-red-200"
-                  : "border-[#3d3211] bg-[#1f1b10] text-[#f5d67a]"
+                  ? "border-border bg-card text-red-300"
+                  : "border-border bg-card text-accent"
               }`}
             >
               {toast.message}
