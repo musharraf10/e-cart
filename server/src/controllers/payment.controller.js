@@ -16,12 +16,8 @@ async function deductStockForOrder(order) {
   return true;
 }
 
-function getOrderIdFromEventObject(object) {
-  return object?.metadata?.orderId || object?.client_reference_id || null;
-}
-
-async function markOrderPaid(order, paymentReference) {
-  if (order.paymentStatus === "paid") {
+async function markOrderPaid(order, paymentIntent) {
+  if (order.paymentStatus === "paid" && order.status === "confirmed") {
     return order;
   }
 
@@ -31,7 +27,7 @@ async function markOrderPaid(order, paymentReference) {
     order.status = "cancelled";
     order.paymentDetails = {
       provider: "stripe",
-      transactionId: paymentReference,
+      transactionId: paymentIntent.id,
     };
     await order.save();
     return order;
@@ -39,13 +35,17 @@ async function markOrderPaid(order, paymentReference) {
 
   order.paymentStatus = "paid";
   order.status = "confirmed";
-  order.stripePaymentId = paymentReference;
+  order.stripePaymentId = paymentIntent.id;
   order.paymentDetails = {
     provider: "stripe",
-    transactionId: paymentReference,
+    transactionId: paymentIntent.id,
   };
-  await markCouponUsed(order.couponCode);
-  order.couponApplied = Boolean(order.couponCode);
+
+  if (order.couponCode && !order.couponApplied) {
+    await markCouponUsed(order.couponCode);
+    order.couponApplied = true;
+  }
+
   await order.save();
   return order;
 }
@@ -64,6 +64,25 @@ async function markOrderFailed(order, paymentReference) {
   };
   await order.save();
   return order;
+}
+
+function assertWebhookPaymentMatchesOrder(order, paymentIntent) {
+  const expectedAmount = Math.round(order.total * 100);
+  const actualAmount = Number(paymentIntent.amount || 0);
+  const actualCurrency = String(paymentIntent.currency || "").toLowerCase();
+  const metadataUserId = String(paymentIntent.metadata?.userId || "");
+
+  if (actualAmount !== expectedAmount) {
+    throw new Error(`Payment amount mismatch for order ${order._id}`);
+  }
+
+  if (actualCurrency !== "inr") {
+    throw new Error(`Payment currency mismatch for order ${order._id}`);
+  }
+
+  if (metadataUserId !== String(order.user)) {
+    throw new Error(`Payment user mismatch for order ${order._id}`);
+  }
 }
 
 export async function createPaymentIntent(req, res) {
@@ -131,28 +150,26 @@ export async function handleStripeWebhook(req, res) {
     );
 
     const object = event.data?.object;
-    const orderId = getOrderIdFromEventObject(object);
-    const paymentReference = object?.payment_intent || object?.id;
+    const paymentIntentId = object?.id || object?.payment_intent;
 
-    const order = orderId
-      ? await Order.findById(orderId)
-      : await Order.findOne({ stripePaymentId: paymentReference }).sort({ createdAt: -1 });
-
-    if (!order) {
-      console.warn("Stripe webhook order not found", { orderId, paymentReference, type: event.type });
+    if (!paymentIntentId) {
       return res.status(200).json({ received: true });
     }
 
-    if (event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded") {
-      await markOrderPaid(order, paymentReference);
+    const order = await Order.findOne({ stripePaymentId: paymentIntentId }).sort({ createdAt: -1 });
+
+    if (!order) {
+      console.warn("Stripe webhook order not found", { paymentIntentId, type: event.type });
+      return res.status(200).json({ received: true });
     }
 
-    if (
-      event.type === "payment_intent.payment_failed"
-      || event.type === "checkout.session.async_payment_failed"
-      || event.type === "checkout.session.expired"
-    ) {
-      await markOrderFailed(order, paymentReference);
+    if (event.type === "payment_intent.succeeded") {
+      assertWebhookPaymentMatchesOrder(order, object);
+      await markOrderPaid(order, object);
+    }
+
+    if (event.type === "payment_intent.payment_failed") {
+      await markOrderFailed(order, paymentIntentId);
     }
   } catch (error) {
     console.error("Stripe webhook error", error.message);

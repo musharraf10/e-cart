@@ -7,7 +7,7 @@ import { Elements, CardElement, useElements, useStripe } from "@stripe/react-str
 
 import api from "../api/client.js";
 import { clearCart } from "../store/slices/cartSlice.js";
-// import { useToast } from "@/components/ui/use-toast";  // ← uncomment & adjust path
+// import { useToast } from "@/components/ui/use-toast";  // ← uncomment when ready
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -68,7 +68,7 @@ function CheckoutForm() {
   const items = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  // const { toast } = useToast();     // ← uncomment when you add the import
+  // const { toast } = useToast();     // ← uncomment when using shadcn toast
 
   const stripe = useStripe();
   const elements = useElements();
@@ -89,13 +89,12 @@ function CheckoutForm() {
   const [successMessage, setSuccessMessage] = useState("");
   const [cardComplete, setCardComplete] = useState(false);
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
   const checkoutIssues = useMemo(() => getCheckoutIssues(items, address), [items, address]);
 
   const isProcessing =
     processingStage === "creating_intent" ||
     processingStage === "confirming_payment" ||
-    processingStage === "verifying_payment" ||
     processingStage === "creating_order";
 
   const canSubmit =
@@ -140,6 +139,7 @@ function CheckoutForm() {
 
     setErrorMessage("");
     setSuccessMessage("");
+    setProcessingStage("processing");
 
     try {
       if (paymentMethod === "cod") {
@@ -153,15 +153,15 @@ function CheckoutForm() {
         });
 
         dispatch(clearCart());
-        // toast({ title: "Order placed successfully." });   // ← modern toast
+        // toast?.({ title: "Order placed successfully." });
         navigate(`/success?orderId=${data.orderId}`);
         return;
       }
 
-      // ── Online payment flow ───────────────────────────────────────
+      // ── Online (Stripe) payment flow ───────────────────────────────
       const card = elements?.getElement(CardElement);
       if (!stripe || !card) {
-        throw new Error("Stripe is not loaded yet.");
+        throw new Error("Stripe has not loaded yet.");
       }
 
       setProcessingStage("creating_intent");
@@ -173,7 +173,7 @@ function CheckoutForm() {
       });
 
       if (!paymentData?.clientSecret) {
-        throw new Error("Unable to create payment intent.");
+        throw new Error("Failed to create payment intent.");
       }
 
       setProcessingStage("confirming_payment");
@@ -187,11 +187,11 @@ function CheckoutForm() {
       }
 
       if (!paymentIntent || paymentIntent.status !== "succeeded") {
-        throw new Error("Payment did not succeed. Please try again.");
+        throw new Error("Payment did not complete successfully.");
       }
 
       setProcessingStage("creating_order");
-      const { data } = await api.post("/orders", {
+      const { data: orderData } = await api.post("/orders", {
         items: orderItems,
         shippingAddress: address,
         addressId: addressId || undefined,
@@ -201,16 +201,19 @@ function CheckoutForm() {
       });
 
       dispatch(clearCart());
-      setSuccessMessage("Payment successful. Redirecting...");
-      // toast({ title: "Order confirmed!", description: "Payment successful." });
+      setSuccessMessage("Payment successful! Redirecting to order status...");
+      // toast?.({ title: "Payment successful", description: "Order is being processed." });
 
+      // Redirect to order status / confirmation page
       setTimeout(() => {
-        navigate(`/account/orders/${data.orderId}`);
+        navigate(`/order-status/${paymentIntent.id}`);
       }, 1200);
+
     } catch (err) {
       const msg = getErrorMessage(err, "Unable to place order. Please try again.");
       setErrorMessage(msg);
-      // toast({ variant: "destructive", title: "Error", description: msg });
+      // toast?.({ variant: "destructive", title: "Error", description: msg });
+      console.error("Checkout error:", err);
     } finally {
       setProcessingStage("idle");
     }
@@ -333,10 +336,10 @@ function CheckoutForm() {
             <Spinner
               label={
                 processingStage === "creating_order"
-                  ? "Creating order..."
-                  : processingStage.includes("payment")
-                    ? "Processing payment..."
-                    : "Finalizing..."
+                  ? "Creating your order..."
+                  : processingStage === "confirming_payment"
+                    ? "Confirming payment..."
+                    : "Processing..."
               }
             />
           </div>
