@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useEffect, useMemo, useState } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { Layout } from "./components/layout/Layout.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { SearchPage } from "./pages/SearchPage.jsx";
@@ -35,12 +35,15 @@ import { OrderDetailsPage } from "./pages/account/OrderDetailsPage.jsx";
 import { WishlistPage } from "./pages/account/WishlistPage.jsx";
 import { AccountSettingsPage } from "./pages/account/AccountSettingsPage.jsx";
 import { AccountPage } from "./pages/AccountPage.jsx";
+import { OrderStatusPage } from "./pages/OrderStatusPage.jsx";
 import { ToastProvider } from "./components/ui/ToastProvider.jsx";
 
-export default function App() {
+function AppShell() {
   const dispatch = useDispatch();
-  const [isDesktopBlocked, setIsDesktopBlocked] = useState(
-    typeof window !== "undefined" ? window.innerWidth >= 768 : false,
+  const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : true,
   );
 
   useEffect(() => {
@@ -48,34 +51,39 @@ export default function App() {
   }, [dispatch]);
 
   useEffect(() => {
-    const handleResize = () => setIsDesktopBlocked(window.innerWidth >= 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const isAdmin = user?.role === "admin";
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  const isAuthRoute = location.pathname.startsWith("/auth");
+  const isDesktopBlocked = useMemo(
+    () => !isMobile && !isAdmin && !isAdminRoute && !isAuthRoute,
+    [isAdmin, isAdminRoute, isAuthRoute, isMobile],
+  );
+
   if (isDesktopBlocked) {
     return (
-      <ToastProvider>
-        <div className="flex min-h-screen items-center justify-center bg-primary px-6 text-center">
-          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-card">
-            <p className="text-sm uppercase tracking-[0.25em] text-accent">NoorFit</p>
-            <h1 className="mt-4 text-3xl font-semibold text-white">
-              This app is optimized for mobile devices.
-            </h1>
-            <p className="mt-4 text-sm text-muted">
-              Please open on your phone.
-            </p>
-          </div>
+      <div className="flex min-h-screen items-center justify-center bg-primary px-6 text-center">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-card">
+          <p className="text-sm uppercase tracking-[0.25em] text-accent">NoorFit</p>
+          <h1 className="mt-4 text-3xl font-semibold text-white">
+            This app is optimized for mobile devices
+          </h1>
+          <p className="mt-4 text-sm text-muted">
+            Customer shopping is available on mobile only. Admins can continue on desktop through the admin panel.
+          </p>
         </div>
-      </ToastProvider>
+      </div>
     );
   }
 
   return (
-    <ToastProvider>
-      <Layout>
-        <Routes>
+    <Layout>
+      <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/shop" element={<Navigate to="/" replace />} />
         <Route path="/search" element={<SearchPage />} />
@@ -87,6 +95,7 @@ export default function App() {
         <Route path="/auth" element={<AuthPage />} />
 
         <Route element={<ProtectedRoute />}>
+          <Route path="/order-status/:paymentIntentId" element={<OrderStatusPage />} />
           <Route path="/account" element={<AccountLayout />}>
             <Route index element={<AccountPage />} />
             <Route path="profile" element={<ProfilePage />} />
@@ -124,8 +133,15 @@ export default function App() {
             <Route path="/admin/products/edit/:id" element={<AdminProductFormPage />} />
           </Route>
         </Route>
-        </Routes>
-      </Layout>
+      </Routes>
+    </Layout>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppShell />
     </ToastProvider>
   );
 }
