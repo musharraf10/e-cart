@@ -7,9 +7,6 @@ import {
   resolveShippingAddress,
 } from "../utils/checkout.util.js";
 
-const WEBHOOK_PENDING_GRACE_MS = 2 * 60 * 1000;
-const STRIPE_FAILURE_STATUSES = new Set(["canceled", "requires_payment_method"]);
-
 async function buildValidatedOrderPayload({ userId, items, shippingAddress, addressId, couponCode }) {
   if (!Array.isArray(items) || items.length === 0) {
     const error = new Error("No items");
@@ -28,69 +25,6 @@ async function buildValidatedOrderPayload({ userId, items, shippingAddress, addr
     couponCode,
     shippingAddress: addressSnapshot,
   });
-}
-
-function buildOrderStatusResponse(order, extra = {}) {
-  return {
-    exists: true,
-    paymentIntentId: order.stripePaymentId,
-    orderId: order._id,
-    orderStatus: order.status,
-    paymentStatus: order.paymentStatus,
-    isFinal: ["confirmed", "cancelled"].includes(order.status),
-    order,
-    ...extra,
-  };
-}
-
-async function reconcilePendingOrderStatus(order) {
-  if (!stripe || order.paymentMethod !== "online" || order.paymentStatus !== "pending") {
-    return buildOrderStatusResponse(order);
-  }
-
-  const ageMs = Date.now() - new Date(order.createdAt).getTime();
-  const isDelayed = ageMs >= WEBHOOK_PENDING_GRACE_MS;
-
-  if (!isDelayed) {
-    return buildOrderStatusResponse(order, {
-      webhookDelayed: false,
-      verificationState: "pending_webhook",
-    });
-  }
-
-  try {
-    const paymentIntent = await stripe.paymentIntents.retrieve(order.stripePaymentId);
-    const stripeStatus = String(paymentIntent.status || "").toLowerCase();
-
-    if (STRIPE_FAILURE_STATUSES.has(stripeStatus)) {
-      order.paymentStatus = "failed";
-      order.status = "cancelled";
-      order.paymentDetails = {
-        provider: "stripe",
-        transactionId: paymentIntent.id,
-      };
-      await order.save();
-
-      return buildOrderStatusResponse(order, {
-        webhookDelayed: true,
-        verificationState: "failed_in_stripe",
-        stripeStatus,
-      });
-    }
-
-    return buildOrderStatusResponse(order, {
-      webhookDelayed: true,
-      verificationState:
-        stripeStatus === "succeeded" ? "awaiting_webhook_confirmation" : "pending_webhook",
-      stripeStatus,
-    });
-  } catch {
-    return buildOrderStatusResponse(order, {
-      webhookDelayed: true,
-      verificationState: "pending_webhook",
-      verificationWarning: "Unable to reach Stripe while checking delayed payment status.",
-    });
-  }
 }
 
 async function validateStripePaymentIntent({ paymentIntentId, expectedAmount, userId }) {
@@ -151,6 +85,7 @@ export async function createOrder(req, res) {
     addressId,
     couponCode,
   });
+}
 
   if (paymentMethod === "online") {
     res.status(400);
@@ -275,8 +210,13 @@ export async function getOrderByPaymentIntent(req, res) {
 
   const response = await reconcilePendingOrderStatus(order);
   return res.json({
-    ...response,
+    exists: true,
     paymentIntentId,
+    orderId: order._id,
+    orderStatus: order.status,
+    paymentStatus: order.paymentStatus,
+    isFinal: ["confirmed", "cancelled"].includes(order.status),
+    order,
   });
 }
 

@@ -3,10 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../api/client.js";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 
-function getStatusMessage(orderState) {
-  const orderStatus = orderState?.orderStatus;
-  const paymentStatus = orderState?.paymentStatus;
-
+function getStatusMessage(orderStatus, paymentStatus) {
   if (orderStatus === "confirmed" || paymentStatus === "paid") {
     return {
       title: "Order placed successfully",
@@ -18,20 +15,6 @@ function getStatusMessage(orderState) {
     return {
       title: "Payment failed",
       description: "Stripe reported a failed payment, so this order was cancelled.",
-    };
-  }
-
-  if (orderState?.webhookDelayed && orderState?.stripeStatus === "succeeded") {
-    return {
-      title: "Payment received, waiting for verification",
-      description: "Stripe shows the payment succeeded, but the webhook confirmation has not reached the server yet. We will keep checking automatically.",
-    };
-  }
-
-  if (orderState?.webhookDelayed && orderState?.verificationWarning) {
-    return {
-      title: "Still verifying payment",
-      description: orderState.verificationWarning,
     };
   }
 
@@ -49,8 +32,8 @@ export function OrderStatusPage() {
   const [loading, setLoading] = useState(true);
 
   const statusMessage = useMemo(
-    () => getStatusMessage(orderState),
-    [orderState],
+    () => getStatusMessage(orderState?.orderStatus, orderState?.paymentStatus),
+    [orderState?.orderStatus, orderState?.paymentStatus],
   );
 
   useEffect(() => {
@@ -110,16 +93,6 @@ export function OrderStatusPage() {
               <p className="font-medium capitalize text-white">{orderState.paymentStatus}</p>
             </div>
           </div>
-          {(orderState.webhookDelayed || orderState.stripeStatus) && (
-            <div className="mt-4 rounded-xl border border-border bg-card p-4 text-sm text-muted">
-              {orderState.stripeStatus && (
-                <p>Stripe payment status: <span className="font-medium capitalize text-white">{orderState.stripeStatus.replace(/_/g, " ")}</span></p>
-              )}
-              {orderState.webhookDelayed && (
-                <p className="mt-2">Webhook delivery is taking longer than usual. Keep this page open while we continue checking.</p>
-              )}
-            </div>
-          )}
         </div>
       )}
 
