@@ -197,7 +197,7 @@ function CheckoutForm() {
       }
 
       setProcessingStage("creating_order");
-      const { data } = await api.post("/orders", {
+      await api.post("/orders/create-pending", {
         items: orderItems,
         shippingAddress: address,
         addressId: addressId || undefined,
@@ -206,12 +206,12 @@ function CheckoutForm() {
         paymentIntentId: paymentIntent.id,
       });
 
-      setSuccessMessage("Payment successful. Redirecting to your orders...");
+      setSuccessMessage("Payment successful, verifying order...");
       dispatch(clearCart());
-      notify("Payment successful. Your order is confirmed.");
+      notify("Payment successful, verifying order...");
       window.setTimeout(() => {
-        navigate(`/account/orders/${data.orderId}`);
-      }, 800);
+        navigate(`/order-status/${paymentIntent.id}`);
+      }, 500);
     } catch (error) {
       const message = getErrorMessage(error, "Unable to place order.");
       setProcessingStage("failed");
@@ -337,7 +337,7 @@ function CheckoutForm() {
                 processingStage === "creating_order"
                   ? "Creating your order..."
                   : processingStage === "verifying_payment"
-                    ? "Verifying payment..."
+                    ? "Payment successful, verifying order..."
                     : "Processing payment..."
               }
             />
