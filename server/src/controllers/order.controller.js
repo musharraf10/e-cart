@@ -85,6 +85,7 @@ export async function createOrder(req, res) {
     addressId,
     couponCode,
   });
+}
 
   if (paymentMethod === "online") {
     res.status(400);
@@ -207,6 +208,7 @@ export async function getOrderByPaymentIntent(req, res) {
     });
   }
 
+  const response = await reconcilePendingOrderStatus(order);
   return res.json({
     exists: true,
     paymentIntentId,
