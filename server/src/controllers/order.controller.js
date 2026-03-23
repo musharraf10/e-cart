@@ -1,196 +1,21 @@
 import { Order } from "../models/order.model.js";
-import { Product } from "../models/product.model.js";
-import { Coupon } from "../models/coupon.model.js";
-import { Address } from "../models/address.model.js";
 import { stripe } from "../utils/stripe.js";
-
-function findVariant(product, item) {
-  return (product.variants || []).find(
-    (v) => v.size === item.size && v.color === item.color,
-  );
-}
-
-function isStripeCompatibleHttpUrl(value) {
-  if (!value || String(value).length > 2048) {
-    return false;
-  }
-
-  try {
-    const url = new URL(String(value));
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function getBaseUrl(req) {
-  const candidates = [
-    process.env.STORE_URL,
-    process.env.CLIENT_URL,
-    req.headers.origin,
-    "http://localhost:5173",
-  ];
-
-  return candidates.find(isStripeCompatibleHttpUrl) || "http://localhost:5173";
-}
-
-function getStripeImageUrls(image) {
-  return isStripeCompatibleHttpUrl(image) ? [String(image)] : [];
-}
-
-async function buildOrderPayload({ items, couponCode, shippingAddress }) {
-  const productIds = items.map((item) => item.product);
-  const products = await Product.find({ _id: { $in: productIds }, isVisible: true });
-  const productMap = new Map(products.map((product) => [String(product._id), product]));
-
-  let subtotal = 0;
-  const orderItems = items.map((item) => {
-    const product = productMap.get(String(item.product));
-    if (!product) {
-      throw new Error("Product not found");
-    }
-
-    const variant = findVariant(product, item);
-    if (!variant) {
-      throw new Error(`Variant not found for ${product.name}`);
-    }
-
-    const qty = Number(item.qty);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      throw new Error(`Invalid quantity for ${product.name}`);
-    }
-
-    if (variant.stock < qty) {
-      throw new Error(`Insufficient stock for ${product.name} (${variant.size} / ${variant.color})`);
-    }
-
-    const price = Number(variant.price) || 0;
-    subtotal += price * qty;
-
-    return {
-      product: product._id,
-      name: product.name,
-      image: product.images?.[0],
-      price,
-      qty,
-      size: variant.size,
-      color: variant.color,
-      sku: variant.sku,
-    };
-  });
-
-  let discount = 0;
-  let appliedCouponCode;
-
-  if (couponCode) {
-    const coupon = await Coupon.findOne({
-      code: String(couponCode).toUpperCase(),
-      active: true,
-      expiry: { $gte: new Date() },
-    });
-    const isWithinUsageLimit = !coupon?.usageLimit || (coupon.usedCount || 0) < coupon.usageLimit;
-
-    if (coupon && isWithinUsageLimit && subtotal >= (coupon.minOrder || 0)) {
-      discount = coupon.discountType === "percentage"
-        ? (subtotal * coupon.value) / 100
-        : coupon.value;
-      appliedCouponCode = coupon.code;
-    }
-  }
-
-  const total = Math.max(0, subtotal - discount);
-
-  return {
-    items: orderItems,
-    shippingAddress: {
-      line1: shippingAddress.line1,
-      line2: shippingAddress.line2 || "",
-      city: shippingAddress.city,
-      state: shippingAddress.state,
-      postalCode: shippingAddress.postalCode,
-      country: shippingAddress.country,
-    },
-    subtotal,
-    discount,
-    total,
-    couponCode: appliedCouponCode,
-  };
-}
-
-async function resolveShippingAddress({ userId, shippingAddress, addressId }) {
-  if (shippingAddress?.line1 && shippingAddress?.city && shippingAddress?.state && shippingAddress?.postalCode && shippingAddress?.country) {
-    return shippingAddress;
-  }
-
-  if (!addressId) {
-    throw new Error("Shipping address is required");
-  }
-
-  const addressDoc = await Address.findOne({ _id: addressId, userId });
-  if (!addressDoc) {
-    throw new Error("Address not found");
-  }
-
-  return {
-    line1: addressDoc.addressLine1,
-    line2: addressDoc.addressLine2 || "",
-    city: addressDoc.city,
-    state: addressDoc.state,
-    postalCode: addressDoc.postalCode,
-    country: addressDoc.country,
-  };
-}
-
-async function createStripeCheckoutSession({ req, order }) {
-  if (!stripe) {
-    throw new Error("Stripe not configured");
-  }
-
-  const baseUrl = getBaseUrl(req);
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
-    customer_email: req.user.email,
-    line_items: order.items.map((item) => ({
-      quantity: item.qty,
-      price_data: {
-        currency: "usd",
-        unit_amount: Math.round(Number(item.price) * 100),
-        product_data: {
-          name: item.name,
-          images: getStripeImageUrls(item.image),
-          metadata: {
-            productId: String(item.product),
-            sku: item.sku || "",
-            size: item.size || "",
-            color: item.color || "",
-          },
-        },
-      },
-    })),
-    client_reference_id: String(order._id),
-    metadata: {
-      orderId: String(order._id),
-      userId: String(req.user._id),
-    },
-    payment_intent_data: {
-      metadata: {
-        orderId: String(order._id),
-        userId: String(req.user._id),
-      },
-    },
-    success_url: `${baseUrl}/success?orderId=${order._id}`,
-    cancel_url: `${baseUrl}/cancel?orderId=${order._id}`,
-  });
-
-  return {
-    sessionId: session.id,
-    url: session.url,
-  };
-}
+import {
+  buildOrderPayload,
+  deductStockForItems,
+  markCouponUsed,
+  resolveShippingAddress,
+} from "../utils/checkout.util.js";
 
 export async function createOrder(req, res) {
-  const { items, shippingAddress, paymentMethod = "online", couponCode, addressId } = req.body;
+  const {
+    items,
+    shippingAddress,
+    paymentMethod = "online",
+    couponCode,
+    addressId,
+    paymentIntentId,
+  } = req.body;
 
   if (!Array.isArray(items) || items.length === 0) {
     res.status(400);
@@ -209,28 +34,93 @@ export async function createOrder(req, res) {
     shippingAddress: addressSnapshot,
   });
 
+  if (paymentMethod === "online") {
+    if (!stripe) {
+      res.status(503);
+      throw new Error("Stripe is not configured");
+    }
+
+    if (!paymentIntentId) {
+      res.status(400);
+      throw new Error("Payment intent is required");
+    }
+
+    const existingOrder = await Order.findOne({
+      stripePaymentId: paymentIntentId,
+      user: req.user._id,
+    });
+    if (existingOrder) {
+      return res.status(200).json({ orderId: existingOrder._id, order: existingOrder });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const expectedAmount = Math.round(orderPayload.total * 100);
+
+    if (paymentIntent.status !== "succeeded") {
+      res.status(400);
+      throw new Error("Payment has not succeeded");
+    }
+
+    if (paymentIntent.amount !== expectedAmount) {
+      res.status(400);
+      throw new Error("Payment amount mismatch");
+    }
+
+    if (String(paymentIntent.currency || "").toLowerCase() !== "inr") {
+      res.status(400);
+      throw new Error("Payment currency mismatch");
+    }
+
+    if (String(paymentIntent.metadata?.userId || "") !== String(req.user._id)) {
+      res.status(403);
+      throw new Error("Payment does not belong to this user");
+    }
+
+    const stockReserved = await deductStockForItems(orderPayload.items);
+    if (!stockReserved) {
+      res.status(409);
+      throw new Error("Some items are no longer available");
+    }
+
+    const order = await Order.create({
+      user: req.user._id,
+      ...orderPayload,
+      paymentMethod,
+      paymentStatus: "paid",
+      status: "confirmed",
+      stripePaymentId: paymentIntent.id,
+      paymentDetails: {
+        provider: "stripe",
+        transactionId: paymentIntent.id,
+      },
+      stockDeducted: true,
+      couponApplied: Boolean(orderPayload.couponCode),
+    });
+
+    await markCouponUsed(orderPayload.couponCode);
+
+    return res.status(201).json({ orderId: order._id, order });
+  }
+
+  const stockReserved = await deductStockForItems(orderPayload.items);
+  if (!stockReserved) {
+    res.status(409);
+    throw new Error("Some items are no longer available");
+  }
+
   const order = await Order.create({
     user: req.user._id,
     ...orderPayload,
     paymentMethod,
     paymentStatus: "pending",
-    status: "pending",
+    status: "processing",
+    stockDeducted: true,
+    couponApplied: Boolean(orderPayload.couponCode),
   });
 
-  if (paymentMethod === "cod") {
-    return res.status(201).json({ orderId: order._id, order });
-  }
+  await markCouponUsed(orderPayload.couponCode);
 
-  const checkout = await createStripeCheckoutSession({ req, order });
-  order.stripeSessionId = checkout.sessionId;
-  await order.save();
-
-  return res.status(201).json({
-    orderId: order._id,
-    order,
-    stripeSessionId: checkout.sessionId,
-    checkoutUrl: checkout.url,
-  });
+  return res.status(201).json({ orderId: order._id, order });
 }
 
 export async function listMyOrders(req, res) {

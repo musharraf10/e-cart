@@ -11,8 +11,7 @@ const router = express.Router();
 
 router.post("/", protect, createOrder);
 router.get("/me", protect, listMyOrders);
-router.get("/:id", protect, getOrderById);
 router.get("/verify-payment/:paymentIntentId", protect, verifyPayment);
+router.get("/:id", protect, getOrderById);
 
 export default router;
-

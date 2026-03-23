@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { Layout } from "./components/layout/Layout.jsx";
@@ -39,10 +39,38 @@ import { ToastProvider } from "./components/ui/ToastProvider.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
+  const [isDesktopBlocked, setIsDesktopBlocked] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 768 : false,
+  );
 
   useEffect(() => {
     dispatch(initializeAuth());
   }, [dispatch]);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktopBlocked(window.innerWidth >= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  if (isDesktopBlocked) {
+    return (
+      <ToastProvider>
+        <div className="flex min-h-screen items-center justify-center bg-primary px-6 text-center">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-card">
+            <p className="text-sm uppercase tracking-[0.25em] text-accent">NoorFit</p>
+            <h1 className="mt-4 text-3xl font-semibold text-white">
+              This app is optimized for mobile devices.
+            </h1>
+            <p className="mt-4 text-sm text-muted">
+              Please open on your phone.
+            </p>
+          </div>
+        </div>
+      </ToastProvider>
+    );
+  }
 
   return (
     <ToastProvider>
