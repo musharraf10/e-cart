@@ -193,60 +193,65 @@ export function ProductInfo({
         />
       </div>
 
-      <div className="flex items-center gap-3 w-full">
-        <div className="flex items-center rounded-xl border border-[#262626] overflow-hidden text-sm bg-primary h-12">
+      <div className="space-y-3 w-full">
+        <div className="flex items-center gap-3">
+          <div className="flex flex-1 items-center rounded-2xl border border-[#2f2f2f] overflow-hidden text-sm bg-primary h-12">
+            <button
+              type="button"
+              onClick={() => setQty((currentQty) => Math.max(1, currentQty - 1))}
+              className="px-4 h-full text-muted hover:text-white transition-colors"
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+
+            <span className="px-4 text-white min-w-[3.25rem] text-center font-medium">
+              {qty}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setQty((currentQty) => currentQty + 1)}
+              className="px-4 h-full text-muted hover:text-white transition-colors"
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
+          </div>
+
           <button
             type="button"
-            onClick={() => setQty((currentQty) => Math.max(1, currentQty - 1))}
-            className="px-4 h-full text-muted hover:text-white"
+            onClick={toggleWishlist}
+            disabled={wishlistLoading}
+            aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
+            className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl border border-[#2f2f2f] text-white hover:bg-card transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            −
-          </button>
-
-          <span className="px-4 text-white min-w-[3rem] text-center">
-            {qty}
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setQty((currentQty) => currentQty + 1)}
-            className="px-4 h-full text-muted hover:text-white"
-          >
-            +
+            {liked ? (
+              <HiHeart className="w-5 h-5 text-red-500" />
+            ) : (
+              <HiOutlineHeart className="w-5 h-5" />
+            )}
           </button>
         </div>
 
         <button
-          type="button"
-          onClick={toggleWishlist}
-          disabled={wishlistLoading}
-          aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
-          className="h-12 w-12 flex items-center justify-center rounded-xl border border-[#262626] text-white hover:bg-card transition active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+          onClick={add}
+          disabled={!canAdd || stock < 1 || adding}
+          className="h-12 w-full rounded-2xl bg-accent text-primary px-4 text-sm font-semibold shadow-[0_8px_24px_rgba(166,210,56,0.22)] hover:opacity-90 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {liked ? (
-            <HiHeart className="w-5 h-5 text-red-500" />
-          ) : (
-            <HiOutlineHeart className="w-5 h-5" />
-          )}
+          <span className={adding ? "inline-block animate-pulse" : "inline-block"}>
+            {adding ? "Adding..." : "Add to Cart"}
+          </span>
         </button>
 
-        <div className="flex-1 grid grid-cols-2 gap-2">
-          <button
-            onClick={add}
-            disabled={!canAdd || stock < 1 || adding}
-            className="h-12 rounded-xl bg-accent text-primary px-4 text-sm font-medium hover:opacity-90 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {adding ? "Adding..." : "Add to cart"}
-          </button>
-          <button
-            type="button"
-            onClick={buyNow}
-            disabled={!canAdd || stock < 1}
-            className="h-12 rounded-xl border border-accent text-accent px-4 text-sm font-medium hover:bg-accent/10 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Buy Now
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={buyNow}
+          disabled={!canAdd || stock < 1}
+          className="h-12 w-full rounded-2xl border border-accent text-accent px-4 text-sm font-semibold bg-transparent hover:bg-accent/10 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Buy Now
+        </button>
       </div>
 
       {selectedImage ? (
