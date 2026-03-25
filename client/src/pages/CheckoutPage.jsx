@@ -1,28 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 
 import api from "../api/client.js";
 import { clearCart } from "../store/slices/cartSlice.js";
-// import { useToast } from "@/components/ui/use-toast";  // ← uncomment when ready
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-
-const cardElementOptions = {
-  style: {
-    base: {
-      color: "#ffffff",
-      fontSize: "14px",
-      "::placeholder": { color: "#71717a" },
-    },
-    invalid: {
-      color: "#f87171",
-    },
-  },
-};
 
 function getErrorMessage(error, fallback) {
   return error?.response?.data?.message || error?.message || fallback;
@@ -64,14 +46,53 @@ function Spinner({ label }) {
   );
 }
 
-function CheckoutForm() {
+function loadRazorpayScript() {
+  if (window.Razorpay) return Promise.resolve(true);
+
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+async function openRazorpayCheckout({ paymentData, address, onFailed }) {
+  return new Promise((resolve, reject) => {
+    const razorpay = new window.Razorpay({
+      key: paymentData.key,
+      amount: paymentData.amount,
+      currency: paymentData.currency,
+      name: "NoorFit",
+      description: "Order Payment",
+      order_id: paymentData.orderId,
+      prefill: {
+        name: "NoorFit Customer",
+      },
+      notes: {
+        address: `${address.line1}, ${address.city}`,
+      },
+      handler: (response) => resolve(response),
+      modal: {
+        ondismiss: () => reject(new Error("Payment popup closed. You can continue payment later.")),
+      },
+    });
+
+    razorpay.on("payment.failed", (response) => {
+      onFailed?.(response?.error?.description || "Payment failed");
+      reject(new Error(response?.error?.description || "Payment failed"));
+    });
+
+    razorpay.open();
+  });
+}
+
+export default function CheckoutPage() {
   const items = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  // const { toast } = useToast();     // ← uncomment when using shadcn toast
-
-  const stripe = useStripe();
-  const elements = useElements();
 
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [couponCode, setCouponCode] = useState("");
@@ -87,20 +108,14 @@ function CheckoutForm() {
   const [processingStage, setProcessingStage] = useState("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [cardComplete, setCardComplete] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState("");
 
   const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
   const checkoutIssues = useMemo(() => getCheckoutIssues(items, address), [items, address]);
 
-  const isProcessing =
-    processingStage === "creating_intent" ||
-    processingStage === "confirming_payment" ||
-    processingStage === "creating_order";
+  const isProcessing = processingStage !== "idle";
 
-  const canSubmit =
-    checkoutIssues.length === 0 &&
-    !isProcessing &&
-    (paymentMethod !== "online" || (stripe && elements && cardComplete));
+  const canSubmit = checkoutIssues.length === 0 && !isProcessing;
 
   useEffect(() => {
     api
@@ -119,7 +134,7 @@ function CheckoutForm() {
         });
         setAddressId(defaultAddress._id || null);
       })
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   const orderItems = useMemo(
@@ -134,11 +149,74 @@ function CheckoutForm() {
     [items]
   );
 
+  const startOnlinePayment = async (orderIdOverride) => {
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      throw new Error("Unable to load Razorpay SDK. Please check your internet and try again.");
+    }
+
+    let dbOrderId = orderIdOverride;
+
+    if (!dbOrderId) {
+      setProcessingStage("creating_order");
+      const { data: pendingData } = await api.post("/orders/create-pending", {
+        items: orderItems,
+        shippingAddress: address,
+        addressId: addressId || undefined,
+        paymentMethod: "online",
+        couponCode: couponCode || undefined,
+      });
+      dbOrderId = pendingData.orderId;
+      setPendingOrderId(dbOrderId);
+    }
+
+    setProcessingStage("creating_razorpay_order");
+    const { data: paymentData } = await api.post("/payments/create-razorpay-order", {
+      orderId: dbOrderId,
+      items: orderItems,
+      address,
+      coupon: couponCode || undefined,
+    });
+
+    if (paymentData.alreadyPaid) {
+      dispatch(clearCart());
+      navigate(`/order-status/${dbOrderId}`);
+      return;
+    }
+
+    setProcessingStage("processing_gateway");
+    const response = await openRazorpayCheckout({
+      paymentData,
+      address,
+      onFailed: (message) => {
+        setPendingOrderId(dbOrderId);
+        setErrorMessage(message || "Payment failed. Please retry.");
+      },
+    });
+
+    setProcessingStage("verifying");
+    const { data: verifyData } = await api.post("/payments/verify", {
+      ...response,
+      orderId: dbOrderId,
+    });
+
+    if (!verifyData.verified) {
+      setPendingOrderId(dbOrderId);
+      setErrorMessage("Payment failed verification. Continue payment to retry.");
+      return;
+    }
+
+    dispatch(clearCart());
+    setSuccessMessage("Order placed successfully.");
+    navigate(`/order-status/${dbOrderId}`);
+  };
+
   const handlePlaceOrder = async () => {
     if (!canSubmit) return;
 
-    setErrorMessage("");
-    setSuccessMessage("");
     setProcessingStage("processing");
 
     try {
@@ -153,74 +231,23 @@ function CheckoutForm() {
         });
 
         dispatch(clearCart());
-        // toast?.({ title: "Order placed successfully." });
         navigate(`/success?orderId=${data.orderId}`);
         return;
       }
 
-      // ── Online (Stripe) payment flow ───────────────────────────────
-      const card = elements?.getElement(CardElement);
-      if (!stripe || !card) {
-        throw new Error("Stripe has not loaded yet.");
-      }
-
-      setProcessingStage("creating_intent");
-      const { data: paymentData } = await api.post("/payments/create-payment-intent", {
-        items: orderItems,
-        shippingAddress: address,
-        addressId: addressId || undefined,
-        couponCode: couponCode || undefined,
-      });
-
-      if (!paymentData?.clientSecret) {
-        throw new Error("Failed to create payment intent.");
-      }
-
-      setProcessingStage("confirming_payment");
-      const { paymentIntent, error } = await stripe.confirmCardPayment(
-        paymentData.clientSecret,
-        { payment_method: { card } }
-      );
-
-      if (error) {
-        throw new Error(error.message || "Payment failed");
-      }
-
-      if (!paymentIntent || paymentIntent.status !== "succeeded") {
-        throw new Error("Payment did not complete successfully.");
-      }
-
-      setProcessingStage("creating_order");
-      const { data: orderData } = await api.post("/orders", {
-        items: orderItems,
-        shippingAddress: address,
-        addressId: addressId || undefined,
-        paymentMethod: "online",
-        couponCode: couponCode || undefined,
-        paymentIntentId: paymentIntent.id,
-      });
-
-      dispatch(clearCart());
-      setSuccessMessage("Payment successful! Redirecting to order status...");
-      // toast?.({ title: "Payment successful", description: "Order is being processed." });
-
-      // Redirect to order status / confirmation page
-      setTimeout(() => {
-        navigate(`/order-status/${paymentIntent.id}`);
-      }, 1200);
-
+      await startOnlinePayment();
     } catch (err) {
-      const msg = getErrorMessage(err, "Unable to place order. Please try again.");
-      setErrorMessage(msg);
-      // toast?.({ variant: "destructive", title: "Error", description: msg });
-      console.error("Checkout error:", err);
+      const message = getErrorMessage(err, "Unable to place order. Please try again.");
+      if (!pendingOrderId) {
+        setErrorMessage(message);
+      }
     } finally {
       setProcessingStage("idle");
     }
   };
 
   const actionLabel = isProcessing
-    ? "Processing..."
+    ? "Processing Payment..."
     : paymentMethod === "online"
       ? "Pay & Place Order"
       : "Place Order (COD)";
@@ -229,14 +256,11 @@ function CheckoutForm() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="grid md:grid-cols-[1fr,380px] gap-8"
+      className="grid gap-8 pb-28 md:grid-cols-[1fr,380px] md:pb-0"
     >
       <section className="space-y-6">
-        <h1 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
-          Checkout
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">Checkout</h1>
 
-        {/* Shipping Address */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 text-lg font-semibold text-white">Shipping address</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -263,8 +287,7 @@ function CheckoutForm() {
           </div>
         </div>
 
-        {/* Payment + Coupon */}
-        <div className="rounded-xl bg-card border border-border p-6 space-y-5">
+        <div className="space-y-5 rounded-xl border border-border bg-card p-6">
           <h2 className="text-lg font-semibold text-white">Payment method</h2>
 
           <div className="flex flex-wrap gap-3">
@@ -274,10 +297,10 @@ function CheckoutForm() {
               disabled={isProcessing}
               className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition-all disabled:opacity-60 ${paymentMethod === "online"
                 ? "border-accent bg-accent/10 text-accent"
-                : "border-border text-muted-foreground hover:text-white hover:border-muted"
+                : "border-border text-muted-foreground hover:border-muted hover:text-white"
                 }`}
             >
-              Online (Card)
+              Online (UPI / Card / Netbanking)
             </button>
 
             <button
@@ -286,7 +309,7 @@ function CheckoutForm() {
               disabled={isProcessing}
               className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition-all disabled:opacity-60 ${paymentMethod === "cod"
                 ? "border-accent bg-accent/10 text-accent"
-                : "border-border text-muted-foreground hover:text-white hover:border-muted"
+                : "border-border text-muted-foreground hover:border-muted hover:text-white"
                 }`}
             >
               Cash on Delivery
@@ -300,26 +323,10 @@ function CheckoutForm() {
             disabled={isProcessing}
             className="w-full rounded-xl border border-border bg-primary px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-accent focus:outline-none disabled:opacity-60"
           />
-
-          {paymentMethod === "online" && (
-            <div className="space-y-3 rounded-xl border border-border bg-primary/50 p-4">
-              <p className="text-sm text-muted-foreground">Pay securely with Stripe</p>
-              <div className="rounded-xl border border-border bg-card px-4 py-3">
-                <CardElement
-                  options={cardElementOptions}
-                  onChange={(e) => {
-                    setCardComplete(e.complete);
-                    setErrorMessage(e.error?.message || "");
-                  }}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Order Summary Sidebar */}
-      <aside className="rounded-xl bg-card border border-border p-6 h-fit md:sticky md:top-24 space-y-5">
+      <aside className="h-fit space-y-5 rounded-xl border border-border bg-card p-6 md:sticky md:top-24">
         <h2 className="text-lg font-semibold text-white">Order summary</h2>
 
         <div className="flex justify-between text-sm">
@@ -327,21 +334,9 @@ function CheckoutForm() {
           <span className="font-medium">₹{subtotal.toFixed(2)}</span>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          Taxes, shipping & discounts calculated on next step
-        </p>
-
         {isProcessing && (
           <div className="rounded-xl border border-accent/20 bg-accent/5 p-3">
-            <Spinner
-              label={
-                processingStage === "creating_order"
-                  ? "Creating your order..."
-                  : processingStage === "confirming_payment"
-                    ? "Confirming payment..."
-                    : "Processing..."
-              }
-            />
+            <Spinner label="Processing payment..." />
           </div>
         )}
 
@@ -357,6 +352,16 @@ function CheckoutForm() {
           </div>
         )}
 
+        {pendingOrderId && (
+          <button
+            type="button"
+            onClick={() => navigate(`/checkout/resume/${pendingOrderId}`)}
+            className="w-full rounded-xl border border-accent bg-accent/10 px-4 py-3 text-sm font-semibold text-accent"
+          >
+            Continue Payment
+          </button>
+        )}
+
         {checkoutIssues.length > 0 && (
           <ul className="space-y-1.5 rounded-xl border border-border bg-primary/60 p-4 text-xs text-muted-foreground">
             {checkoutIssues.map((issue) => (
@@ -369,19 +374,22 @@ function CheckoutForm() {
           type="button"
           disabled={!canSubmit}
           onClick={handlePlaceOrder}
-          className="w-full rounded-xl bg-accent text-primary py-3 px-6 text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          className="hidden w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 md:block"
         >
           {actionLabel}
         </button>
       </aside>
-    </motion.div>
-  );
-}
 
-export default function CheckoutPage() {
-  return (
-    <Elements stripe={stripePromise}>
-      <CheckoutForm />
-    </Elements>
+      <div className="fixed inset-x-0 bottom-16 z-30 border-t border-border bg-card/95 p-4 backdrop-blur md:hidden">
+        <button
+          type="button"
+          disabled={!canSubmit}
+          onClick={handlePlaceOrder}
+          className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {actionLabel}
+        </button>
+      </div>
+    </motion.div>
   );
 }

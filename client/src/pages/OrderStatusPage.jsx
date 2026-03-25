@@ -7,25 +7,25 @@ function getStatusMessage(orderStatus, paymentStatus) {
   if (orderStatus === "confirmed" || paymentStatus === "paid") {
     return {
       title: "Order placed successfully",
-      description: "Stripe verified your payment and your order is now confirmed.",
+      description: "Razorpay verified your payment and your order is now confirmed.",
     };
   }
 
   if (orderStatus === "cancelled" || paymentStatus === "failed") {
     return {
       title: "Payment failed",
-      description: "Stripe reported a failed payment, so this order was cancelled.",
+      description: "Your payment was not completed. You can retry from your orders page.",
     };
   }
 
   return {
     title: "Verifying payment...",
-    description: "Payment was submitted successfully. We are waiting for Stripe webhook confirmation.",
+    description: "We are syncing your payment status. This should complete shortly.",
   };
 }
 
 export function OrderStatusPage() {
-  const { paymentIntentId } = useParams();
+  const { orderId } = useParams();
   const navigate = useNavigate();
   const { notify } = useToast();
   const [orderState, setOrderState] = useState(null);
@@ -37,7 +37,7 @@ export function OrderStatusPage() {
   );
 
   useEffect(() => {
-    if (!paymentIntentId) {
+    if (!orderId) {
       setLoading(false);
       return undefined;
     }
@@ -47,7 +47,7 @@ export function OrderStatusPage() {
 
     const loadStatus = async () => {
       try {
-        const { data } = await api.get(`/orders/status/${paymentIntentId}`);
+        const { data } = await api.get(`/orders/status/${orderId}`);
         if (!isMounted) return;
 
         setOrderState(data);
@@ -69,7 +69,7 @@ export function OrderStatusPage() {
       isMounted = false;
       if (timeoutId) window.clearTimeout(timeoutId);
     };
-  }, [notify, paymentIntentId]);
+  }, [notify, orderId]);
 
   return (
     <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 text-center shadow-card">
@@ -81,8 +81,8 @@ export function OrderStatusPage() {
 
       {orderState?.order && (
         <div className="mt-8 rounded-xl border border-border bg-primary p-5 text-left">
-          <p className="text-sm text-muted">Payment intent</p>
-          <p className="mt-1 break-all font-medium text-white">{paymentIntentId}</p>
+          <p className="text-sm text-muted">Order ID</p>
+          <p className="mt-1 break-all font-medium text-white">{orderId}</p>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <p className="text-muted">Order status</p>

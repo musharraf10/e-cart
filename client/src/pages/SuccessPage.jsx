@@ -20,7 +20,7 @@ function getMessage(paymentStatus) {
 
   return {
     title: "Processing payment",
-    description: "We received your order and are waiting for Stripe webhook confirmation.",
+    description: "We received your order and are waiting for payment confirmation.",
   };
 }
 
