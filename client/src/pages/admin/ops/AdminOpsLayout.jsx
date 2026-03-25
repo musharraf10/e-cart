@@ -3,15 +3,16 @@ import { AdminSidebar } from "../../../components/admin/AdminSidebar.jsx";
 
 export function AdminOpsLayout() {
   return (
-    <div className="min-h-screen bg-primary">
-      <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 md:py-8">
-        <div className="grid gap-4 lg:grid-cols-[280px,1fr] lg:gap-8">
-          <AdminSidebar />
-          <main className="min-w-0 rounded-2xl border border-border/70 bg-primary/60 p-3 sm:p-4 md:p-5">
-            <Outlet />
-          </main>
+    <div className="h-screen w-screen flex overflow-hidden bg-primary">
+      <aside className="hidden md:flex w-64 flex-shrink-0 h-full border-r border-neutral-800 bg-[#0b0b0b]">
+        <AdminSidebar />
+      </aside>
+
+      <main className="flex-1 h-full overflow-y-auto">
+        <div className="p-6">
+          <Outlet />
         </div>
-      </div>
+      </main>
     </div>
   );
 }

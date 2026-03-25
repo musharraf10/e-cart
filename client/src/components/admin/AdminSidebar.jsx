@@ -31,19 +31,19 @@ const links = [
 
 export function AdminSidebar() {
   return (
-    <aside className="h-fit rounded-2xl border border-border bg-card/95 p-4 backdrop-blur lg:sticky lg:top-24">
-      <div className="mb-4 border-b border-border pb-3">
+    <div className="flex h-full w-full flex-col bg-[#0b0b0b] p-4">
+      <div className="mb-4 border-b border-neutral-800 pb-3">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">NoorFit</p>
         <p className="mt-1 text-sm font-medium text-white">Clothing Admin Workspace</p>
       </div>
 
-      <nav className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1">
+      <nav className="flex flex-col gap-1 overflow-y-auto">
         {links.map(([to, label, Icon]) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium transition-colors sm:text-sm ${
+              `flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "border border-accent/40 bg-accent/10 text-white"
                   : "text-muted hover:bg-primary/70 hover:text-white"
@@ -55,6 +55,6 @@ export function AdminSidebar() {
           </NavLink>
         ))}
       </nav>
-    </aside>
+    </div>
   );
 }
