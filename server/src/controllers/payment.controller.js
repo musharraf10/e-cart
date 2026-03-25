@@ -1,5 +1,6 @@
+import crypto from "crypto";
 import { Order } from "../models/order.model.js";
-import { stripe } from "../utils/stripe.js";
+import { razorpay } from "../utils/razorpay.js";
 import {
   buildOrderPayload,
   deductStockForItems,
@@ -7,16 +8,81 @@ import {
   resolveShippingAddress,
 } from "../utils/checkout.util.js";
 
+function createCheckoutFingerprint({ items, shippingAddress, couponCode }) {
+  const itemKey = [...items]
+    .sort((a, b) => String(a.product).localeCompare(String(b.product)))
+    .map((item) => `${item.product}:${item.sku}:${item.size}:${item.color}:${item.qty}`)
+    .join("|");
+
+  const addressKey = [
+    shippingAddress.line1,
+    shippingAddress.line2 || "",
+    shippingAddress.city,
+    shippingAddress.state,
+    shippingAddress.postalCode,
+    shippingAddress.country,
+  ].join("|");
+
+  return crypto
+    .createHash("sha256")
+    .update(`${itemKey}#${addressKey}#${couponCode || ""}`)
+    .digest("hex");
+}
+
+async function buildPendingOrderFromPayload(req, { items, address, coupon, addressId }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("items are required when orderId is not provided");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const shippingAddress = await resolveShippingAddress({
+    userId: req.user._id,
+    shippingAddress: address,
+    addressId,
+  });
+
+  const orderPayload = await buildOrderPayload({
+    items,
+    couponCode: coupon,
+    shippingAddress,
+  });
+
+  const checkoutFingerprint = createCheckoutFingerprint(orderPayload);
+
+  const existingOrder = await Order.findOne({
+    user: req.user._id,
+    paymentMethod: "online",
+    checkoutFingerprint,
+    status: "pending",
+    paymentStatus: { $in: ["pending", "failed"] },
+  }).sort({ createdAt: -1 });
+
+  if (existingOrder) return existingOrder;
+
+  return Order.create({
+    user: req.user._id,
+    ...orderPayload,
+    paymentMethod: "online",
+    paymentStatus: "pending",
+    status: "pending",
+    stockDeducted: false,
+    couponApplied: false,
+    checkoutFingerprint,
+  });
+}
+
 async function deductStockForOrder(order) {
   if (order.stockDeducted) return true;
 
   const reserved = await deductStockForItems(order.items);
   if (!reserved) return false;
+
   order.stockDeducted = true;
   return true;
 }
 
-async function markOrderPaid(order, paymentIntent) {
+async function markOrderPaid(order, paymentId) {
   if (order.paymentStatus === "paid" && order.status === "confirmed") {
     return order;
   }
@@ -26,8 +92,8 @@ async function markOrderPaid(order, paymentIntent) {
     order.paymentStatus = "failed";
     order.status = "cancelled";
     order.paymentDetails = {
-      provider: "stripe",
-      transactionId: paymentIntent.id,
+      provider: "razorpay",
+      transactionId: paymentId,
     };
     await order.save();
     return order;
@@ -35,10 +101,10 @@ async function markOrderPaid(order, paymentIntent) {
 
   order.paymentStatus = "paid";
   order.status = "confirmed";
-  order.stripePaymentId = paymentIntent.id;
+  order.razorpayPaymentId = paymentId;
   order.paymentDetails = {
-    provider: "stripe",
-    transactionId: paymentIntent.id,
+    provider: "razorpay",
+    transactionId: paymentId,
   };
 
   if (order.couponCode && !order.couponApplied) {
@@ -50,130 +116,123 @@ async function markOrderPaid(order, paymentIntent) {
   return order;
 }
 
-async function markOrderFailed(order, paymentReference) {
-  if (order.paymentStatus === "paid") {
-    return order;
-  }
-
-  order.paymentStatus = "failed";
-  order.status = "cancelled";
-  order.stripePaymentId = paymentReference || order.stripePaymentId;
-  order.paymentDetails = {
-    provider: "stripe",
-    transactionId: paymentReference || order.paymentDetails?.transactionId,
-  };
-  await order.save();
-  return order;
-}
-
-function assertWebhookPaymentMatchesOrder(order, paymentIntent) {
-  const expectedAmount = Math.round(order.total * 100);
-  const actualAmount = Number(paymentIntent.amount || 0);
-  const actualCurrency = String(paymentIntent.currency || "").toLowerCase();
-  const metadataUserId = String(paymentIntent.metadata?.userId || "");
-
-  if (actualAmount !== expectedAmount) {
-    throw new Error(`Payment amount mismatch for order ${order._id}`);
-  }
-
-  if (actualCurrency !== "inr") {
-    throw new Error(`Payment currency mismatch for order ${order._id}`);
-  }
-
-  if (metadataUserId !== String(order.user)) {
-    throw new Error(`Payment user mismatch for order ${order._id}`);
-  }
-}
-
-export async function createPaymentIntent(req, res) {
-  if (!stripe) {
+export async function createRazorpayOrder(req, res) {
+  if (!razorpay) {
     res.status(503);
-    throw new Error("Stripe is not configured");
+    throw new Error("Razorpay is not configured");
   }
 
-  const { items, shippingAddress, couponCode, addressId } = req.body;
+  const { orderId, items, address, coupon, addressId } = req.body;
 
-  if (!Array.isArray(items) || items.length === 0) {
-    res.status(400);
-    throw new Error("No items");
+  const order = orderId
+    ? await Order.findOne({
+      _id: orderId,
+      user: req.user._id,
+      paymentMethod: "online",
+    })
+    : await buildPendingOrderFromPayload(req, { items, address, coupon, addressId });
+
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found");
   }
 
-  const addressSnapshot = await resolveShippingAddress({
-    userId: req.user._id,
-    shippingAddress,
-    addressId,
-  });
+  if (order.paymentStatus === "paid") {
+    return res.json({
+      orderId: order.razorpayOrderId,
+      dbOrderId: order._id,
+      amount: order.total,
+      currency: "INR",
+      key: process.env.RAZORPAY_KEY_ID,
+      alreadyPaid: true,
+    });
+  }
 
-  const orderPayload = await buildOrderPayload({
-    items,
-    couponCode,
-    shippingAddress: addressSnapshot,
-  });
-
-  const amount = Math.round(orderPayload.total * 100);
-  if (amount <= 0) {
+  const amountInPaise = Math.round(Number(order.total) * 100);
+  if (amountInPaise <= 0) {
     res.status(400);
     throw new Error("Order total must be greater than zero");
   }
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount,
-    currency: "inr",
-    automatic_payment_methods: {
-      enabled: true,
-      allow_redirects: "never",
-    },
-    metadata: {
+  const razorpayOrder = await razorpay.orders.create({
+    amount: amountInPaise,
+    currency: "INR",
+    receipt: String(order._id),
+    notes: {
+      orderId: String(order._id),
       userId: String(req.user._id),
-      itemCount: String(orderPayload.items.length),
     },
   });
 
+  order.razorpayOrderId = razorpayOrder.id;
+  order.paymentStatus = "pending";
+  order.status = "pending";
+  order.paymentDetails = {
+    provider: "razorpay",
+    transactionId: razorpayOrder.id,
+  };
+  await order.save();
+
   return res.status(201).json({
-    clientSecret: paymentIntent.client_secret,
-    paymentIntentId: paymentIntent.id,
-    amount: orderPayload.total,
-    currency: "inr",
+    orderId: razorpayOrder.id,
+    dbOrderId: order._id,
+    amount: razorpayOrder.amount,
+    currency: razorpayOrder.currency,
+    key: process.env.RAZORPAY_KEY_ID,
   });
 }
 
-export async function handleStripeWebhook(req, res) {
-  try {
-    if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
-      throw new Error("Stripe webhook is not configured");
-    }
+export async function verifyRazorpayPayment(req, res) {
+  const {
+    razorpay_order_id: razorpayOrderId,
+    razorpay_payment_id: razorpayPaymentId,
+    razorpay_signature: razorpaySignature,
+    orderId,
+  } = req.body;
 
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      req.headers["stripe-signature"],
-      process.env.STRIPE_WEBHOOK_SECRET,
-    );
-
-    const object = event.data?.object;
-    const paymentIntentId = object?.id || object?.payment_intent;
-
-    if (!paymentIntentId) {
-      return res.status(200).json({ received: true });
-    }
-
-    const order = await Order.findOne({ stripePaymentId: paymentIntentId }).sort({ createdAt: -1 });
-
-    if (!order) {
-      console.warn("Stripe webhook order not found", { paymentIntentId, type: event.type });
-      return res.status(200).json({ received: true });
-    }
-
-    if (event.type === "payment_intent.succeeded") {
-      assertWebhookPaymentMatchesOrder(order, object);
-      await markOrderPaid(order, object);
-    }
-
-    if (event.type === "payment_intent.payment_failed") {
-      await markOrderFailed(order, paymentIntentId);
-    }
-  } catch (error) {
-    console.error("Stripe webhook error", error.message);
+  if (!orderId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    res.status(400);
+    throw new Error("Missing payment verification fields");
   }
 
-  return res.status(200).json({ received: true });
+  const order = await Order.findOne({ _id: orderId, user: req.user._id, paymentMethod: "online" });
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found");
+  }
+
+  const generatedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
+
+  if (generatedSignature !== razorpaySignature) {
+    order.paymentStatus = "failed";
+    order.status = "pending";
+    order.razorpayOrderId = razorpayOrderId;
+    order.razorpayPaymentId = razorpayPaymentId;
+    order.paymentDetails = {
+      provider: "razorpay",
+      transactionId: razorpayPaymentId,
+    };
+    await order.save();
+
+    return res.status(400).json({
+      verified: false,
+      message: "Payment verification failed",
+      orderId: order._id,
+      paymentStatus: order.paymentStatus,
+    });
+  }
+
+  order.razorpayOrderId = razorpayOrderId;
+  await markOrderPaid(order, razorpayPaymentId);
+
+  return res.json({
+    verified: true,
+    message: "Payment verified",
+    orderId: order._id,
+    paymentStatus: order.paymentStatus,
+    status: order.status,
+  });
 }

@@ -29,6 +29,7 @@ import { WishlistPage } from "./pages/account/WishlistPage.jsx";
 import { AccountSettingsPage } from "./pages/account/AccountSettingsPage.jsx";
 import { AccountPage } from "./pages/AccountPage.jsx";
 import { OrderStatusPage } from "./pages/OrderStatusPage.jsx";
+import { CheckoutResumePage } from "./pages/CheckoutResumePage.jsx";
 
 import { AdminOpsLayout } from "./pages/admin/ops/AdminOpsLayout.jsx";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage.jsx";
@@ -83,7 +84,7 @@ function AppShell() {
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-card">
           <p className="text-sm uppercase tracking-[0.25em] text-accent">NoorFit</p>
           <h1 className="mt-4 text-3xl font-semibold text-white">
-            This app is optimized for mobile devices
+            This app is optimized for mobile
           </h1>
           <p className="mt-4 text-sm text-muted">
             Customer shopping is available on mobile only.<br />
@@ -104,13 +105,14 @@ function AppShell() {
         <Route path="/product/:slug" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/checkout/resume/:orderId" element={<CheckoutResumePage />} />
         <Route path="/success" element={<SuccessPage />} />
         <Route path="/cancel" element={<CancelPage />} />
         <Route path="/auth" element={<AuthPage />} />
 
         {/* Authenticated user routes */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/order-status/:paymentIntentId" element={<OrderStatusPage />} />
+          <Route path="/order-status/:orderId" element={<OrderStatusPage />} />
 
           <Route path="/account" element={<AccountLayout />}>
             <Route index element={<AccountPage />} />
