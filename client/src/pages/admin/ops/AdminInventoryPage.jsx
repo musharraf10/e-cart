@@ -304,7 +304,6 @@ export function AdminInventoryPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => { load(); }, []);
 
   const setVariantStock = (productId, size, color, value) =>
