@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import api from "../api/client.js";
 import { setCredentials } from "../store/slices/authSlice.js";
+import { GoogleLoginButton } from "../components/auth/GoogleLoginButton.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 
 export function AuthPage() {
@@ -32,7 +33,7 @@ export function AuthPage() {
         navigate("/");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Authentication failed");
+      notify(err.response?.data?.message || "Authentication failed", "error");
     } finally {
       setLoading(false);
     }
@@ -65,15 +66,7 @@ export function AuthPage() {
         </p>
 
         <div className="mt-6 space-y-3">
-          <button
-            type="button"
-            onClick={() =>
-              notify("Google sign-in UI added. Enable OAuth to activate.", "error")
-            }
-            className="w-full h-12 rounded-xl border border-[#262626] bg-primary text-white text-sm font-semibold active:scale-95 transition-transform"
-          >
-            Continue with Google
-          </button>
+          <GoogleLoginButton disabled={loading} />
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-[#262626]" />
             <span className="text-xs text-muted">or</span>
