@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { HiStar, HiOutlineHeart, HiHeart } from "react-icons/hi";
 import api from "../../api/client.js";
 import { addToCart } from "../../store/slices/cartSlice.js";
@@ -19,6 +20,7 @@ export function ProductInfo({
   onWishlistChange,
 }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { notify } = useToast();
 
   const [adding, setAdding] = useState(false);
@@ -76,6 +78,36 @@ export function ProductInfo({
     notify("Added to cart");
 
     setTimeout(() => setAdding(false), 600);
+  };
+
+  const buyNow = () => {
+    if (!canAdd) {
+      notify("Please select size & color", "error");
+      return;
+    }
+
+    if (qty > stock || stock < 1) {
+      notify("Requested quantity exceeds stock", "error");
+      return;
+    }
+
+    navigate("/checkout", {
+      state: {
+        buyNow: true,
+        selected: [
+          {
+            product: product._id,
+            name: product.name,
+            price: selectedPrice,
+            image: selectedImage,
+            qty,
+            size,
+            color,
+            sku: selectedVariant?.sku,
+          },
+        ],
+      },
+    });
   };
 
   const toggleWishlist = async () => {
@@ -198,13 +230,23 @@ export function ProductInfo({
           )}
         </button>
 
-        <button
-          onClick={add}
-          disabled={!canAdd || stock < 1 || adding}
-          className="flex-1 h-12 rounded-xl bg-accent text-primary px-6 text-sm font-medium hover:opacity-90 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {adding ? "Adding..." : "Add to cart"}
-        </button>
+        <div className="flex-1 grid grid-cols-2 gap-2">
+          <button
+            onClick={add}
+            disabled={!canAdd || stock < 1 || adding}
+            className="h-12 rounded-xl bg-accent text-primary px-4 text-sm font-medium hover:opacity-90 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {adding ? "Adding..." : "Add to cart"}
+          </button>
+          <button
+            type="button"
+            onClick={buyNow}
+            disabled={!canAdd || stock < 1}
+            className="h-12 rounded-xl border border-accent text-accent px-4 text-sm font-medium hover:bg-accent/10 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Buy Now
+          </button>
+        </div>
       </div>
 
       {selectedImage ? (
