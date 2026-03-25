@@ -4,9 +4,9 @@ import { FiDownload, FiRefreshCw } from "react-icons/fi";
 import api from "../../api/client.js";
 import {
   ActivityItem,
+  AdminLineChart,
   AdminMetricCard,
   AdminPanelCard,
-  AdminTrendList,
   RecentOrderRow,
 } from "../../components/admin/AdminDashboardWidgets.jsx";
 
@@ -46,14 +46,14 @@ export function AdminDashboardPage() {
     })}`;
 
   const metricCards = [
-    ["Total Revenue", formatCurrency(data?.totalRevenue), true],
-    ["Revenue Today", formatCurrency(data?.revenueToday), true],
-    ["Orders Today", data?.ordersToday ?? 0],
-    ["Total Orders", data?.totalOrders ?? 0],
-    ["Total Customers", data?.totalCustomers ?? 0],
-    ["Total Products", data?.totalProducts ?? 0],
-    ["Low Stock Products", data?.lowStockProducts ?? 0],
-    ["Out of Stock Products", data?.outOfStockProducts ?? 0],
+    ["Total Revenue", formatCurrency(data?.totalRevenue), true, "All-time store performance"],
+    ["Revenue Today", formatCurrency(data?.revenueToday), true, "Updated from latest orders"],
+    ["Orders Today", data?.ordersToday ?? 0, false, "Daily completed + pending orders"],
+    ["Total Orders", data?.totalOrders ?? 0, false, "Lifetime order records"],
+    ["Total Customers", data?.totalCustomers ?? 0, false, "Registered shoppers"],
+    ["Total Products", data?.totalProducts ?? 0, false, "SKUs currently listed"],
+    ["Low Stock", data?.lowStockProducts ?? 0, false, "Products below threshold"],
+    ["Out of Stock", data?.outOfStockProducts ?? 0, false, "Requires immediate replenishment"],
   ];
 
   if (loading) {
@@ -79,14 +79,14 @@ export function AdminDashboardPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <section className="rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary p-5 md:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary p-5 md:p-6">
+        <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute -left-16 bottom-0 h-44 w-44 rounded-full bg-accent/5 blur-3xl" />
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">NoorFit Admin</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white md:text-3xl">
-              Operations Command Center
-            </h1>
-            <p className="mt-2 text-sm text-muted">Centralized view of orders, revenue, and inventory health.</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white md:text-3xl">Modern Operations Dashboard</h1>
+            <p className="mt-2 text-sm text-muted">Responsive command center for clothing sales, fulfillment, and inventory health.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -109,26 +109,26 @@ export function AdminDashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metricCards.map(([label, value, highlight]) => (
-          <AdminMetricCard key={label} label={label} value={value} highlight={highlight} />
+        {metricCards.map(([label, value, highlight, detail]) => (
+          <AdminMetricCard key={label} label={label} value={value} highlight={highlight} detail={detail} />
         ))}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">
-        <AdminPanelCard title="Revenue (Last 30 Days)" subtitle="Daily revenue trend for recent 30-day window.">
-          <AdminTrendList
+        <AdminPanelCard title="Revenue Trend" subtitle="Visual revenue performance across recent 30 days.">
+          <AdminLineChart
             rows={data.charts?.revenueLast30Days}
-            valueFormatter={formatCurrency}
             valueKey="revenue"
+            valueFormatter={formatCurrency}
             emptyMessage="No revenue data yet"
           />
         </AdminPanelCard>
 
-        <AdminPanelCard title="Orders (Last 30 Days)" subtitle="Daily order volume in the same period.">
-          <AdminTrendList
+        <AdminPanelCard title="Orders Trend" subtitle="Order velocity for the same period.">
+          <AdminLineChart
             rows={data.charts?.ordersLast30Days}
-            valueFormatter={(value) => value ?? 0}
             valueKey="orders"
+            valueFormatter={(value) => value ?? 0}
             emptyMessage="No orders yet"
           />
         </AdminPanelCard>
@@ -147,7 +147,7 @@ export function AdminDashboardPage() {
           )}
         </AdminPanelCard>
 
-        <AdminPanelCard title="Recent Activity" subtitle="Operational alerts and customer feedback signals.">
+        <AdminPanelCard title="Operational Activity" subtitle="Live inventory and customer sentiment signals.">
           <div className="space-y-2">
             <ActivityItem>
               <strong className="text-white">{data.lowStockProducts ?? 0}</strong> products low on stock (&lt; 5 units)
