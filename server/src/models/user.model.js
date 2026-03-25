@@ -14,6 +14,31 @@ const userSchema = new mongoose.Schema(
     dateOfBirth: Date,
     gender: { type: String, enum: ["male", "female", "other", "prefer_not_to_say"] },
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+    savedCards: [
+      {
+        last4: {
+          type: String,
+          trim: true,
+          minlength: 4,
+          maxlength: 4,
+        },
+        brand: {
+          type: String,
+          trim: true,
+          maxlength: 30,
+        },
+        expiry: {
+          type: String,
+          trim: true,
+          maxlength: 5,
+        },
+        tokenId: {
+          type: String,
+          trim: true,
+          maxlength: 120,
+        },
+      },
+    ],
     address: {
       line1: String,
       line2: String,
@@ -38,4 +63,3 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 export const User = mongoose.model("User", userSchema);
-

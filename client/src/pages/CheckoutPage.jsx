@@ -60,6 +60,8 @@ function loadRazorpayScript() {
 }
 
 async function openRazorpayCheckout({ paymentData, address, onFailed }) {
+  const isSavedCardFlow = paymentData.paymentChannel === "card";
+
   return new Promise((resolve, reject) => {
     const razorpay = new window.Razorpay({
       key: paymentData.key,
@@ -73,7 +75,26 @@ async function openRazorpayCheckout({ paymentData, address, onFailed }) {
       },
       notes: {
         address: `${address.line1}, ${address.city}`,
+        paymentChannel: paymentData.paymentChannel,
+        savedCardTokenId: paymentData.savedCardTokenId || "",
       },
+      method: isSavedCardFlow
+        ? {
+          card: true,
+          upi: false,
+          netbanking: false,
+          wallet: false,
+          paylater: false,
+          emi: false,
+        }
+        : {
+          card: false,
+          upi: true,
+          netbanking: false,
+          wallet: false,
+          paylater: false,
+          emi: false,
+        },
       handler: (response) => resolve(response),
       modal: {
         ondismiss: () => reject(new Error("Payment popup closed. You can continue payment later.")),
@@ -94,7 +115,9 @@ export default function CheckoutPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [paymentMethod, setPaymentMethod] = useState("online");
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [savedCards, setSavedCards] = useState([]);
+  const [selectedSavedCardId, setSelectedSavedCardId] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [address, setAddress] = useState({
     line1: "",
@@ -115,7 +138,9 @@ export default function CheckoutPage() {
 
   const isProcessing = processingStage !== "idle";
 
-  const canSubmit = checkoutIssues.length === 0 && !isProcessing;
+  const canSubmit = checkoutIssues.length === 0
+    && !isProcessing
+    && (paymentMethod !== "saved_card" || Boolean(selectedSavedCardId));
 
   useEffect(() => {
     api
@@ -135,6 +160,19 @@ export default function CheckoutPage() {
         setAddressId(defaultAddress._id || null);
       })
       .catch(() => {});
+
+    api
+      .get("/users/saved-cards")
+      .then(({ data }) => {
+        const cards = Array.isArray(data) ? data : [];
+        setSavedCards(cards);
+        if (cards.length) {
+          setSelectedSavedCardId(cards[0].id);
+        }
+      })
+      .catch(() => {
+        setSavedCards([]);
+      });
   }, []);
 
   const orderItems = useMemo(
@@ -174,11 +212,16 @@ export default function CheckoutPage() {
     }
 
     setProcessingStage("creating_razorpay_order");
+    const selectedSavedCard = savedCards.find((card) => card.id === selectedSavedCardId);
+    const channel = paymentMethod === "saved_card" ? "card" : "upi";
+
     const { data: paymentData } = await api.post("/payments/create-razorpay-order", {
       orderId: dbOrderId,
       items: orderItems,
       address,
       coupon: couponCode || undefined,
+      paymentChannel: channel,
+      savedCardTokenId: selectedSavedCard?.tokenId,
     });
 
     if (paymentData.alreadyPaid) {
@@ -248,9 +291,12 @@ export default function CheckoutPage() {
 
   const actionLabel = isProcessing
     ? "Processing Payment..."
-    : paymentMethod === "online"
-      ? "Pay & Place Order"
-      : "Place Order (COD)";
+    : paymentMethod === "cod"
+      ? "Place Order (COD)"
+      : paymentMethod === "saved_card"
+        ? "Pay with Saved Card"
+        : "Pay with UPI";
+  const selectedSavedCard = savedCards.find((card) => card.id === selectedSavedCardId);
 
   return (
     <motion.div
@@ -290,31 +336,81 @@ export default function CheckoutPage() {
         <div className="space-y-5 rounded-xl border border-border bg-card p-6">
           <h2 className="text-lg font-semibold text-white">Payment method</h2>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="space-y-3">
             <button
               type="button"
-              onClick={() => setPaymentMethod("online")}
+              onClick={() => setPaymentMethod("upi")}
               disabled={isProcessing}
-              className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition-all disabled:opacity-60 ${paymentMethod === "online"
-                ? "border-accent bg-accent/10 text-accent"
+              className={`w-full rounded-2xl border px-4 py-4 text-left transition-all disabled:opacity-60 ${paymentMethod === "upi"
+                ? "border-accent bg-accent/10 text-accent shadow-[0_0_0_1px_rgba(190,242,100,0.5)]"
                 : "border-border text-muted-foreground hover:border-muted hover:text-white"
                 }`}
             >
-              Online (UPI / Card / Netbanking)
+              <p className="text-sm font-semibold">UPI</p>
+              <p className="mt-1 text-xs text-muted-foreground">Recommended • Fast payment via Razorpay UPI</p>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("saved_card")}
+              disabled={isProcessing || savedCards.length === 0}
+              className={`w-full rounded-2xl border px-4 py-4 text-left transition-all disabled:opacity-60 ${paymentMethod === "saved_card"
+                ? "border-accent bg-accent/10 text-accent shadow-[0_0_0_1px_rgba(190,242,100,0.5)]"
+                : "border-border text-muted-foreground hover:border-muted hover:text-white"
+                }`}
+            >
+              <p className="text-sm font-semibold">Saved cards</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {savedCards.length ? `${savedCards.length} card${savedCards.length > 1 ? "s" : ""} available` : "No saved cards yet"}
+              </p>
+            </button>
+
+            {savedCards.length > 0 && paymentMethod === "saved_card" && (
+              <div className="space-y-2 rounded-2xl border border-border bg-primary/50 p-3">
+                {savedCards.map((card) => {
+                  const isSelected = selectedSavedCardId === card.id;
+
+                  return (
+                    <button
+                      key={card.id}
+                      type="button"
+                      onClick={() => setSelectedSavedCardId(card.id)}
+                      disabled={isProcessing}
+                      className={`w-full rounded-xl border p-3 text-left transition-all ${isSelected
+                        ? "border-accent bg-accent/10"
+                        : "border-border bg-card/80 hover:border-muted"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold uppercase tracking-wide">{card.brand}</span>
+                        <span className="text-xs text-muted-foreground">Exp {card.expiry}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">•••• •••• •••• {card.last4}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <button
               type="button"
               onClick={() => setPaymentMethod("cod")}
               disabled={isProcessing}
-              className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition-all disabled:opacity-60 ${paymentMethod === "cod"
-                ? "border-accent bg-accent/10 text-accent"
+              className={`w-full rounded-2xl border px-4 py-4 text-left transition-all disabled:opacity-60 ${paymentMethod === "cod"
+                ? "border-accent bg-accent/10 text-accent shadow-[0_0_0_1px_rgba(190,242,100,0.5)]"
                 : "border-border text-muted-foreground hover:border-muted hover:text-white"
                 }`}
             >
-              Cash on Delivery
+              <p className="text-sm font-semibold">Cash on Delivery</p>
+              <p className="mt-1 text-xs text-muted-foreground">Pay after delivery confirmation</p>
             </button>
           </div>
+
+          {paymentMethod !== "cod" && (
+            <p className="rounded-xl border border-border bg-primary/60 px-3 py-2 text-xs text-muted-foreground">
+              Razorpay securely processes {paymentMethod === "saved_card" && selectedSavedCard ? `${selectedSavedCard.brand} •••• ${selectedSavedCard.last4}` : "UPI"}. NoorFit never stores full card details.
+            </p>
+          )}
 
           <input
             placeholder="Coupon code (optional)"
