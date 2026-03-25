@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { FiDownload, FiRefreshCw } from "react-icons/fi";
 import api from "../../api/client.js";
+import {
+  ActivityItem,
+  AdminMetricCard,
+  AdminPanelCard,
+  AdminTrendList,
+  RecentOrderRow,
+} from "../../components/admin/AdminDashboardWidgets.jsx";
 
 export function AdminDashboardPage() {
   const [data, setData] = useState(null);
@@ -38,8 +46,8 @@ export function AdminDashboardPage() {
     })}`;
 
   const metricCards = [
-    ["Total Revenue", formatCurrency(data?.totalRevenue)],
-    ["Revenue Today", formatCurrency(data?.revenueToday)],
+    ["Total Revenue", formatCurrency(data?.totalRevenue), true],
+    ["Revenue Today", formatCurrency(data?.revenueToday), true],
     ["Orders Today", data?.ordersToday ?? 0],
     ["Total Orders", data?.totalOrders ?? 0],
     ["Total Customers", data?.totalCustomers ?? 0],
@@ -50,151 +58,127 @@ export function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse rounded-xl bg-card border border-[#262626] h-32 w-full max-w-md" />
+      <div className="space-y-4">
+        <div className="h-28 animate-pulse rounded-2xl border border-border bg-card" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="h-24 animate-pulse rounded-2xl border border-border bg-card" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="rounded-xl bg-card border border-red-900/50 p-8 text-center">
+      <div className="rounded-2xl border border-red-900/50 bg-card p-8 text-center">
         <p className="text-red-400">{error || "Could not load dashboard data"}</p>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
-    >
-      <h1 className="text-2xl font-bold tracking-tight text-white">
-        Admin Operations Dashboard
-      </h1>
-
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {metricCards.map(([label, value]) => (
-          <div
-            key={label}
-            className="bg-card rounded-xl border border-[#262626] p-4 hover:border-[#262626]/80 transition-colors"
-          >
-            <p className="text-xs text-muted font-medium uppercase tracking-wide">
-              {label}
-            </p>
-            <p className="text-xl font-semibold text-white mt-1.5">{value}</p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <section className="rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary p-5 md:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">NoorFit Admin</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white md:text-3xl">
+              Operations Command Center
+            </h1>
+            <p className="mt-2 text-sm text-muted">Centralized view of orders, revenue, and inventory health.</p>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-muted hover:text-white"
+            >
+              <FiRefreshCw />
+              Refresh
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-white"
+            >
+              <FiDownload />
+              Export Snapshot
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metricCards.map(([label, value, highlight]) => (
+          <AdminMetricCard key={label} label={label} value={value} highlight={highlight} />
         ))}
       </section>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-xl border border-[#262626] p-5">
-          <h2 className="font-semibold text-white mb-3">Revenue (Last 30 Days)</h2>
-          <div className="max-h-64 overflow-auto text-sm">
-            {data.charts?.revenueLast30Days?.length ? (
-              data.charts.revenueLast30Days.map((row) => (
-                <div
-                  key={row._id}
-                  className="flex justify-between py-2 border-b border-[#262626] last:border-b-0 text-muted"
-                >
-                  <span>{row._id}</span>
-                  <span className="font-medium text-white">{formatCurrency(row.revenue)}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted text-center py-6">No revenue data yet</p>
-            )}
-          </div>
-        </div>
+      <section className="grid gap-6 xl:grid-cols-2">
+        <AdminPanelCard title="Revenue (Last 30 Days)" subtitle="Daily revenue trend for recent 30-day window.">
+          <AdminTrendList
+            rows={data.charts?.revenueLast30Days}
+            valueFormatter={formatCurrency}
+            valueKey="revenue"
+            emptyMessage="No revenue data yet"
+          />
+        </AdminPanelCard>
 
-        <div className="bg-card rounded-xl border border-[#262626] p-5">
-          <h2 className="font-semibold text-white mb-3">Orders (Last 30 Days)</h2>
-          <div className="max-h-64 overflow-auto text-sm">
-            {data.charts?.ordersLast30Days?.length ? (
-              data.charts.ordersLast30Days.map((row) => (
-                <div
-                  key={row._id}
-                  className="flex justify-between py-2 border-b border-[#262626] last:border-b-0 text-muted"
-                >
-                  <span>{row._id}</span>
-                  <span className="font-medium text-white">{row.orders}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted text-center py-6">No orders yet</p>
-            )}
-          </div>
-        </div>
-      </div>
+        <AdminPanelCard title="Orders (Last 30 Days)" subtitle="Daily order volume in the same period.">
+          <AdminTrendList
+            rows={data.charts?.ordersLast30Days}
+            valueFormatter={(value) => value ?? 0}
+            valueKey="orders"
+            emptyMessage="No orders yet"
+          />
+        </AdminPanelCard>
+      </section>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-xl border border-[#262626] p-5">
-          <h2 className="font-semibold text-white mb-3">Recent Orders</h2>
+      <section className="grid gap-6 xl:grid-cols-2">
+        <AdminPanelCard title="Recent Orders" subtitle="Most recent customer transactions.">
           {data.recentOrders?.length ? (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-2">
               {data.recentOrders.map((order) => (
-                <div
-                  key={order._id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-[#262626] last:border-b-0"
-                >
-                  <div>
-                    <div className="font-medium text-white">
-                      #{order._id.slice(-6).toUpperCase()} · {order.user?.name || "Guest"}
-                    </div>
-                    <div className="text-muted text-xs mt-0.5">
-                      {new Date(order.createdAt).toLocaleString("en-US", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </div>
-                  </div>
-                  <div className="mt-1 sm:mt-0 text-right">
-                    <div className="font-medium text-white">{formatCurrency(order.total)}</div>
-                    <div className="text-xs capitalize text-muted">{order.status}</div>
-                  </div>
-                </div>
+                <RecentOrderRow key={order._id} order={order} formatCurrency={formatCurrency} />
               ))}
             </div>
           ) : (
-            <p className="text-muted text-center py-8">No recent orders</p>
+            <p className="py-8 text-center text-sm text-muted">No recent orders</p>
           )}
-        </div>
+        </AdminPanelCard>
 
-        <div className="bg-card rounded-xl border border-[#262626] p-5">
-          <h2 className="font-semibold text-white mb-3">Recent Activity</h2>
-          <div className="mb-4 space-y-1 text-sm text-muted">
-            <p>
+        <AdminPanelCard title="Recent Activity" subtitle="Operational alerts and customer feedback signals.">
+          <div className="space-y-2">
+            <ActivityItem>
               <strong className="text-white">{data.lowStockProducts ?? 0}</strong> products low on stock (&lt; 5 units)
-            </p>
-            <p>
-              <strong className="text-white">{data.outOfStockProducts ?? 0}</strong> products out of stock
-            </p>
+            </ActivityItem>
+            <ActivityItem>
+              <strong className="text-white">{data.outOfStockProducts ?? 0}</strong> products currently out of stock
+            </ActivityItem>
           </div>
-          <h3 className="font-medium text-white mt-5 mb-2">Recent Reviews</h3>
+
+          <h3 className="mt-5 text-sm font-semibold uppercase tracking-[0.15em] text-muted">Recent Reviews</h3>
           {data.recentReviews?.length ? (
-            <div className="space-y-3 text-sm">
+            <div className="mt-3 space-y-2">
               {data.recentReviews.map((review) => (
-                <div key={review._id} className="py-3 border-b border-[#262626] last:border-b-0">
-                  <div className="flex justify-between items-baseline">
-                    <span className="font-medium text-white">
+                <div key={review._id} className="rounded-xl border border-border/80 bg-primary/40 px-3 py-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-white">
                       {review.user?.name || "Anonymous"} · {review.rating}/5
-                    </span>
-                    <span className="text-muted text-xs">
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </span>
+                    </p>
+                    <p className="text-xs text-muted">{new Date(review.createdAt).toLocaleDateString()}</p>
                   </div>
-                  <div className="text-muted mt-1 line-clamp-2">
+                  <p className="mt-1 text-xs text-muted">
                     on <em>{review.product?.name || "Product"}</em>
-                  </div>
+                  </p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-muted text-center py-6">No recent reviews</p>
+            <p className="mt-3 py-2 text-sm text-muted">No recent reviews</p>
           )}
-        </div>
-      </div>
+        </AdminPanelCard>
+      </section>
     </motion.div>
   );
 }

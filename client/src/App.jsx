@@ -5,7 +5,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 import { Layout } from "./components/layout/Layout.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
@@ -48,12 +48,11 @@ import { AdminSettingsPage } from "./pages/admin/ops/AdminSettingsPage.jsx";
 
 import { initializeAuth } from "./store/slices/authSlice.js";
 import { ToastProvider } from "./components/ui/ToastProvider.jsx";
+import { DesktopBlockScreen } from "./components/layout/DesktopBlockScreen.jsx";
 
 function AppShell() {
   const dispatch = useDispatch();
   const location = useLocation();
-  const { user } = useSelector((state) => state.auth);
-
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : true
   );
@@ -69,30 +68,15 @@ function AppShell() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const isAdmin = user?.role === "admin";
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const isAuthRoute = location.pathname.startsWith("/auth");
 
   const isDesktopBlocked = useMemo(
-    () => !isMobile && !isAdmin && !isAdminRoute && !isAuthRoute,
-    [isMobile, isAdmin, isAdminRoute, isAuthRoute]
+    () => !isMobile && !isAdminRoute,
+    [isMobile, isAdminRoute]
   );
 
   if (isDesktopBlocked) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-primary px-6 text-center">
-        <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-card">
-          <p className="text-sm uppercase tracking-[0.25em] text-accent">NoorFit</p>
-          <h1 className="mt-4 text-3xl font-semibold text-white">
-            This app is optimized for mobile
-          </h1>
-          <p className="mt-4 text-sm text-muted">
-            Customer shopping is available on mobile only.<br />
-            Admins can continue on desktop through the admin panel.
-          </p>
-        </div>
-      </div>
-    );
+    return <DesktopBlockScreen />;
   }
 
   return (
