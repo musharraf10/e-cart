@@ -7,7 +7,13 @@ import {
   resolveShippingAddress,
 } from "../utils/checkout.util.js";
 
-async function buildValidatedOrderPayload({ userId, items, shippingAddress, addressId, couponCode }) {
+async function buildValidatedOrderPayload({
+  userId,
+  items,
+  shippingAddress,
+  addressId,
+  couponCode,
+}) {
   if (!Array.isArray(items) || items.length === 0) {
     const error = new Error("No items");
     error.statusCode = 400;
@@ -27,7 +33,11 @@ async function buildValidatedOrderPayload({ userId, items, shippingAddress, addr
   });
 }
 
-async function validateStripePaymentIntent({ paymentIntentId, expectedAmount, userId }) {
+async function validateStripePaymentIntent({
+  paymentIntentId,
+  expectedAmount,
+  userId,
+}) {
   if (!stripe) {
     const error = new Error("Stripe is not configured");
     error.statusCode = 503;
@@ -42,8 +52,14 @@ async function validateStripePaymentIntent({ paymentIntentId, expectedAmount, us
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-  if (!["succeeded", "processing", "requires_capture"].includes(paymentIntent.status)) {
-    const error = new Error("Payment intent is not ready for order verification");
+  if (
+    !["succeeded", "processing", "requires_capture"].includes(
+      paymentIntent.status,
+    )
+  ) {
+    const error = new Error(
+      "Payment intent is not ready for order verification",
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -85,7 +101,6 @@ export async function createOrder(req, res) {
     addressId,
     couponCode,
   });
-}
 
   if (paymentMethod === "online") {
     res.status(400);
@@ -178,7 +193,9 @@ export async function createPendingOrder(req, res) {
 }
 
 export async function listMyOrders(req, res) {
-  const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+  const orders = await Order.find({ user: req.user._id }).sort({
+    createdAt: -1,
+  });
   res.json(orders);
 }
 

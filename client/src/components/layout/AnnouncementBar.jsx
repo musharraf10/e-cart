@@ -33,12 +33,12 @@ export function AnnouncementBar() {
     );
   }
 
-  if (!items.length) {
+  if (!Array.isArray(items) || !items.length) {
     return null;
   }
 
   const message = items
-    .map((a) => a.text)
+    ?.map((a) => a.text)
     .filter(Boolean)
     .join("   •   ");
 
