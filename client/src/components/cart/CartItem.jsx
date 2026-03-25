@@ -2,7 +2,7 @@ import { useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { removeFromCart, updateQty } from "../../store/slices/cartSlice.js";
 
-export function CartItem({ item, index }) {
+export function CartItem({ item, index, selected, onSelectChange }) {
   const dispatch = useDispatch();
   const lineTotal = item.price * item.qty;
 
@@ -14,6 +14,15 @@ export function CartItem({ item, index }) {
       exit={{ opacity: 0, x: -20 }}
       className="flex gap-4 p-4 rounded-xl bg-card border border-[#262626] hover:border-[#262626]/80 transition-all duration-200"
     >
+      <div className="flex items-start pt-1">
+        <input
+          type="checkbox"
+          checked={Boolean(selected)}
+          onChange={(event) => onSelectChange?.(event.target.checked)}
+          className="h-4 w-4 cursor-pointer rounded border-border bg-primary text-accent focus:ring-accent"
+          aria-label={`Select ${item.name}`}
+        />
+      </div>
       <div className="w-20 h-24 md:w-24 md:h-28 flex-shrink-0 rounded-lg overflow-hidden bg-[#262626]">
         {item.image ? (
           <img

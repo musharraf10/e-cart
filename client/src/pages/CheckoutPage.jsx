@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import api from "../api/client.js";
@@ -111,9 +111,10 @@ async function openRazorpayCheckout({ paymentData, address, onFailed }) {
 }
 
 export default function CheckoutPage() {
-  const items = useSelector((state) => state.cart.items);
+  const cartItems = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [savedCards, setSavedCards] = useState([]);
@@ -133,8 +134,15 @@ export default function CheckoutPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [pendingOrderId, setPendingOrderId] = useState("");
 
-  const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-  const checkoutIssues = useMemo(() => getCheckoutIssues(items, address), [items, address]);
+  const stateSelectedItems = Array.isArray(location.state?.selected)
+    ? location.state.selected
+    : [];
+  const isBuyNowFlow = Boolean(location.state?.buyNow);
+  const isSelectedFlow = !isBuyNowFlow && stateSelectedItems.length > 0;
+  const checkoutItems = stateSelectedItems.length > 0 ? stateSelectedItems : cartItems;
+
+  const subtotal = checkoutItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const checkoutIssues = useMemo(() => getCheckoutIssues(checkoutItems, address), [checkoutItems, address]);
 
   const isProcessing = processingStage !== "idle";
 
@@ -177,14 +185,14 @@ export default function CheckoutPage() {
 
   const orderItems = useMemo(
     () =>
-      items.map((item) => ({
+      checkoutItems.map((item) => ({
         product: item.product,
         qty: item.qty,
         size: item.size,
         color: item.color,
         sku: item.sku,
       })),
-    [items]
+    [checkoutItems]
   );
 
   const startOnlinePayment = async (orderIdOverride) => {
@@ -225,7 +233,9 @@ export default function CheckoutPage() {
     });
 
     if (paymentData.alreadyPaid) {
-      dispatch(clearCart());
+      if (!isBuyNowFlow && !isSelectedFlow) {
+        dispatch(clearCart());
+      }
       navigate(`/order-status/${dbOrderId}`);
       return;
     }
@@ -252,7 +262,9 @@ export default function CheckoutPage() {
       return;
     }
 
-    dispatch(clearCart());
+    if (!isBuyNowFlow && !isSelectedFlow) {
+      dispatch(clearCart());
+    }
     setSuccessMessage("Order placed successfully.");
     navigate(`/order-status/${dbOrderId}`);
   };
@@ -273,7 +285,9 @@ export default function CheckoutPage() {
           couponCode: couponCode || undefined,
         });
 
-        dispatch(clearCart());
+        if (!isBuyNowFlow && !isSelectedFlow) {
+          dispatch(clearCart());
+        }
         navigate(`/success?orderId=${data.orderId}`);
         return;
       }
@@ -305,7 +319,12 @@ export default function CheckoutPage() {
       className="grid gap-8 pb-28 md:grid-cols-[1fr,380px] md:pb-0"
     >
       <section className="space-y-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">Checkout</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">Checkout</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isBuyNowFlow ? "Buy Now" : isSelectedFlow ? "Selected Cart Items" : "Full Cart"} • {checkoutItems.length} {checkoutItems.length === 1 ? "item" : "items"}
+          </p>
+        </div>
 
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 text-lg font-semibold text-white">Shipping address</h2>
