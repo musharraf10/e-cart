@@ -122,7 +122,15 @@ export async function createRazorpayOrder(req, res) {
     throw new Error("Razorpay is not configured");
   }
 
-  const { orderId, items, address, coupon, addressId } = req.body;
+  const {
+    orderId,
+    items,
+    address,
+    coupon,
+    addressId,
+    paymentChannel = "upi",
+    savedCardTokenId,
+  } = req.body;
 
   const order = orderId
     ? await Order.findOne({
@@ -161,6 +169,8 @@ export async function createRazorpayOrder(req, res) {
     notes: {
       orderId: String(order._id),
       userId: String(req.user._id),
+      paymentChannel,
+      savedCardTokenId: savedCardTokenId || "",
     },
   });
 
@@ -179,6 +189,8 @@ export async function createRazorpayOrder(req, res) {
     amount: razorpayOrder.amount,
     currency: razorpayOrder.currency,
     key: process.env.RAZORPAY_KEY_ID,
+    paymentChannel,
+    savedCardTokenId: savedCardTokenId || null,
   });
 }
 

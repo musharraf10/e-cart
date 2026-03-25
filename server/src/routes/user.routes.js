@@ -2,6 +2,7 @@ import express from "express";
 import { protect } from "../middleware/auth.middleware.js";
 import {
   getUserProfile,
+  listSavedCards,
   updateUserProfile,
   listAddresses,
   createAddress,
@@ -20,6 +21,7 @@ router.use(protect);
 
 router.get("/profile", getUserProfile);
 router.put("/profile", updateUserProfile);
+router.get("/saved-cards", listSavedCards);
 
 router.get("/addresses", listAddresses);
 router.post("/addresses", createAddress);

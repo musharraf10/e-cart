@@ -6,6 +6,21 @@ export async function getUserProfile(req, res) {
   res.json(req.user);
 }
 
+export async function listSavedCards(req, res) {
+  const user = await User.findById(req.user._id).select("savedCards");
+  const safeCards = (user?.savedCards || [])
+    .filter((card) => card?.last4 && card?.brand && card?.expiry && card?.tokenId)
+    .map((card) => ({
+      id: card._id,
+      last4: card.last4,
+      brand: card.brand,
+      expiry: card.expiry,
+      tokenId: card.tokenId,
+    }));
+
+  res.json(safeCards);
+}
+
 export async function updateUserProfile(req, res) {
   const user = await User.findById(req.user._id);
   if (!user) {
