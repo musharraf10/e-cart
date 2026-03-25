@@ -75,7 +75,7 @@ function AppShell() {
     [isMobile, isAdminRoute]
   );
 
-  if (isDesktopBlocked) {
+  if (isDesktopBlocked && !location.pathname.startsWith("/auth")) {
     return <DesktopBlockScreen />;
   }
 
