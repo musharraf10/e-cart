@@ -39,11 +39,17 @@ export function AdminDashboardPage() {
     };
   }, []);
 
-  const formatCurrency = (amount) =>
-    `$${(Number(amount) || 0).toLocaleString("en-US", {
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`;
+    }).format(Number(amount) || 0);
+  };
+
+  // Example Output:
+  // 100000 => ₹1,00,000.00
 
   const metricCards = [
     ["Total Revenue", formatCurrency(data?.totalRevenue), true, "All-time store performance"],

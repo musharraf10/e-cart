@@ -85,6 +85,17 @@ function Sparkline({ rows, valueKey }) {
 
 export function AdminAnalyticsPage() {
   const [data, setData] = useState(null);
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(amount) || 0);
+  };
+
+  // Example Output:
+  // 100000 => ₹1,00,000.00
 
   useEffect(() => {
     api.get("/admin/analytics").then(({ data: payload }) => setData(payload));
@@ -132,7 +143,7 @@ export function AdminAnalyticsPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <MetricBlock label="Revenue (Visible Period)" value={`$${summary.totalRevenue.toFixed(2)}`} icon={FiTrendingUp} />
+        <MetricBlock label="Revenue (Visible Period)" value={`${formatCurrency(summary.totalRevenue)}`} icon={FiTrendingUp} />
         <MetricBlock label="Units Sold" value={summary.totalUnits} icon={FiBarChart2} />
         <MetricBlock label="Products with Sales" value={summary.activeProducts} icon={FiTrendingUp} />
       </section>
@@ -163,7 +174,7 @@ export function AdminAnalyticsPage() {
                 <span className="font-medium text-white">{row._id}</span>
                 <div className="flex gap-3 text-muted">
                   <span>Qty {row.qty}</span>
-                  <span className="font-semibold text-accent">${(row.revenue || 0).toFixed(2)}</span>
+                  <span className="font-semibold text-accent">{(formatCurrency(row.revenue) || 0)}</span>
                 </div>
               </div>
             ))}

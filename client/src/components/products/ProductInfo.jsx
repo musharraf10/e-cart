@@ -195,28 +195,33 @@ export function ProductInfo({
 
       <div className="space-y-3 w-full">
         <div className="flex items-center gap-3">
-          <div className="flex flex-1 items-center rounded-2xl border border-[#2f2f2f] overflow-hidden text-sm bg-primary h-12">
+          <div className="flex flex-1 h-12 rounded-2xl border border-[#2f2f2f] overflow-hidden bg-primary text-sm">
+
+            {/* Decrease */}
             <button
               type="button"
-              onClick={() => setQty((currentQty) => Math.max(1, currentQty - 1))}
-              className="px-4 h-full text-muted hover:text-white transition-colors"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              className="flex-1 flex items-center justify-center text-muted hover:text-white transition-colors"
               aria-label="Decrease quantity"
             >
               −
             </button>
 
-            <span className="px-4 text-white min-w-[3.25rem] text-center font-medium">
+            {/* Quantity */}
+            <div className="flex-1 flex items-center justify-center text-white font-medium border-x border-[#2f2f2f]">
               {qty}
-            </span>
+            </div>
 
+            {/* Increase */}
             <button
               type="button"
-              onClick={() => setQty((currentQty) => currentQty + 1)}
-              className="px-4 h-full text-muted hover:text-white transition-colors"
+              onClick={() => setQty((q) => q + 1)}
+              className="flex-1 flex items-center justify-center text-muted hover:text-white transition-colors"
               aria-label="Increase quantity"
             >
               +
             </button>
+
           </div>
 
           <button

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import api from "../../../api/client.js";
 import { LoadingSkeleton } from "../../../components/ui/LoadingSkeleton.jsx";
 
@@ -13,12 +13,63 @@ const initialForm = {
   active: true,
 };
 
+const fadeUp = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+};
+
+const stagger = {
+  animate: { transition: { staggerChildren: 0.06 } },
+};
+
+function StatusPill({ active, expired }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide border transition-colors duration-200 ${active
+          ? "bg-accent/10 text-accent border-accent/30"
+          : "bg-zinc-800/60 text-zinc-400 border-zinc-700/60"
+          }`}
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${active ? "bg-accent" : "bg-zinc-500"}`}
+        />
+        {active ? "Active" : "Inactive"}
+      </span>
+      {expired && (
+        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide bg-red-500/10 text-red-400 border border-red-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+          Expired
+        </span>
+      )}
+    </div>
+  );
+}
+
+function InputField({ label, children }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+          {label}
+        </label>
+      )}
+      {children}
+    </div>
+  );
+}
+
+const inputClass =
+  "w-full rounded-xl border border-[#262626] bg-[#111111] px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/10 transition-all duration-200";
+
 export function AdminCouponsPage() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -28,9 +79,7 @@ export function AdminCouponsPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +109,7 @@ export function AdminCouponsPage() {
       usageLimit: coupon.usageLimit ?? "",
       active: coupon.active ?? true,
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const resetForm = () => {
@@ -74,7 +124,9 @@ export function AdminCouponsPage() {
 
   const remove = async (id) => {
     if (!window.confirm("Delete this coupon? This cannot be undone.")) return;
+    setDeletingId(id);
     await api.delete(`/admin/coupons/${id}`);
+    setDeletingId(null);
     load();
   };
 
@@ -82,258 +134,431 @@ export function AdminCouponsPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-5"
+      variants={stagger}
+      initial="initial"
+      animate="animate"
+      className="space-y-6 max-w-6xl mx-auto"
     >
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Coupons & Promotions
-        </h1>
-        {editingId && (
-          <button
-            type="button"
-            onClick={resetForm}
-            className="text-xs rounded-xl border border-[#262626] px-3 py-1.5 text-muted hover:text-white hover:bg-[#262626]"
-          >
-            Cancel edit
-          </button>
-        )}
-      </div>
-
-      <section className="bg-card rounded-xl border border-[#262626] p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-white">
-          {editingId ? "Edit coupon" : "Create coupon"}
-        </h2>
-        <form
-          onSubmit={handleSubmit}
-          className="grid gap-3 md:grid-cols-3 text-sm"
-        >
-          <input
-            className="rounded-xl border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
-            placeholder="Coupon code"
-            value={form.code}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))
-            }
-            required
-          />
-          <select
-            className="rounded-xl border border-[#262626] bg-primary px-3 py-2 text-white focus:outline-none focus:border-accent"
-            value={form.discountType}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, discountType: e.target.value }))
-            }
-          >
-            <option value="percentage">Percentage</option>
-            <option value="fixed">Fixed amount</option>
-          </select>
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            className="rounded-xl border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
-            placeholder={
-              form.discountType === "percentage"
-                ? "Value (%)"
-                : "Value (fixed amount)"
-            }
-            value={form.value}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, value: Number(e.target.value) || 0 }))
-            }
-            required
-          />
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            className="rounded-xl border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
-            placeholder="Minimum order amount"
-            value={form.minOrder}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, minOrder: Number(e.target.value) || 0 }))
-            }
-          />
-          <input
-            type="date"
-            className="rounded-xl border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
-            value={form.expiry}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, expiry: e.target.value }))
-            }
-            required
-          />
-          <input
-            type="number"
-            min={0}
-            className="rounded-xl border border-[#262626] bg-primary px-3 py-2 text-white placeholder-muted focus:outline-none focus:border-accent"
-            placeholder="Usage limit (optional)"
-            value={form.usageLimit}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                usageLimit: e.target.value === "" ? "" : Number(e.target.value),
-              }))
-            }
-          />
-          <label className="flex items-center gap-2 text-xs text-muted md:col-span-3">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-[#262626] bg-primary"
-              checked={form.active}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, active: e.target.checked }))
-              }
-            />
-            Active
-          </label>
-          <button
-            type="submit"
-            disabled={saving}
-            className="md:col-span-3 rounded-xl bg-accent text-primary py-2.5 text-sm font-medium hover:opacity-90 disabled:opacity-60"
-          >
-            {saving
-              ? editingId
-                ? "Saving changes..."
-                : "Creating..."
-              : editingId
-              ? "Save changes"
-              : "Create coupon"}
-          </button>
-        </form>
-      </section>
-
-      <section className="bg-card rounded-xl border border-[#262626] p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-white">All coupons</h2>
-          <p className="text-xs text-muted">
-            {coupons.length} coupon{coupons.length === 1 ? "" : "s"}
+      {/* Header */}
+      <motion.div variants={fadeUp} className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            Coupons & Promotions
+          </h1>
+          <p className="text-sm text-zinc-500 mt-0.5">
+            Manage discount codes for your customers
           </p>
+        </div>
+        <AnimatePresence>
+          {editingId && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              type="button"
+              onClick={resetForm}
+              className="flex items-center gap-2 text-xs rounded-xl border border-[#262626] px-4 py-2 text-zinc-400 hover:text-white hover:bg-[#222] hover:border-zinc-600 transition-all duration-200"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel edit
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Form */}
+      <motion.section
+        variants={fadeUp}
+        className="relative bg-[#141414] rounded-2xl border border-[#262626] overflow-hidden"
+      >
+        {/* Accent top bar */}
+        <div className="h-0.5 w-full bg-gradient-to-r from-accent/60 via-accent to-accent/20" />
+
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-white">
+                {editingId ? "Edit Coupon" : "Create New Coupon"}
+              </h2>
+              <p className="text-[11px] text-zinc-500">
+                {editingId ? "Update the fields below and save" : "Fill in the details to add a new discount"}
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <InputField label="Coupon Code">
+                <input
+                  className={inputClass + " uppercase font-mono tracking-widest"}
+                  placeholder="e.g. SAVE20"
+                  value={form.code}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))
+                  }
+                  required
+                />
+              </InputField>
+
+              <InputField label="Discount Type">
+                <select
+                  className={inputClass}
+                  value={form.discountType}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, discountType: e.target.value }))
+                  }
+                >
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount (₹)</option>
+                </select>
+              </InputField>
+
+              <InputField label={form.discountType === "percentage" ? "Discount Value (%)" : "Discount Value (₹)"}>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className={inputClass}
+                  placeholder={form.discountType === "percentage" ? "10" : "50.00"}
+                  value={form.value}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, value: Number(e.target.value) || 0 }))
+                  }
+                  required
+                />
+              </InputField>
+
+              <InputField label="Minimum Order (₹)">
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className={inputClass}
+                  placeholder="0.00"
+                  value={form.minOrder}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, minOrder: Number(e.target.value) || 0 }))
+                  }
+                />
+              </InputField>
+
+              <InputField label="Expiry Date">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={form.expiry}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, expiry: e.target.value }))
+                  }
+                  required
+                />
+              </InputField>
+
+              <InputField label="Usage Limit">
+                <input
+                  type="number"
+                  min={0}
+                  className={inputClass}
+                  placeholder="Unlimited"
+                  value={form.usageLimit}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      usageLimit: e.target.value === "" ? "" : Number(e.target.value),
+                    }))
+                  }
+                />
+              </InputField>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[#222]">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative" onClick={() => setForm((f) => ({ ...f, active: !f.active }))}>
+                  <div
+                    className={`w-10 h-6 rounded-full border transition-all duration-200 ${form.active
+                      ? "bg-accent/20 border-accent/40"
+                      : "bg-[#1a1a1a] border-[#333]"
+                      }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full mt-0.5 transition-all duration-200 ${form.active
+                        ? "translate-x-5 bg-accent"
+                        : "translate-x-0.5 bg-zinc-600"
+                        }`}
+                    />
+                  </div>
+                </div>
+                <span className="text-sm text-zinc-400 group-hover:text-white transition-colors duration-150">
+                  Activate coupon immediately
+                </span>
+              </label>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-[#0f0f0f] hover:bg-accent/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-accent/10"
+              >
+                {saving ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    {editingId ? "Saving..." : "Creating..."}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      {editingId ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      )}
+                    </svg>
+                    {editingId ? "Save Changes" : "Create Coupon"}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </motion.section>
+
+      {/* Coupon List */}
+      <motion.section variants={fadeUp} className="bg-[#141414] rounded-2xl border border-[#262626] overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#1e1e1e] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-zinc-800 border border-[#333] flex items-center justify-center">
+              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h2 className="text-sm font-semibold text-white">All Coupons</h2>
+          </div>
+          <span className="text-[11px] font-semibold text-zinc-500 bg-[#1e1e1e] border border-[#2a2a2a] px-2.5 py-1 rounded-full">
+            {coupons.length} {coupons.length === 1 ? "coupon" : "coupons"}
+          </span>
         </div>
 
         {loading ? (
-          <div className="space-y-2">
-            <LoadingSkeleton className="h-10 w-full" />
-            <LoadingSkeleton className="h-10 w-full" />
-            <LoadingSkeleton className="h-10 w-full" />
+          <div className="p-6 space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-14 bg-[#1a1a1a] rounded-xl animate-pulse border border-[#222]" />
+            ))}
           </div>
         ) : coupons.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#262626] py-10 text-center text-sm text-muted">
-            No coupons yet. Create your first coupon above.
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-zinc-400">No coupons yet</p>
+            <p className="text-xs text-zinc-600 mt-1">Create your first coupon using the form above.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <table className="min-w-full text-sm text-left border-separate border-spacing-y-2 px-4 md:px-0">
-              <thead>
-                <tr className="text-xs uppercase text-muted">
-                  <th className="px-4 py-2">Code</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Value</th>
-                  <th className="px-4 py-2">Min order</th>
-                  <th className="px-4 py-2">Expiry</th>
-                  <th className="px-4 py-2">Usage</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coupons.map((c) => {
-                  const expiryDate = c.expiry ? new Date(c.expiry) : null;
-                  const isExpired = expiryDate && expiryDate < now;
-                  const used = c.usedCount ?? 0;
-                  const limit = c.usageLimit ?? null;
-                  const usageLabel = limit ? `${used}/${limit}` : `${used} / ∞`;
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#1e1e1e]">
+                    {["Code", "Type", "Value", "Min Order", "Expiry", "Usage", "Status", ""].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3 text-left text-[10px] uppercase tracking-widest font-semibold text-zinc-600"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1c1c1c]">
+                  <AnimatePresence>
+                    {coupons.map((c, i) => {
+                      const expiryDate = c.expiry ? new Date(c.expiry) : null;
+                      const isExpired = expiryDate && expiryDate < now;
+                      const used = c.usedCount ?? 0;
+                      const limit = c.usageLimit ?? null;
+                      const usageLabel = limit ? `${used} / ${limit}` : `${used} / ∞`;
+                      const usagePct = limit ? Math.min((used / limit) * 100, 100) : 0;
 
-                  return (
-                    <tr key={c._id}>
-                      <td className="px-4">
-                        <div className="bg-[#171717] rounded-xl border border-[#262626] px-3 py-2">
-                          <div className="font-semibold text-white">
-                            {c.code}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 align-top">
-                        <div className="bg-[#171717] rounded-xl border border-[#262626] px-3 py-2 text-xs text-muted capitalize">
-                          {c.discountType}
-                        </div>
-                      </td>
-                      <td className="px-4 align-top">
-                        <div className="bg-[#171717] rounded-xl border border-[#262626] px-3 py-2 text-xs text-white">
-                          {c.discountType === "percentage"
-                            ? `${c.value}%`
-                            : `₹${(c.value || 0).toFixed(2)}`}
-                        </div>
-                      </td>
-                      <td className="px-4 align-top">
-                        <div className="bg-[#171717] rounded-xl border border-[#262626] px-3 py-2 text-xs text-white">
-                          {c.minOrder ? `₹${c.minOrder.toFixed(2)}` : "None"}
-                        </div>
-                      </td>
-                      <td className="px-4 align-top">
-                        <div className="bg-[#171717] rounded-xl border border-[#262626] px-3 py-2 text-xs text-white">
-                          {expiryDate
-                            ? expiryDate.toLocaleDateString()
-                            : "—"}
-                        </div>
-                      </td>
-                      <td className="px-4 align-top">
-                        <div className="bg-[#171717] rounded-xl border border-[#262626] px-3 py-2 text-xs text-white">
-                          {usageLabel}
-                        </div>
-                      </td>
-                      <td className="px-4 align-top">
-                        <div className="flex flex-col gap-1">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                              c.active
-                                ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
-                                : "bg-zinc-800 text-zinc-300 border border-zinc-700"
+                      return (
+                        <motion.tr
+                          key={c._id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, x: -16 }}
+                          transition={{ delay: i * 0.04 }}
+                          className={`group hover:bg-[#1a1a1a] transition-colors duration-150 ${deletingId === c._id ? "opacity-40 pointer-events-none" : ""
                             }`}
-                          >
-                            {c.active ? "Active" : "Inactive"}
-                          </span>
-                          {isExpired && (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-red-500/10 text-red-300 border border-red-500/40">
-                              Expired
+                        >
+                          <td className="px-5 py-3.5">
+                            <span className="font-mono font-bold text-white tracking-wider text-xs bg-[#1e1e1e] border border-[#2a2a2a] px-2.5 py-1.5 rounded-lg">
+                              {c.code}
                             </span>
-                          )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className="text-xs text-zinc-400 capitalize">{c.discountType}</span>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className="text-sm font-semibold text-accent">
+                              {c.discountType === "percentage"
+                                ? `${c.value}%`
+                                : `₹${(c.value || 0).toFixed(2)}`}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-xs text-zinc-400">
+                            {c.minOrder ? `₹${c.minOrder.toFixed(2)}` : <span className="text-zinc-600">—</span>}
+                          </td>
+                          <td className="px-5 py-3.5 text-xs">
+                            {expiryDate ? (
+                              <span className={isExpired ? "text-red-400" : "text-zinc-400"}>
+                                {expiryDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-600">—</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="space-y-1.5 min-w-[80px]">
+                              <span className="text-xs text-zinc-400 font-mono">{usageLabel}</span>
+                              {limit > 0 && (
+                                <div className="w-full h-1 bg-[#222] rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${usagePct}%`,
+                                      background: usagePct > 80 ? "#ef4444" : "#a6c655",
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <StatusPill active={c.active} expired={isExpired} />
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                              <button
+                                type="button"
+                                onClick={() => startEdit(c)}
+                                className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-1.5 text-[11px] font-medium text-zinc-300 hover:text-white hover:border-zinc-600 hover:bg-[#222] transition-all duration-150"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleActive(c._id)}
+                                className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-1.5 text-[11px] font-medium text-zinc-300 hover:text-white hover:border-zinc-600 hover:bg-[#222] transition-all duration-150"
+                              >
+                                {c.active ? "Disable" : "Enable"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => remove(c._id)}
+                                className="rounded-lg border border-red-900/40 bg-red-900/10 px-3 py-1.5 text-[11px] font-medium text-red-400 hover:bg-red-900/25 hover:border-red-700/60 transition-all duration-150"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden divide-y divide-[#1e1e1e]">
+              {coupons.map((c, i) => {
+                const expiryDate = c.expiry ? new Date(c.expiry) : null;
+                const isExpired = expiryDate && expiryDate < now;
+                const used = c.usedCount ?? 0;
+                const limit = c.usageLimit ?? null;
+
+                return (
+                  <motion.div
+                    key={c._id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="p-4 space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="font-mono font-bold text-white tracking-widest text-sm bg-[#1e1e1e] border border-[#2a2a2a] px-2.5 py-1 rounded-lg inline-block">
+                          {c.code}
+                        </span>
+                        <div className="flex items-center gap-2 text-xs text-zinc-500">
+                          <span className="capitalize">{c.discountType}</span>
+                          <span>·</span>
+                          <span className="text-accent font-semibold">
+                            {c.discountType === "percentage"
+                              ? `${c.value}%`
+                              : `₹${(c.value || 0).toFixed(2)}`}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-4 align-top text-right">
-                        <div className="flex justify-end gap-2 text-xs">
-                          <button
-                            type="button"
-                            onClick={() => startEdit(c)}
-                            className="rounded-xl border border-[#262626] px-3 py-1.5 text-muted hover:text-white hover:bg-[#262626]"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleActive(c._id)}
-                            className="rounded-xl border border-[#262626] px-3 py-1.5 text-muted hover:text-white hover:bg-[#262626]"
-                          >
-                            {c.active ? "Disable" : "Enable"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => remove(c._id)}
-                            className="rounded-xl border border-red-900/60 bg-red-900/20 px-3 py-1.5 text-red-300 hover:bg-red-900/40"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                      <StatusPill active={c.active} expired={isExpired} />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-[#111] rounded-lg p-2.5 border border-[#222]">
+                        <p className="text-zinc-600 mb-1">Min order</p>
+                        <p className="text-white font-medium">{c.minOrder ? `₹${c.minOrder.toFixed(2)}` : "None"}</p>
+                      </div>
+                      <div className="bg-[#111] rounded-lg p-2.5 border border-[#222]">
+                        <p className="text-zinc-600 mb-1">Expires</p>
+                        <p className={`font-medium ${isExpired ? "text-red-400" : "text-white"}`}>
+                          {expiryDate
+                            ? expiryDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                            : "—"}
+                        </p>
+                      </div>
+                      <div className="bg-[#111] rounded-lg p-2.5 border border-[#222]">
+                        <p className="text-zinc-600 mb-1">Used</p>
+                        <p className="text-white font-medium">{used}{limit ? `/${limit}` : ""}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => startEdit(c)}
+                        className="flex-1 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] py-2 text-xs font-medium text-zinc-300 hover:text-white hover:bg-[#222] transition-all duration-150"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => toggleActive(c._id)}
+                        className="flex-1 rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] py-2 text-xs font-medium text-zinc-300 hover:text-white hover:bg-[#222] transition-all duration-150"
+                      >
+                        {c.active ? "Disable" : "Enable"}
+                      </button>
+                      <button
+                        onClick={() => remove(c._id)}
+                        className="flex-1 rounded-lg border border-red-900/40 bg-red-900/10 py-2 text-xs font-medium text-red-400 hover:bg-red-900/25 transition-all duration-150"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </>
         )}
-      </section>
+      </motion.section>
     </motion.div>
   );
 }

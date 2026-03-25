@@ -294,7 +294,7 @@ export function AdminProductFormPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-card rounded-xl border border-[#262626] p-6 space-y-4">
+    <div className="max-w-6xl mx-auto bg-card rounded-xl border border-[#262626] p-6 space-y-4">
       <h1 className="text-xl font-semibold text-white">{title}</h1>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid md:grid-cols-2 gap-3">
