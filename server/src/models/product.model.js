@@ -35,6 +35,8 @@ const productSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+productSchema.index({ name: "text", description: "text" });
+
 productSchema.pre("validate", function validateVariantImages(next) {
   const colors = [...new Set((this.variants || []).map((variant) => variant.color).filter(Boolean))];
   const colorImageEntries = this.colorImages instanceof Map ? this.colorImages : new Map(Object.entries(this.colorImages || {}));
