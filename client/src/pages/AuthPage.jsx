@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import api from "../api/client.js";
 import { setCredentials } from "../store/slices/authSlice.js";
+import { GoogleLoginButton } from "../components/auth/GoogleLoginButton.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 
 export function AuthPage() {
@@ -17,13 +18,28 @@ export function AuthPage() {
   const { notify } = useToast();
 
   const isLogin = mode === "login";
+  const isForgot = mode === "forgot";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
+      if (isForgot) {
+        const { data } = await api.post("/auth/forgot-password", { email: form.email });
+        notify(data.message || "Password reset email sent", "success");
+        setMode("login");
+        return;
+      }
+
       const endpoint = isLogin ? "/auth/login" : "/auth/register";
       const { data } = await api.post(endpoint, form);
+
+      if (!isLogin) {
+        notify(data.message || "Account created. Verify your email before login.", "success");
+        setMode("login");
+        return;
+      }
+
       dispatch(setCredentials(data));
       const role = data?.user?.role;
       if (role === "admin") {
@@ -32,7 +48,7 @@ export function AuthPage() {
         navigate("/");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Authentication failed");
+      notify(err.response?.data?.message || "Authentication failed", "error");
     } finally {
       setLoading(false);
     }
@@ -50,125 +66,98 @@ export function AuthPage() {
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
             <span className="text-primary font-bold text-lg">N</span>
           </div>
-          <span className="text-xl font-semibold text-white tracking-tight">
-            NoorFit
-          </span>
+          <span className="text-xl font-semibold text-white tracking-tight">NoorFit</span>
         </div>
 
         <h1 className="text-2xl font-semibold text-white tracking-tight">
-          {isLogin ? "Welcome back" : "Create account"}
+          {isForgot ? "Forgot password" : isLogin ? "Welcome back" : "Create account"}
         </h1>
-        <p className="text-muted text-sm mt-1">
-          {isLogin
-            ? "Sign in to continue shopping"
-            : "Create your account today"}
-        </p>
 
-        <div className="mt-6 space-y-3">
-          <button
-            type="button"
-            onClick={() =>
-              notify("Google sign-in UI added. Enable OAuth to activate.", "error")
-            }
-            className="w-full h-12 rounded-xl border border-[#262626] bg-primary text-white text-sm font-semibold active:scale-95 transition-transform"
-          >
-            Continue with Google
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#262626]" />
-            <span className="text-xs text-muted">or</span>
-            <div className="h-px flex-1 bg-[#262626]" />
+        {!isForgot && (
+          <div className="mt-6 space-y-3">
+            <GoogleLoginButton disabled={loading} />
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-[#262626]" />
+              <span className="text-xs text-muted">or</span>
+              <div className="h-px flex-1 bg-[#262626]" />
+            </div>
           </div>
-        </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          {!isLogin && (
+          {!isLogin && !isForgot && (
             <div>
-              <label className="block text-muted text-xs uppercase tracking-wider mb-1.5">
-                Full Name
-              </label>
+              <label className="block text-muted text-xs uppercase tracking-wider mb-1.5">Full Name</label>
               <input
                 type="text"
                 placeholder="Your name"
                 autoComplete="name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent transition-colors"
+                className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-muted text-xs uppercase tracking-wider mb-1.5">
-              Email
-            </label>
+            <label className="block text-muted text-xs uppercase tracking-wider mb-1.5">Email</label>
             <input
               type="email"
               placeholder="you@email.com"
               autoComplete="email"
-              inputMode="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent transition-colors"
+              className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-muted text-xs uppercase tracking-wider mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                autoComplete={isLogin ? "current-password" : "new-password"}
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 pr-12 text-white text-sm placeholder-muted focus:outline-none focus:border-accent transition-colors"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white p-1"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <HiEyeOff className="w-5 h-5" />
-                ) : (
-                  <HiEye className="w-5 h-5" />
-                )}
-              </button>
+          {!isForgot && (
+            <div>
+              <label className="block text-muted text-xs uppercase tracking-wider mb-1.5">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 pr-12 text-white text-sm"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white p-1"
+                >
+                  {showPassword ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
+                </button>
+              </div>
+              {isLogin && (
+                <button type="button" onClick={() => setMode("forgot")} className="inline-block text-accent text-xs mt-1.5 hover:underline">
+                  Forgot password?
+                </button>
+              )}
             </div>
-            {isLogin && (
-              <a
-                href="#"
-                className="inline-block text-accent text-xs mt-1.5 hover:underline"
-              >
-                Forgot password?
-              </a>
-            )}
-          </div>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-12 rounded-xl bg-accent text-primary text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity mt-2 active:scale-95"
-          >
-            {loading ? "Please wait…" : isLogin ? "Sign In" : "Create Account"}
+          <button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-accent text-primary text-sm font-semibold">
+            {loading ? "Please wait…" : isForgot ? "Send reset email" : isLogin ? "Sign In" : "Create Account"}
           </button>
         </form>
 
         <p className="text-center text-muted text-sm mt-6">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button
-            type="button"
-            onClick={() => setMode(isLogin ? "register" : "login")}
-            className="text-accent font-medium hover:underline"
-          >
-            {isLogin ? "Create one" : "Sign in"}
-          </button>
+          {isForgot ? (
+            <button type="button" onClick={() => setMode("login")} className="text-accent font-medium hover:underline">Back to sign in</button>
+          ) : isLogin ? (
+            <>
+              Don&apos;t have an account? <button type="button" onClick={() => setMode("register")} className="text-accent font-medium hover:underline">Create one</button>
+            </>
+          ) : (
+            <>
+              Already have an account? <button type="button" onClick={() => setMode("login")} className="text-accent font-medium hover:underline">Sign in</button>
+            </>
+          )}
         </p>
       </div>
     </motion.div>

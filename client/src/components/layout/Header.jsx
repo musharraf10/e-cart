@@ -4,7 +4,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiArrowLeft, HiSearch, HiShoppingCart, HiUser, HiLogout } from "react-icons/hi";
 import { logout } from "../../store/slices/authSlice.js";
+import api from "../../api/client.js";
 import { MobileNavigation } from "./MobileNavigation.jsx";
+import { NotificationBell } from "./NotificationBell.jsx";
 
 export function Header() {
   const location = useLocation();
@@ -21,9 +23,14 @@ export function Header() {
   const isSearchPage = location.pathname === "/search";
   const isAdminRoute = location.pathname.startsWith("/admin");
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // best effort
+    }
     dispatch(logout());
-    navigate("/");
+    navigate("/login");
   };
 
   const handleSearchSubmit = (e) => {
@@ -101,7 +108,9 @@ export function Header() {
               {!isAdminRoute && (
                 <>
                   {user ? (
-                    <NavLink
+                    <>
+                      <NotificationBell />
+                      <NavLink
                       to="/account"
                       className={({ isActive }) =>
                         `p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
@@ -111,6 +120,7 @@ export function Header() {
                     >
                       <HiUser className="w-6 h-6" />
                     </NavLink>
+                    </>
                   ) : (
                     <NavLink
                       to="/auth"

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../../api/client.js";
+import { useToast } from "../../components/ui/ToastProvider.jsx";
 
 const createVariant = () => ({
   id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -43,6 +44,7 @@ export function AdminProductFormPage() {
   const editId = routeProductId || searchParams.get("edit");
   const isEdit = Boolean(editId);
   const navigate = useNavigate();
+  const { notify } = useToast();
 
   const [form, setForm] = useState(defaultForm);
   const [categories, setCategories] = useState([]);
@@ -101,7 +103,7 @@ export function AdminProductFormPage() {
         });
       })
       .catch(() => {
-        alert("Product not found");
+        notify("Product not found", "error");
         navigate("/admin/products");
       });
   }, [editId, isEdit, navigate]);
@@ -248,7 +250,7 @@ export function AdminProductFormPage() {
       }
       navigate("/admin/products");
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to save product");
+      notify(error.response?.data?.message || "Failed to save product", "error");
     } finally {
       setSubmitting(false);
     }
@@ -259,7 +261,7 @@ export function AdminProductFormPage() {
     const trimmedName = newCategoryName.trim();
     if (!trimmedName) return;
     if (!newCategoryImage || !String(newCategoryImage).trim()) {
-      alert("Category image is required");
+      notify("Category image is required", "error");
       return;
     }
 
@@ -277,7 +279,7 @@ export function AdminProductFormPage() {
       setShowCategoryMenu(false);
       setCategorySearch("");
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to create category");
+      notify(error.response?.data?.message || "Failed to create category", "error");
     } finally {
       setCreatingCategory(false);
     }

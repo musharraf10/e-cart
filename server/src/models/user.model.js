@@ -5,9 +5,22 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
+    authProvider: { type: String, enum: ["local", "google"], default: "local" },
+    firebaseUid: { type: String, unique: true, sparse: true },
+    password: {
+      type: String,
+      default: null,
+      required: function requiredPassword() {
+        return this.authProvider === "local";
+      },
+    },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     isBlocked: { type: Boolean, default: false },
+    isVerified: { type: Boolean, default: false },
+    verifyTokenHash: { type: String, default: null },
+    verifyTokenExpiry: { type: Date, default: null },
+    passwordResetTokenHash: { type: String, default: null },
+    passwordResetTokenExpiry: { type: Date, default: null },
     mobileNumber: String,
     isMobileVerified: { type: Boolean, default: false },
     avatar: String,
@@ -47,18 +60,23 @@ const userSchema = new mongoose.Schema(
       postalCode: String,
       country: String,
     },
+    refreshTokenHash: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.password || !this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) return false;
   return bcrypt.compare(enteredPassword, this.password);
 };
 

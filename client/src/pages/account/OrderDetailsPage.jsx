@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/client.js";
+import { useToast } from "../../components/ui/ToastProvider.jsx";
 
 const steps = ["pending", "confirmed", "processing", "shipped", "delivered"];
 
@@ -18,6 +19,7 @@ export function OrderDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = useSelector((s) => s.auth.user);
+  const { notify } = useToast();
   const [order, setOrder] = useState(null);
   const [reviewedByProductId, setReviewedByProductId] = useState({});
   const [loadingReviews, setLoadingReviews] = useState(false);
@@ -140,9 +142,9 @@ export function OrderDetailsPage() {
         [String(reviewModal.productId)]: true,
       }));
       closeReviewModal();
-      alert("Thank you! Your review has been submitted.");
+      notify("Thank you! Your review has been submitted.");
     } catch (err) {
-      alert(err.response?.data?.message || "Unable to submit review");
+      notify(err.response?.data?.message || "Unable to submit review", "error");
     }
   };
 

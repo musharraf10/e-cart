@@ -9,19 +9,34 @@ import { Announcement } from "../models/announcement.model.js";
 import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
+import { createNotification } from "../services/notification.service.js";
 
-function normalizeColorImages(colorImages = {}, variants = [], fallbackImages = []) {
-  const entries = Object.entries(colorImages || {}).map(([color, images]) => ([
-    String(color || "").trim(),
-    Array.isArray(images) ? images.filter(Boolean) : (images ? [images] : []),
-  ])).filter(([color]) => color);
+function normalizeColorImages(
+  colorImages = {},
+  variants = [],
+  fallbackImages = [],
+) {
+  const entries = Object.entries(colorImages || {})
+    .map(([color, images]) => [
+      String(color || "").trim(),
+      Array.isArray(images) ? images.filter(Boolean) : images ? [images] : [],
+    ])
+    .filter(([color]) => color);
 
   const normalized = Object.fromEntries(entries);
-  const colors = [...new Set((variants || []).map((variant) => String(variant.color || "").trim()).filter(Boolean))];
+  const colors = [
+    ...new Set(
+      (variants || [])
+        .map((variant) => String(variant.color || "").trim())
+        .filter(Boolean),
+    ),
+  ];
 
   colors.forEach((color) => {
     if (!normalized[color] || normalized[color].length === 0) {
-      normalized[color] = Array.isArray(fallbackImages) ? fallbackImages.filter(Boolean) : [];
+      normalized[color] = Array.isArray(fallbackImages)
+        ? fallbackImages.filter(Boolean)
+        : [];
     }
   });
 
@@ -41,16 +56,22 @@ function normalizeProductPayload(payload) {
     delete next.newDrop;
   }
 
-  next.variants = (next.variants || []).map((variant) => ({
-    size: variant.size,
-    color: variant.color,
-    stock: Number(variant.stock) || 0,
-    price: Number(variant.price) || 0,
-    sku: variant.sku,
-  })).filter((variant) => variant.size && variant.color && variant.sku);
+  next.variants = (next.variants || [])
+    .map((variant) => ({
+      size: variant.size,
+      color: variant.color,
+      stock: Number(variant.stock) || 0,
+      price: Number(variant.price) || 0,
+      sku: variant.sku,
+    }))
+    .filter((variant) => variant.size && variant.color && variant.sku);
 
   next.images = Array.isArray(next.images) ? next.images.filter(Boolean) : [];
-  next.colorImages = normalizeColorImages(next.colorImages, next.variants, next.images);
+  next.colorImages = normalizeColorImages(
+    next.colorImages,
+    next.variants,
+    next.images,
+  );
 
   if (!next.price && next.variants.length) {
     next.price = Math.min(...next.variants.map((v) => v.price));
@@ -60,7 +81,10 @@ function normalizeProductPayload(payload) {
 }
 
 function totalVariantStock(product) {
-  return (product.variants || []).reduce((sum, variant) => sum + (variant.stock || 0), 0);
+  return (product.variants || []).reduce(
+    (sum, variant) => sum + (variant.stock || 0),
+    0,
+  );
 }
 
 export async function getDashboardMetrics(req, res) {
@@ -121,7 +145,11 @@ export async function getDashboardMetrics(req, res) {
       { $sort: { _id: 1 } },
     ]),
     Order.aggregate([
-      { $match: { createdAt: { $gte: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000) } } },
+      {
+        $match: {
+          createdAt: { $gte: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000) },
+        },
+      },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -189,7 +217,9 @@ export async function getDashboardMetrics(req, res) {
       const stock = totalVariantStock(p);
       return stock > 0 && stock < 5;
     }).length,
-    outOfStockProducts: outOfStockProducts.filter((p) => totalVariantStock(p) <= 0).length,
+    outOfStockProducts: outOfStockProducts.filter(
+      (p) => totalVariantStock(p) <= 0,
+    ).length,
     recentOrders,
     newCustomerSignups,
     recentReviews,
@@ -304,9 +334,11 @@ export async function adminCreateCategory(req, res) {
 // Product CRUD & Actions
 // ────────────────────────────────────────────────
 
-
 export async function adminGetProductById(req, res) {
-  const product = await Product.findById(req.params.id).populate("category", "name slug");
+  const product = await Product.findById(req.params.id).populate(
+    "category",
+    "name slug",
+  );
   if (!product) {
     res.status(404);
     throw new Error("Product not found");
@@ -379,14 +411,16 @@ export async function adminMarkFeatured(req, res) {
 export async function adminInventoryOverview(req, res) {
   const products = await Product.find()
     .sort({ createdAt: -1 })
-    .limit(100)
+    .limit(150)
     .populate("category", "name");
 
-  const lowStock = products.filter(
-    (p) => totalVariantStock(p) > 0 && totalVariantStock(p) < 5,
-  );
+  const lowStock = products.filter((p) => {
+    const stock = totalVariantStock(p);
+    console.log(`Product: ${p.name}, Calculated Stock: ${stock}`); // Check your console!
+    return stock > 0 && stock < 5;
+  });
   const outOfStock = products.filter((p) => totalVariantStock(p) <= 0);
-
+  console.log("Low", lowStock);
   res.json({
     items: products,
     lowStockCount: lowStock.length,
@@ -408,7 +442,9 @@ export async function adminUpdateProductStock(req, res) {
     throw new Error("Invalid variant stock payload");
   }
 
-  const variant = product.variants.find((v) => v.size === size && v.color === color);
+  const variant = product.variants.find(
+    (v) => v.size === size && v.color === color,
+  );
   if (!variant) {
     res.status(404);
     throw new Error("Variant not found");
@@ -458,6 +494,16 @@ export async function adminUpdateOrderStatus(req, res) {
 
   order.status = req.body.status || order.status;
   await order.save();
+
+  if (["shipped", "delivered", "cancelled"].includes(order.status)) {
+    await createNotification({
+      userId: order.user,
+      title: `Order ${order.status}`,
+      message: `Your order #${order._id.toString().slice(-6)} is now ${order.status}.`,
+      type: "order",
+      link: `/account/orders/${order._id}`,
+    });
+  }
 
   res.json(order);
 }
@@ -641,6 +687,19 @@ export async function adminCreateAnnouncement(req, res) {
     active: req.body.active ?? true,
   };
   const announcement = await Announcement.create(payload);
+
+  if (announcement.active) {
+    const users = await User.find({ role: "customer" }).select("_id").lean();
+    await Promise.allSettled(
+      users.map((user) => createNotification({
+        userId: user._id,
+        title: "New announcement",
+        message: announcement.text,
+        type: "system",
+      })),
+    );
+  }
+
   res.status(201).json(announcement);
 }
 
