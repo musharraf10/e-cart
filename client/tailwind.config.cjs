@@ -3,11 +3,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#0f0f0f",
-        card: "#171717",
+        primary: "#000000",
+        card: "#111111",
         muted: "#a1a1aa",
         border: "#262626",
-        accent: "#a6c655",
+        accent: "#a6c25e",
       },
       fontFamily: {
         sans: [

@@ -7,17 +7,25 @@ export function SectionHeader({ title, subtitle, action }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 md:mb-8"
+      className="flex items-center justify-between gap-3 mb-6 md:mb-8"
     >
-      <div>
-        <h2 className="text-xl md:text-2xl font-semibold text-white tracking-tight">
+      <div className="min-w-0">
+        <h2 className="text-xl md:text-2xl font-semibold text-white tracking-tight truncate">
           {title}
         </h2>
+
         {subtitle && (
-          <p className="text-muted text-sm mt-1">{subtitle}</p>
+          <p className="text-muted text-sm mt-1 truncate">
+            {subtitle}
+          </p>
         )}
       </div>
-      {action && <div className="flex-shrink-0">{action}</div>}
+
+      {action && (
+        <div className="flex-shrink-0">
+          {action}
+        </div>
+      )}
     </motion.div>
   );
 }
