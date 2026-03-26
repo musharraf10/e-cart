@@ -29,7 +29,7 @@ export function Header() {
       // best effort
     }
     dispatch(logout());
-    navigate(isAdminRoute ? "/login" : "/");
+    navigate("/login");
   };
 
   const handleSearchSubmit = (e) => {

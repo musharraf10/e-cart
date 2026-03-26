@@ -62,7 +62,11 @@ const authSlice = createSlice({
       state.isInitializing = false;
 
       if (typeof window !== "undefined") {
-        localStorage.setItem(tokenKey, action.payload.token);
+        if (action.payload.token) {
+          localStorage.setItem(tokenKey, action.payload.token);
+        } else {
+          localStorage.removeItem(tokenKey);
+        }
       }
     },
     logout(state) {
