@@ -8,6 +8,7 @@ import { ProductGrid } from "../components/ui/ProductGrid.jsx";
 import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { ProductGridSkeleton, ProductListSkeleton } from "../components/ui/LoadingSkeleton.jsx";
 import { expandProductsByVariant } from "../utils/productVariants.js";
+import { useShopScrollRestoration } from "../hooks/useShopScrollRestoration.js";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -20,6 +21,8 @@ const LIMIT = 12;
 const LOAD_MORE_TO_PAGINATION_PAGE = 3;
 
 export function ShopPage() {
+  useShopScrollRestoration("shopScroll");
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -32,6 +35,7 @@ export function ShopPage() {
   const [categories, setCategories] = useState([]);
   const [sizes, setSizes] = useState([]);
   const [colors, setColors] = useState([]);
+  const [cache, setCache] = useState({});
 
   const category = searchParams.get("category") || "";
   const minPrice = searchParams.get("minPrice") || "";
@@ -51,6 +55,7 @@ export function ShopPage() {
   }, [category, minPrice, maxPrice, size, color, sort]);
 
   const queryKey = useMemo(() => JSON.stringify(queryFilters), [queryFilters]);
+  const getCacheKey = (pageToFetch) => `${queryKey}::${pageToFetch}`;
 
   const collectFiltersMeta = (productItems) => {
     const catMap = new Map();
@@ -73,6 +78,17 @@ export function ShopPage() {
   };
 
   const fetchProducts = async ({ pageToFetch = 1, append = false } = {}) => {
+    const cacheKey = getCacheKey(pageToFetch);
+    const cachedPage = cache[cacheKey];
+
+    if (cachedPage) {
+      const nextItems = cachedPage.items || [];
+      setItems((prev) => (append ? [...prev, ...nextItems] : nextItems));
+      setTotalPages(cachedPage.totalPages ?? 1);
+      setTotal(cachedPage.total ?? 0);
+      return;
+    }
+
     if (append) setLoadingMore(true);
     else setLoading(true);
 
@@ -82,6 +98,14 @@ export function ShopPage() {
       });
 
       const nextItems = data.items || [];
+      setCache((prev) => ({
+        ...prev,
+        [cacheKey]: {
+          items: nextItems,
+          totalPages: data.totalPages ?? 1,
+          total: data.total ?? 0,
+        },
+      }));
       setItems((prev) => (append ? [...prev, ...nextItems] : nextItems));
       setTotalPages(data.totalPages ?? 1);
       setTotal(data.total ?? 0);
@@ -179,6 +203,8 @@ export function ShopPage() {
   const hasActiveFilters = category || minPrice || maxPrice || size || color;
   const expandedItems = useMemo(() => expandProductsByVariant(items), [items]);
   const canLoadMore = loadMorePage < totalPages;
+  const rangeStart = total === 0 ? 0 : (page - 1) * LIMIT + 1;
+  const rangeEnd = Math.min(rangeStart + expandedItems.length - 1, total);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col lg:flex-row gap-8">
@@ -273,7 +299,7 @@ export function ShopPage() {
               ? `${total} product${total !== 1 ? "s" : ""} • ${mode === "loadMore" ? "Grid + Load More" : "List + Pagination"}`
               : "Browse the catalog"
           }
-          action={
+          action={mode === "loadMore" ? (
             <select
               value={sort}
               onChange={(e) => setFilter("sort", e.target.value)}
@@ -283,7 +309,7 @@ export function ShopPage() {
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
-          }
+          ) : null}
         />
 
         {loading ? (
@@ -321,6 +347,20 @@ export function ShopPage() {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-3"
                 >
+                  <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded-xl border border-[#262626] bg-[#0f0f0f]/95 px-3 py-2 backdrop-blur">
+                    <p className="text-xs text-muted">
+                      Showing {rangeStart}–{rangeEnd} of {total} results
+                    </p>
+                    <select
+                      value={sort}
+                      onChange={(e) => setFilter("sort", e.target.value)}
+                      className="rounded-lg border border-[#262626] bg-card px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-accent"
+                    >
+                      {SORT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
                   {expandedItems.map((p) => (
                     <ProductListItem key={p.variantKey || `${p._id}-${p.displayColor || "default"}`} product={p} />
                   ))}
@@ -335,12 +375,23 @@ export function ShopPage() {
                     type="button"
                     onClick={handleLoadMore}
                     disabled={loadingMore}
-                    className="rounded-xl border border-[#262626] px-6 py-2 text-sm text-white transition-colors hover:bg-card disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#262626] px-6 py-2 text-sm text-white transition duration-200 hover:bg-card active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {loadingMore ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : null}
                     {loadingMore ? "Loading..." : "Load More"}
                   </button>
                 ) : (
-                  <p className="text-sm text-muted">No more products.</p>
+                  <div className="space-y-2 text-center">
+                    <p className="text-sm text-muted">You're all caught up 🎉</p>
+                    <p className="text-xs text-muted">Explore more categories</p>
+                    <button
+                      type="button"
+                      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                      className="rounded-xl border border-[#262626] px-4 py-2 text-xs text-white transition hover:bg-card"
+                    >
+                      Browse categories
+                    </button>
+                  </div>
                 )}
                 {loadingMore && <ProductGridSkeleton count={4} />}
               </div>
