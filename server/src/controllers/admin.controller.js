@@ -9,6 +9,7 @@ import { Announcement } from "../models/announcement.model.js";
 import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
+import { createNotification } from "../services/notification.service.js";
 
 function normalizeColorImages(
   colorImages = {},
@@ -494,6 +495,16 @@ export async function adminUpdateOrderStatus(req, res) {
   order.status = req.body.status || order.status;
   await order.save();
 
+  if (["shipped", "delivered", "cancelled"].includes(order.status)) {
+    await createNotification({
+      userId: order.user,
+      title: `Order ${order.status}`,
+      message: `Your order #${order._id.toString().slice(-6)} is now ${order.status}.`,
+      type: "order",
+      link: `/account/orders/${order._id}`,
+    });
+  }
+
   res.json(order);
 }
 
@@ -676,6 +687,19 @@ export async function adminCreateAnnouncement(req, res) {
     active: req.body.active ?? true,
   };
   const announcement = await Announcement.create(payload);
+
+  if (announcement.active) {
+    const users = await User.find({ role: "customer" }).select("_id").lean();
+    await Promise.allSettled(
+      users.map((user) => createNotification({
+        userId: user._id,
+        title: "New announcement",
+        message: announcement.text,
+        type: "system",
+      })),
+    );
+  }
+
   res.status(201).json(announcement);
 }
 

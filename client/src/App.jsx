@@ -16,6 +16,8 @@ import CheckoutPage from "./pages/CheckoutPage.jsx";
 import { SuccessPage } from "./pages/SuccessPage.jsx";
 import { CancelPage } from "./pages/CancelPage.jsx";
 import { AuthPage } from "./pages/AuthPage.jsx";
+import { VerifyEmailPage } from "./pages/VerifyEmailPage.jsx";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage.jsx";
 
 import { ProtectedRoute } from "./components/routes/ProtectedRoute.jsx";
 import { AdminRoute } from "./components/routes/AdminRoute.jsx";
@@ -94,6 +96,8 @@ function AppShell() {
         <Route path="/cancel" element={<CancelPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Authenticated user routes */}
         <Route element={<ProtectedRoute />}>

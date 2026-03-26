@@ -1,6 +1,27 @@
 import crypto from "crypto";
 import { Order } from "../models/order.model.js";
+import { User } from "../models/user.model.js";
+import { sendEmail } from "../utils/email.util.js";
+import { createNotification } from "../services/notification.service.js";
 import { razorpay } from "../utils/razorpay.js";
+
+async function sendPaidOrderConfirmation(order) {
+  const user = await User.findById(order.user).select("name email");
+  if (!user?.email) return;
+
+  await sendEmail({
+    to: user.email,
+    subject: `Payment received for order #${order._id.toString().slice(-6)}`,
+    html: `
+      <div style="font-family: Arial, sans-serif;">
+        <h2>Payment confirmed</h2>
+        <p>Hi ${user.name || "Customer"}, your payment was successful.</p>
+        <p>Order #${order._id.toString().slice(-6)} is now confirmed.</p>
+      </div>
+    `,
+  });
+}
+
 import {
   buildOrderPayload,
   deductStockForItems,
@@ -113,6 +134,18 @@ async function markOrderPaid(order, paymentId) {
   }
 
   await order.save();
+
+  await Promise.allSettled([
+    createNotification({
+      userId: order.user,
+      title: "Order confirmed",
+      message: `Payment received for order #${order._id.toString().slice(-6)}.`,
+      type: "order",
+      link: `/account/orders/${order._id}`,
+    }),
+    sendPaidOrderConfirmation(order),
+  ]);
+
   return order;
 }
 
