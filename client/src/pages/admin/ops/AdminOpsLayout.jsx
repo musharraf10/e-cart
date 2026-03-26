@@ -4,7 +4,7 @@ import { AdminSidebar } from "../../../components/admin/AdminSidebar.jsx";
 export function AdminOpsLayout() {
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-primary">
-      <aside className="hidden md:flex w-64 flex-shrink-0 h-full border-r border-neutral-800 bg-[#0b0b0b]">
+      <aside className="hidden md:flex w-64 flex-shrink-0 h-full border-r border-border bg-primary">
         <AdminSidebar />
       </aside>
 
