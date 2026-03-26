@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
   {
-    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
     productId: { type: String, required: true },
     name: String,
     image: String,
@@ -48,9 +52,19 @@ const orderSchema = new mongoose.Schema(
     couponApplied: { type: Boolean, default: false },
     status: {
       type: String,
-      enum: ["pending", "processing", "confirmed", "shipped", "delivered", "cancelled"],
+      enum: [
+        "pending",
+        "processing",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ],
       default: "pending",
     },
+    deliveredAt: Date,
+    paidAt: Date,
+    cancelledAt: Date,
   },
   { timestamps: true },
 );

@@ -487,14 +487,40 @@ export async function adminListOrders(req, res) {
 
 export async function adminUpdateOrderStatus(req, res) {
   const order = await Order.findById(req.params.id);
+
   if (!order) {
     res.status(404);
     throw new Error("Order not found");
   }
 
-  order.status = req.body.status || order.status;
+  const newStatus = req.body.status;
+
+  if (!newStatus) {
+    return res.status(400).json({ message: "Status is required" });
+  }
+
+  if (order.status === newStatus) {
+    return res.json(order);
+  }
+
+  order.status = newStatus;
+
+  if (newStatus === "delivered") {
+    order.deliveredAt = new Date();
+
+    if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
+      order.paymentStatus = "paid";
+      order.paidAt = new Date();
+    }
+  }
+
+  if (newStatus === "cancelled") {
+    order.cancelledAt = new Date();
+  }
+
   await order.save();
 
+  // 🔔 Notification
   if (["shipped", "delivered", "cancelled"].includes(order.status)) {
     await createNotification({
       userId: order.user,
@@ -691,12 +717,14 @@ export async function adminCreateAnnouncement(req, res) {
   if (announcement.active) {
     const users = await User.find({ role: "customer" }).select("_id").lean();
     await Promise.allSettled(
-      users.map((user) => createNotification({
-        userId: user._id,
-        title: "New announcement",
-        message: announcement.text,
-        type: "system",
-      })),
+      users.map((user) =>
+        createNotification({
+          userId: user._id,
+          title: "New announcement",
+          message: announcement.text,
+          type: "system",
+        }),
+      ),
     );
   }
 

@@ -76,3 +76,5 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
   - `mongo` (MongoDB + volume)
 
 Adjust images, ports, and env as needed for production.
+
+image upload options + final and push notifications
