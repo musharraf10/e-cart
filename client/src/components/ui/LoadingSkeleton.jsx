@@ -38,3 +38,26 @@ export function ProductGridSkeleton({ count = 8 }) {
     </div>
   );
 }
+
+export function ProductListSkeleton({ count = 6 }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex gap-4 rounded-xl border border-[#262626] bg-card p-3"
+        >
+          <LoadingSkeleton className="h-24 w-24 shrink-0" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <LoadingSkeleton className="h-4 w-2/3" />
+            <LoadingSkeleton className="h-3 w-full" />
+            <LoadingSkeleton className="h-3 w-4/5" />
+            <LoadingSkeleton className="h-4 w-20" />
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
