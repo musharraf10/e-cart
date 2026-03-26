@@ -6,6 +6,7 @@ import { HiArrowLeft, HiSearch, HiShoppingCart, HiUser, HiLogout } from "react-i
 import { logout } from "../../store/slices/authSlice.js";
 import api from "../../api/client.js";
 import { MobileNavigation } from "./MobileNavigation.jsx";
+import { NotificationBell } from "./NotificationBell.jsx";
 
 export function Header() {
   const location = useLocation();
@@ -107,7 +108,9 @@ export function Header() {
               {!isAdminRoute && (
                 <>
                   {user ? (
-                    <NavLink
+                    <>
+                      <NotificationBell />
+                      <NavLink
                       to="/account"
                       className={({ isActive }) =>
                         `p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
@@ -117,6 +120,7 @@ export function Header() {
                     >
                       <HiUser className="w-6 h-6" />
                     </NavLink>
+                    </>
                   ) : (
                     <NavLink
                       to="/auth"

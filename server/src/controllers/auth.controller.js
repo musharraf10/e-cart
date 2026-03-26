@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import { User } from "../models/user.model.js";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/token.util.js";
 import { getFirebaseAdminAuth } from "../config/firebase-admin.js";
+import { generateRawToken, hashToken, tokenExpiry } from "../utils/security.util.js";
+import { sendEmail } from "../utils/email.util.js";
 
 const refreshCookieName = "noorfit_refresh";
 
@@ -77,23 +79,146 @@ async function buildAuthResponse(user, res) {
   };
 }
 
+async function sendVerificationEmail(user, rawToken) {
+  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const verifyUrl = `${clientBaseUrl}/verify-email?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
+
+  await sendEmail({
+    to: user.email,
+    subject: "Verify your NoorFit account",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>Welcome to NoorFit, ${user.name}!</h2>
+        <p>Please verify your email to activate your account.</p>
+        <p><a href="${verifyUrl}">Verify Email</a></p>
+        <p>This link expires in 24 hours.</p>
+      </div>
+    `,
+  });
+}
+
+async function sendPasswordResetEmail(user, rawToken) {
+  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const resetUrl = `${clientBaseUrl}/reset-password?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
+
+  await sendEmail({
+    to: user.email,
+    subject: "Reset your NoorFit password",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>Password reset request</h2>
+        <p>Click the link below to reset your password:</p>
+        <p><a href="${resetUrl}">Reset Password</a></p>
+        <p>This link expires in 30 minutes.</p>
+      </div>
+    `,
+  });
+}
+
 export async function register(req, res) {
   const { name, email, password } = req.body;
 
-  const existing = await User.findOne({ email });
+  const normalizedEmail = String(email || "").toLowerCase();
+  const existing = await User.findOne({ email: normalizedEmail });
   if (existing) {
     res.status(400);
     throw new Error("Email already registered");
   }
 
-  const user = await User.create({ name, email, password, authProvider: "local" });
+  const rawVerifyToken = generateRawToken();
 
-  res.status(201).json(await buildAuthResponse(user, res));
+  const user = await User.create({
+    name,
+    email: normalizedEmail,
+    password,
+    authProvider: "local",
+    isVerified: false,
+    verifyTokenHash: hashToken(rawVerifyToken),
+    verifyTokenExpiry: tokenExpiry(24 * 60),
+  });
+
+  await sendVerificationEmail(user, rawVerifyToken);
+
+  res.status(201).json({
+    message: "Registration successful. Please verify your email before login.",
+  });
+}
+
+export async function verifyEmail(req, res) {
+  const { token, email } = req.body;
+  if (!token) {
+    res.status(400);
+    throw new Error("Verification token is required");
+  }
+
+  const user = await User.findOne({
+    email: String(email || "").toLowerCase(),
+    verifyTokenHash: hashToken(token),
+    verifyTokenExpiry: { $gt: new Date() },
+  });
+
+  if (!user) {
+    res.status(400);
+    throw new Error("Verification token is invalid or expired");
+  }
+
+  user.isVerified = true;
+  user.verifyTokenHash = null;
+  user.verifyTokenExpiry = null;
+  await user.save();
+
+  res.json({ message: "Email verified successfully. You can now log in." });
+}
+
+export async function forgotPassword(req, res) {
+  const { email } = req.body;
+  const normalizedEmail = String(email || "").toLowerCase();
+
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user || user.authProvider !== "local") {
+    return res.json({ message: "If that email exists, a reset link has been sent." });
+  }
+
+  const rawResetToken = generateRawToken();
+  user.passwordResetTokenHash = hashToken(rawResetToken);
+  user.passwordResetTokenExpiry = tokenExpiry(30);
+  await user.save();
+
+  await sendPasswordResetEmail(user, rawResetToken);
+
+  return res.json({ message: "If that email exists, a reset link has been sent." });
+}
+
+export async function resetPassword(req, res) {
+  const { token, email, password } = req.body;
+
+  if (!token || !password || !email) {
+    res.status(400);
+    throw new Error("Email, token and password are required");
+  }
+
+  const user = await User.findOne({
+    email: String(email).toLowerCase(),
+    passwordResetTokenHash: hashToken(token),
+    passwordResetTokenExpiry: { $gt: new Date() },
+  });
+
+  if (!user) {
+    res.status(400);
+    throw new Error("Reset token is invalid or expired");
+  }
+
+  user.password = password;
+  user.passwordResetTokenHash = null;
+  user.passwordResetTokenExpiry = null;
+  await user.save();
+
+  res.json({ message: "Password reset successful. Please log in with your new password." });
 }
 
 export async function login(req, res) {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: String(email || "").toLowerCase() });
 
   if (!user) {
     res.status(401);
@@ -108,6 +233,11 @@ export async function login(req, res) {
   if (!(await user.matchPassword(password))) {
     res.status(401);
     throw new Error("Invalid credentials");
+  }
+
+  if (user.authProvider === "local" && !user.isVerified) {
+    res.status(403);
+    throw new Error("Please verify your email before logging in.");
   }
 
   if (user.isBlocked) {
@@ -159,10 +289,12 @@ export async function googleLogin(req, res) {
       role: "customer",
       authProvider: "google",
       firebaseUid: decodedToken.uid,
+      isVerified: true,
     });
   } else {
     user.avatar = user.avatar || avatar;
     user.firebaseUid = user.firebaseUid || decodedToken.uid;
+    if (!user.isVerified) user.isVerified = true;
     await user.save();
   }
 
@@ -191,12 +323,10 @@ export async function refreshAccessToken(req, res) {
 
   const matches = await bcrypt.compare(refreshToken, user.refreshTokenHash);
   if (!matches) {
-    // Token reuse / stale-token attempt: invalidate the current refresh hash for safety.
     await invalidateUserRefreshToken(user);
     rejectRefreshRequest(res, "Refresh token mismatch");
   }
 
-  // Rotation: issue a brand new refresh token and overwrite the stored hash.
   const accessToken = generateAccessToken(user._id);
   const newRefreshToken = generateRefreshToken(user._id);
 
