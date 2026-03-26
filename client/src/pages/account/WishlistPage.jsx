@@ -64,7 +64,7 @@ export function WishlistPage() {
       Let the parent layout / page shell handle scrolling.
       This component just stacks naturally.
     */
-    <div className="w-full px-4 pt-4 pb-16">
+    <div className="w-full pt-4 pb-16">
 
       {/* ── header ──────────────────────────────────── */}
       <div className="mb-4 max-w-lg mx-auto">
