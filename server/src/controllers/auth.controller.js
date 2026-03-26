@@ -27,6 +27,7 @@ function setRefreshCookie(res, token) {
     "Path=/api/auth",
     `Max-Age=${Math.floor(maxAge / 1000)}`,
   ];
+
   if (secure) cookie.push("Secure");
   res.setHeader("Set-Cookie", cookie.join("; "));
 }
@@ -34,6 +35,7 @@ function setRefreshCookie(res, token) {
 function clearRefreshCookie(res) {
   const secure = process.env.NODE_ENV === "production";
   const cookie = [`${refreshCookieName}=`, "HttpOnly", "SameSite=Lax", "Path=/api/auth", "Max-Age=0"];
+
   if (secure) cookie.push("Secure");
   res.setHeader("Set-Cookie", cookie.join("; "));
 }
@@ -42,6 +44,18 @@ async function persistRefreshToken(user, refreshToken) {
   const salt = await bcrypt.genSalt(10);
   user.refreshTokenHash = await bcrypt.hash(refreshToken, salt);
   await user.save();
+}
+
+async function invalidateUserRefreshToken(user) {
+  if (!user?.refreshTokenHash) return;
+  user.refreshTokenHash = null;
+  await user.save();
+}
+
+function rejectRefreshRequest(res, message) {
+  clearRefreshCookie(res);
+  res.status(401);
+  throw new Error(message);
 }
 
 async function buildAuthResponse(user, res) {
@@ -160,32 +174,36 @@ export async function refreshAccessToken(req, res) {
   const refreshToken = cookies[refreshCookieName];
 
   if (!refreshToken) {
-    res.status(401);
-    throw new Error("Refresh token missing");
+    rejectRefreshRequest(res, "Refresh token missing");
   }
 
   let decoded;
   try {
     decoded = verifyRefreshToken(refreshToken);
   } catch {
-    res.status(401);
-    throw new Error("Invalid refresh token");
+    rejectRefreshRequest(res, "Invalid refresh token");
   }
 
   const user = await User.findById(decoded.id);
   if (!user || !user.refreshTokenHash) {
-    res.status(401);
-    throw new Error("Refresh token not recognized");
+    rejectRefreshRequest(res, "Refresh token not recognized");
   }
 
   const matches = await bcrypt.compare(refreshToken, user.refreshTokenHash);
   if (!matches) {
-    res.status(401);
-    throw new Error("Refresh token mismatch");
+    // Token reuse / stale-token attempt: invalidate the current refresh hash for safety.
+    await invalidateUserRefreshToken(user);
+    rejectRefreshRequest(res, "Refresh token mismatch");
   }
 
-  const token = generateAccessToken(user._id);
-  res.json({ token });
+  // Rotation: issue a brand new refresh token and overwrite the stored hash.
+  const accessToken = generateAccessToken(user._id);
+  const newRefreshToken = generateRefreshToken(user._id);
+
+  await persistRefreshToken(user, newRefreshToken);
+  setRefreshCookie(res, newRefreshToken);
+
+  res.json({ token: accessToken });
 }
 
 export async function logout(req, res) {
@@ -196,10 +214,7 @@ export async function logout(req, res) {
     try {
       const decoded = verifyRefreshToken(refreshToken);
       const user = await User.findById(decoded.id);
-      if (user) {
-        user.refreshTokenHash = null;
-        await user.save();
-      }
+      await invalidateUserRefreshToken(user);
     } catch {
       // best-effort logout
     }

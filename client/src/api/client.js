@@ -29,9 +29,11 @@ api.interceptors.response.use(
     }
 
     const status = error.response?.status;
-    const isRefreshCall = originalRequest.url?.includes("/auth/refresh");
+    const url = originalRequest.url || "";
+    const isRefreshCall = url.includes("/auth/refresh");
+    const isLogoutCall = url.includes("/auth/logout");
 
-    if (status !== 401 || isRefreshCall) {
+    if (status !== 401 || isRefreshCall || isLogoutCall) {
       throw error;
     }
 
@@ -50,6 +52,11 @@ api.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${data.token}`;
       return api(originalRequest);
     } catch (refreshError) {
+      try {
+        await api.post("/auth/logout");
+      } catch {
+        // best effort cookie cleanup
+      }
       store.dispatch(logout());
       throw refreshError;
     }
