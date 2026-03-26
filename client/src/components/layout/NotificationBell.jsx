@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { HiBell } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/client.js";
@@ -7,12 +7,28 @@ export function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const dropdownRef = useRef(null);
 
   const unreadCount = useMemo(
     () => notifications.filter((item) => !item.isRead).length,
-    [notifications],
+    [notifications]
   );
 
+  useEffect(() => {
+    function handleScroll() {
+      setOpen((prev) => (prev ? false : prev));
+    }
+
+    if (open) {
+      window.addEventListener("scroll", handleScroll, { passive: true });
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [open]);
+
+  // Fetch notifications
   useEffect(() => {
     let mounted = true;
 
@@ -22,7 +38,7 @@ export function NotificationBell() {
         if (!mounted) return;
         setNotifications(data.notifications || []);
       } catch {
-        // intentionally ignore transient fetch failures
+        // ignore errors
       }
     }
 
@@ -35,19 +51,34 @@ export function NotificationBell() {
     };
   }, []);
 
+  // ✅ Click outside to close
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
   const handleClickNotification = async (item) => {
     try {
       if (!item.isRead) {
         await api.patch(`/notifications/${item._id}/read`);
       }
-    } catch {
-      // best effort
-    }
+    } catch { }
 
     setNotifications((current) =>
       current.map((entry) =>
-        entry._id === item._id ? { ...entry, isRead: true } : entry,
-      ),
+        entry._id === item._id ? { ...entry, isRead: true } : entry
+      )
     );
 
     setOpen(false);
@@ -56,6 +87,7 @@ export function NotificationBell() {
 
   return (
     <div className="relative">
+      {/* Bell Button */}
       <button
         type="button"
         onClick={() => setOpen((state) => !state)}
@@ -70,13 +102,22 @@ export function NotificationBell() {
         )}
       </button>
 
+      {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-auto rounded-xl border border-[#262626] bg-[#111111] shadow-2xl z-40">
+        <div
+          ref={dropdownRef}
+          className="fixed left-0 right-0 top-16 mx-2 max-h-96 overflow-auto rounded-xl border border-[#262626] bg-[#111111] shadow-2xl z-50"
+        >
+          {/* Header */}
           <div className="px-4 py-3 border-b border-[#262626] text-sm font-semibold text-white">
             Notifications
           </div>
+
+          {/* Content */}
           {notifications.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted">No notifications yet.</p>
+            <p className="px-4 py-6 text-sm text-gray-400">
+              No notifications yet.
+            </p>
           ) : (
             <ul>
               {notifications.map((item) => (
@@ -84,12 +125,15 @@ export function NotificationBell() {
                   <button
                     type="button"
                     onClick={() => handleClickNotification(item)}
-                    className={`w-full text-left px-4 py-3 border-b border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors ${
-                      item.isRead ? "opacity-70" : ""
-                    }`}
+                    className={`w-full text-left px-4 py-3 border-b border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors ${item.isRead ? "opacity-70" : ""
+                      }`}
                   >
-                    <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="text-xs text-muted mt-1">{item.message}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {item.message}
+                    </p>
                   </button>
                 </li>
               ))}

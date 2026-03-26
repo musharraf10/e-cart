@@ -38,7 +38,7 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
    - `STRIPE_WEBHOOK_SECRET=whsec_xxx`
 4. Paste that value into `server/.env` as `STRIPE_WEBHOOK_SECRET=...` and restart the server.
 
-3. Run with Docker (recommended):
+5. Run with Docker (recommended):
 
    ```bash
    docker compose up --build
@@ -48,7 +48,7 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
    - Client: `http://localhost:5173`
    - MongoDB: `mongodb://mongo:27017/noorfit`
 
-4. Run locally without Docker:
+6. Run locally without Docker:
 
    ```bash
    # terminal 1
