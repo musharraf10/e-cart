@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import api from "../api/client.js";
@@ -12,7 +12,10 @@ export function AuthPage() {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { notify } = useToast();
@@ -22,8 +25,14 @@ export function AuthPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLogin && !acceptTerms) {
+      notify("Please accept Terms & Conditions before logging in.", "error");
+      return;
+    }
+
     setLoading(true);
     try {
+      setShowVerifyPrompt(false);
       if (isForgot) {
         const { data } = await api.post("/auth/forgot-password", { email: form.email });
         notify(data.message || "Password reset email sent", "success");
@@ -48,9 +57,33 @@ export function AuthPage() {
         navigate("/");
       }
     } catch (err) {
-      notify(err.response?.data?.message || "Authentication failed", "error");
+      const message = err.response?.data?.message || "Authentication failed";
+      const shouldShowVerifyPrompt =
+        isLogin &&
+        err.response?.status === 403 &&
+        message.toLowerCase().includes("verify your email");
+
+      setShowVerifyPrompt(shouldShowVerifyPrompt);
+      notify(message, "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!form.email) {
+      notify("Please enter your email first.", "error");
+      return;
+    }
+
+    setResendLoading(true);
+    try {
+      const { data } = await api.post("/auth/resend-verification", { email: form.email });
+      notify(data.message || "Verification email sent", "success");
+    } catch (err) {
+      notify(err.response?.data?.message || "Unable to resend verification email", "error");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -106,10 +139,28 @@ export function AuthPage() {
               placeholder="you@email.com"
               autoComplete="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, email: e.target.value });
+                setShowVerifyPrompt(false);
+              }}
               className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm"
               required
             />
+            {isLogin && showVerifyPrompt && (
+              <div className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5">
+                <p className="text-xs text-amber-300">
+                  Your account is not verified yet. Please verify before login.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  className="mt-1.5 text-xs font-semibold text-accent hover:underline disabled:opacity-60"
+                >
+                  {resendLoading ? "Sending..." : "Resend verification email"}
+                </button>
+              </div>
+            )}
           </div>
 
           {!isForgot && (
@@ -139,6 +190,24 @@ export function AuthPage() {
                 </button>
               )}
             </div>
+          )}
+
+          {isLogin && (
+            <label className="flex items-start gap-2 text-xs text-muted">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-[#3a3a3a] bg-primary text-accent focus:ring-accent"
+              />
+              <span>
+                I accept{" "}
+                <Link to="/terms" className="text-accent hover:underline">
+                  Terms & Conditions
+                </Link>
+                .
+              </span>
+            </label>
           )}
 
           <button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-accent text-primary text-sm font-semibold">

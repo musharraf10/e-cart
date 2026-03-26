@@ -170,6 +170,35 @@ export async function verifyEmail(req, res) {
   res.json({ message: "Email verified successfully. You can now log in." });
 }
 
+export async function resendVerificationEmail(req, res) {
+  const { email } = req.body;
+  const normalizedEmail = String(email || "").toLowerCase();
+
+  if (!normalizedEmail) {
+    res.status(400);
+    throw new Error("Email is required");
+  }
+
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user || user.authProvider !== "local") {
+    return res.json({ message: "If the account exists, a verification email has been sent." });
+  }
+
+  if (user.isVerified) {
+    return res.json({ message: "Your email is already verified. Please log in." });
+  }
+
+  const rawVerifyToken = generateRawToken();
+  user.verifyTokenHash = hashToken(rawVerifyToken);
+  user.verifyTokenExpiry = tokenExpiry(24 * 60);
+  await user.save();
+
+  await sendVerificationEmail(user, rawVerifyToken);
+
+  return res.json({ message: "Verification email sent. Please check your inbox." });
+}
+
 export async function forgotPassword(req, res) {
   const { email } = req.body;
   const normalizedEmail = String(email || "").toLowerCase();
