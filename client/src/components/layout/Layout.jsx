@@ -5,7 +5,7 @@ import { AnnouncementBar } from "./AnnouncementBar.jsx";
 
 export function Layout({ children }) {
   const location = useLocation();
-  const isAuthPage = location.pathname === "/auth";
+  const isAuthPage = location.pathname === "/auth" || location.pathname === "/login";
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   if (isAuthPage) {

@@ -146,16 +146,60 @@ export async function getRelatedProducts(req, res) {
 }
 
 export async function searchProducts(req, res) {
-  const { q } = req.query;
-  if (!q) {
-    return res.json({ items: [] });
+  const { q = "", page = 1, limit = 12 } = req.query;
+  const trimmedQuery = String(q).trim();
+  const pageNumber = Math.max(Number(page) || 1, 1);
+  const pageLimit = Math.min(Math.max(Number(limit) || 12, 1), 50);
+
+  if (!trimmedQuery) {
+    return res.json({ products: [], total: 0, page: pageNumber, pages: 0 });
   }
 
-  const regex = new RegExp(q, "i");
-  const items = await Product.find({
-    isVisible: true,
-    $or: [{ name: regex }, { description: regex }],
-  }).limit(20);
+  const regex = new RegExp(trimmedQuery, "i");
+  const basePipeline = [
+    { $match: { isVisible: true } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    {
+      $unwind: {
+        path: "$category",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        $or: [{ name: regex }, { description: regex }, { "category.name": regex }],
+      },
+    },
+  ];
 
-  res.json({ items: items.map((item) => withDerivedFields(item)) });
+  const [result, wishlistedProductIds] = await Promise.all([
+    Product.aggregate([
+      ...basePipeline,
+      {
+        $facet: {
+          products: [{ $sort: { createdAt: -1 } }, { $skip: (pageNumber - 1) * pageLimit }, { $limit: pageLimit }],
+          metadata: [{ $count: "total" }],
+        },
+      },
+    ]),
+    getRequestWishlistProductIds(req),
+  ]);
+
+  const products = result?.[0]?.products || [];
+  const total = result?.[0]?.metadata?.[0]?.total || 0;
+  const pages = total > 0 ? Math.ceil(total / pageLimit) : 0;
+
+  res.json({
+    products: products.map((item) => withDerivedFields(item, { wishlistedProductIds })),
+    total,
+    page: pageNumber,
+    pages,
+  });
 }

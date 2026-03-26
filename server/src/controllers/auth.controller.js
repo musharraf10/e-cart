@@ -1,8 +1,56 @@
+import bcrypt from "bcryptjs";
 import { User } from "../models/user.model.js";
-import { generateToken } from "../utils/token.util.js";
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/token.util.js";
 import { getFirebaseAdminAuth } from "../config/firebase-admin.js";
 
-function formatAuthResponse(user) {
+const refreshCookieName = "noorfit_refresh";
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+
+  return header.split(";").reduce((acc, part) => {
+    const [key, ...rest] = part.trim().split("=");
+    if (!key) return acc;
+    acc[key] = decodeURIComponent(rest.join("="));
+    return acc;
+  }, {});
+}
+
+function setRefreshCookie(res, token) {
+  const secure = process.env.NODE_ENV === "production";
+  const maxAge = 7 * 24 * 60 * 60 * 1000;
+  const cookie = [
+    `${refreshCookieName}=${encodeURIComponent(token)}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/api/auth",
+    `Max-Age=${Math.floor(maxAge / 1000)}`,
+  ];
+  if (secure) cookie.push("Secure");
+  res.setHeader("Set-Cookie", cookie.join("; "));
+}
+
+function clearRefreshCookie(res) {
+  const secure = process.env.NODE_ENV === "production";
+  const cookie = [`${refreshCookieName}=`, "HttpOnly", "SameSite=Lax", "Path=/api/auth", "Max-Age=0"];
+  if (secure) cookie.push("Secure");
+  res.setHeader("Set-Cookie", cookie.join("; "));
+}
+
+async function persistRefreshToken(user, refreshToken) {
+  const salt = await bcrypt.genSalt(10);
+  user.refreshTokenHash = await bcrypt.hash(refreshToken, salt);
+  await user.save();
+}
+
+async function buildAuthResponse(user, res) {
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+
+  await persistRefreshToken(user, refreshToken);
+  setRefreshCookie(res, refreshToken);
+
   return {
     user: {
       id: user._id,
@@ -11,7 +59,7 @@ function formatAuthResponse(user) {
       role: user.role,
       avatar: user.avatar || "",
     },
-    token: generateToken(user._id),
+    token: accessToken,
   };
 }
 
@@ -26,7 +74,7 @@ export async function register(req, res) {
 
   const user = await User.create({ name, email, password, authProvider: "local" });
 
-  res.status(201).json(formatAuthResponse(user));
+  res.status(201).json(await buildAuthResponse(user, res));
 }
 
 export async function login(req, res) {
@@ -53,7 +101,7 @@ export async function login(req, res) {
     throw new Error("Your account is blocked. Please contact support.");
   }
 
-  res.json(formatAuthResponse(user));
+  res.json(await buildAuthResponse(user, res));
 }
 
 export async function googleLogin(req, res) {
@@ -104,7 +152,61 @@ export async function googleLogin(req, res) {
     await user.save();
   }
 
-  res.json(formatAuthResponse(user));
+  res.json(await buildAuthResponse(user, res));
+}
+
+export async function refreshAccessToken(req, res) {
+  const cookies = parseCookies(req);
+  const refreshToken = cookies[refreshCookieName];
+
+  if (!refreshToken) {
+    res.status(401);
+    throw new Error("Refresh token missing");
+  }
+
+  let decoded;
+  try {
+    decoded = verifyRefreshToken(refreshToken);
+  } catch {
+    res.status(401);
+    throw new Error("Invalid refresh token");
+  }
+
+  const user = await User.findById(decoded.id);
+  if (!user || !user.refreshTokenHash) {
+    res.status(401);
+    throw new Error("Refresh token not recognized");
+  }
+
+  const matches = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+  if (!matches) {
+    res.status(401);
+    throw new Error("Refresh token mismatch");
+  }
+
+  const token = generateAccessToken(user._id);
+  res.json({ token });
+}
+
+export async function logout(req, res) {
+  const cookies = parseCookies(req);
+  const refreshToken = cookies[refreshCookieName];
+
+  if (refreshToken) {
+    try {
+      const decoded = verifyRefreshToken(refreshToken);
+      const user = await User.findById(decoded.id);
+      if (user) {
+        user.refreshTokenHash = null;
+        await user.save();
+      }
+    } catch {
+      // best-effort logout
+    }
+  }
+
+  clearRefreshCookie(res);
+  res.json({ message: "Logged out" });
 }
 
 export async function getProfile(req, res) {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useToast } from "../../../components/ui/ToastProvider.jsx";
 
 export function AdminSettingsPage() {
   const [settings, setSettings] = useState({
@@ -10,6 +11,8 @@ export function AdminSettingsPage() {
     currency: "USD",
   });
 
+  const { notify } = useToast();
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <h1 className="text-2xl font-bold tracking-tight text-white">Admin Settings</h1>
@@ -17,7 +20,7 @@ export function AdminSettingsPage() {
         className="bg-card rounded-xl border border-[#262626] p-6 grid sm:grid-cols-2 gap-4 text-sm"
         onSubmit={(e) => {
           e.preventDefault();
-          alert("Settings saved (local demo)");
+          notify("Settings saved (local demo)");
         }}
       >
         <input

@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/client.js";
 import { logout } from "../../store/slices/authSlice.js";
+import { useToast } from "../../components/ui/ToastProvider.jsx";
 
 export function AccountSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -10,6 +11,7 @@ export function AccountSettingsPage() {
   const [message, setMessage] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { notify } = useToast();
 
   const changePassword = async (e) => {
     e.preventDefault();
@@ -36,13 +38,18 @@ export function AccountSettingsPage() {
       dispatch(logout());
       navigate("/");
     } catch (err) {
-      alert("Failed to delete account");
+      notify("Failed to delete account", "error");
     }
   };
 
-  const logoutAll = () => {
+  const logoutAll = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // best effort
+    }
     dispatch(logout());
-    navigate("/auth");
+    navigate("/login");
   };
 
   return (

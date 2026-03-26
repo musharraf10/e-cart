@@ -55,6 +55,10 @@ const userSchema = new mongoose.Schema(
       postalCode: String,
       country: String,
     },
+    refreshTokenHash: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true },
 );

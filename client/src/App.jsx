@@ -75,7 +75,7 @@ function AppShell() {
     [isMobile, isAdminRoute]
   );
 
-  if (isDesktopBlocked && !location.pathname.startsWith("/auth")) {
+  if (isDesktopBlocked && !location.pathname.startsWith("/auth") && !location.pathname.startsWith("/login")) {
     return <DesktopBlockScreen />;
   }
 
@@ -93,6 +93,7 @@ function AppShell() {
         <Route path="/success" element={<SuccessPage />} />
         <Route path="/cancel" element={<CancelPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/login" element={<AuthPage />} />
 
         {/* Authenticated user routes */}
         <Route element={<ProtectedRoute />}>

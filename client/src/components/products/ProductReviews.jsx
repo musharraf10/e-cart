@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { HiBadgeCheck, HiStar } from "react-icons/hi";
 import api from "../../api/client.js";
+import { useToast } from "../ui/ToastProvider.jsx";
 
 function StarRow({ rating, size = "w-4 h-4" }) {
   return (
@@ -25,6 +26,7 @@ export function ProductReviews({
   canReview,
 }) {
   const user = useSelector((s) => s.auth.user);
+  const { notify } = useToast();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [images, setImages] = useState([]);
@@ -96,7 +98,7 @@ export function ProductReviews({
       setImages([]);
       setImagePreviews([]);
     } catch (err) {
-      alert(err.response?.data?.message || "Unable to submit review");
+      notify(err.response?.data?.message || "Unable to submit review", "error");
     } finally {
       setSubmitting(false);
     }

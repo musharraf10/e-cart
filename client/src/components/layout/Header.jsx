@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiArrowLeft, HiSearch, HiShoppingCart, HiUser, HiLogout } from "react-icons/hi";
 import { logout } from "../../store/slices/authSlice.js";
+import api from "../../api/client.js";
 import { MobileNavigation } from "./MobileNavigation.jsx";
 
 export function Header() {
@@ -21,9 +22,14 @@ export function Header() {
   const isSearchPage = location.pathname === "/search";
   const isAdminRoute = location.pathname.startsWith("/admin");
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // best effort
+    }
     dispatch(logout());
-    navigate("/");
+    navigate(isAdminRoute ? "/login" : "/");
   };
 
   const handleSearchSubmit = (e) => {
