@@ -6,6 +6,7 @@ import {
   HiShoppingCart,
   HiHeart,
 } from "react-icons/hi";
+import { Link } from "react-router-dom";
 
 const navItems = [
   { to: "/", icon: HiHome, label: "Home" },
@@ -44,6 +45,17 @@ export function MobileNavigation() {
       className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-[#262626] safe-area-pb"
       aria-label="Mobile navigation"
     >
+      <div className="flex items-center justify-center gap-4 border-b border-[#262626] px-3 py-2">
+        <Link to="/about" className="text-[11px] font-medium text-muted hover:text-white">
+          About
+        </Link>
+        <Link to="/support" className="text-[11px] font-medium text-muted hover:text-white">
+          Support
+        </Link>
+        <Link to="/terms" className="text-[11px] font-medium text-muted hover:text-white">
+          Terms
+        </Link>
+      </div>
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map(({ to, icon: Icon, label }) => {
           const active = isActive(to);

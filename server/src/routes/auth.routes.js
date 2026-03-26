@@ -8,6 +8,7 @@ import {
   getProfile,
   updateProfile,
   verifyEmail,
+  resendVerificationEmail,
   forgotPassword,
   resetPassword,
 } from "../controllers/auth.controller.js";
@@ -17,6 +18,7 @@ const router = express.Router();
 
 router.post("/register", register);
 router.post("/verify-email", verifyEmail);
+router.post("/resend-verification", resendVerificationEmail);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.post("/login", login);
