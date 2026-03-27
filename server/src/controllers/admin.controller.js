@@ -12,6 +12,11 @@ import { SiteSetting } from "../models/siteSetting.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
+import {
+  getCloudinaryConfig,
+  isCloudinaryConfigured,
+  signCloudinaryParams,
+} from "../config/cloudinary.js";
 
 function normalizeColorImages(
   colorImages = {},
@@ -376,6 +381,57 @@ export async function adminCreateCategory(req, res) {
   });
 
   res.status(201).json(category);
+}
+
+export async function adminUploadImage(req, res) {
+  if (!isCloudinaryConfigured()) {
+    res.status(500);
+    throw new Error("Cloudinary is not configured on the server");
+  }
+
+  if (!req.file) {
+    res.status(400);
+    throw new Error("Image file is required");
+  }
+
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+  const folder = String(req.body?.folder || "products").trim() || "products";
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signedParams = {
+    folder: `noorfit/${folder}`,
+    timestamp,
+  };
+  const signature = signCloudinaryParams(signedParams, apiSecret);
+  const base64Data = req.file.buffer.toString("base64");
+  const dataUri = `data:${req.file.mimetype};base64,${base64Data}`;
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: new URLSearchParams({
+      file: dataUri,
+      folder: signedParams.folder,
+      timestamp: String(timestamp),
+      api_key: apiKey,
+      signature,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    res.status(502);
+    throw new Error(errorPayload?.error?.message || "Cloudinary upload failed");
+  }
+
+  const result = await response.json();
+
+  res.status(201).json({
+    url: result.secure_url,
+    publicId: result.public_id,
+    width: result.width,
+    height: result.height,
+    format: result.format,
+    bytes: result.bytes,
+  });
 }
 
 // ────────────────────────────────────────────────

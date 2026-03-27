@@ -1,5 +1,6 @@
 import express from "express";
 import { protect, admin } from "../middleware/auth.middleware.js";
+import { uploadSingleImage } from "../middleware/upload.middleware.js";
 import {
   getDashboardMetrics,
   adminListProducts,
@@ -43,6 +44,7 @@ import {
   adminDeleteAnnouncement,
   adminGetSettings,
   adminUpdateSettings,
+  adminUploadImage,
 } from "../controllers/admin.controller.js";
 import { answerProductQuestion } from "../controllers/qa.controller.js";
 
@@ -55,6 +57,7 @@ router.get("/notifications", adminGetNotifications);
 
 router.get("/categories", adminListCategories);
 router.post("/categories", adminCreateCategory);
+router.post("/uploads/image", uploadSingleImage, adminUploadImage);
 router.get("/products", adminListProducts);
 router.get("/products/:id", adminGetProductById);
 router.post("/products", adminCreateProduct);

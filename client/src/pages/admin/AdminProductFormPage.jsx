@@ -81,6 +81,9 @@ export function AdminProductFormPage() {
   const [newCategoryImage, setNewCategoryImage] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingMainImage, setUploadingMainImage] = useState(false);
+  const [uploadingColorByName, setUploadingColorByName] = useState({});
+  const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
 
   const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
 
@@ -197,6 +200,25 @@ export function AdminProductFormPage() {
     });
   };
 
+  const addUploadedMainImages = async (files) => {
+    if (!files?.length) return;
+    setUploadingMainImage(true);
+    try {
+      const uploadedUrls = await uploadMultipleFiles(files, "products");
+      if (!uploadedUrls.length) return;
+      setForm((prev) => {
+        const current = (prev.images || [])
+          .map((img) => String(img || "").trim())
+          .filter(Boolean);
+        return { ...prev, images: [...current, ...uploadedUrls] };
+      });
+    } catch (error) {
+      notify(error.response?.data?.message || "Failed to upload product image", "error");
+    } finally {
+      setUploadingMainImage(false);
+    }
+  };
+
   const updateColorImagesFor = (colorName, nextImages) => {
     setForm((prev) => ({
       ...prev,
@@ -261,17 +283,28 @@ export function AdminProductFormPage() {
     });
   };
 
-  const readFilesAsDataUrls = (files) =>
-    Promise.all(
-      Array.from(files || []).map(
-        (file) =>
-          new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(file);
-          }),
-      ),
-    );
+  const uploadImageFile = async (file, folder = "products") => {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+
+    const { data } = await api.post("/admin/uploads/image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return data?.url || "";
+  };
+
+  const uploadMultipleFiles = async (files, folder = "products") => {
+    const urls = [];
+    for (const file of Array.from(files || [])) {
+      const uploaded = await uploadImageFile(file, folder);
+      if (uploaded) urls.push(uploaded);
+    }
+    return urls;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -370,14 +403,21 @@ export function AdminProductFormPage() {
     }
   };
 
-  const handleNewCategoryImageFile = (file) => {
+  const handleNewCategoryImageFile = async (file) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result;
-      if (typeof result === "string") setNewCategoryImage(result);
-    };
-    reader.readAsDataURL(file);
+    setUploadingCategoryImage(true);
+    try {
+      const uploadedUrl = await uploadImageFile(file, "categories");
+      if (uploadedUrl) {
+        setNewCategoryImage(uploadedUrl);
+      } else {
+        notify("Failed to upload category image", "error");
+      }
+    } catch (error) {
+      notify(error.response?.data?.message || "Failed to upload category image", "error");
+    } finally {
+      setUploadingCategoryImage(false);
+    }
   };
 
   return (
@@ -450,9 +490,24 @@ export function AdminProductFormPage() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Image URLs</p>
+            <p className="text-sm font-medium">Images</p>
             <button type="button" onClick={addImageField} className="text-xs px-2 py-1 border border-[#262626] rounded-full text-white hover:bg-[#262626]">+ Add Image</button>
           </div>
+          <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-[#262626] bg-primary px-3 py-2 text-sm text-white w-fit">
+            {uploadingMainImage ? "Uploading..." : "Upload image files"}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploadingMainImage}
+              className="hidden"
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files?.length) addUploadedMainImages(files);
+                e.target.value = "";
+              }}
+            />
+          </label>
           {form.images.map((url, idx) => (
             <div key={`image-${idx}`} className="flex gap-2 items-center">
               <input placeholder="https://..." value={url} onChange={(e) => setImageAt(idx, e.target.value)} className="flex-1 rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white" />
@@ -489,12 +544,29 @@ export function AdminProductFormPage() {
               })();
 
               const addUploadedFiles = async (files) => {
-                const dataUrls = (await readFilesAsDataUrls(files))
-                  .map((x) => (typeof x === "string" ? x : ""))
-                  .filter(Boolean);
-                if (!dataUrls.length) return;
-                const current = (form.colorImages?.[colorName] || []).filter(Boolean).map((x) => String(x).trim()).filter(Boolean);
-                updateColorImagesFor(colorName, [...current, ...dataUrls]);
+                if (!files?.length) return;
+                setUploadingColorByName((prev) => ({ ...prev, [colorName]: true }));
+                try {
+                  const uploadedUrls = await uploadMultipleFiles(files, `products/${colorName.toLowerCase()}`);
+                  if (!uploadedUrls.length) return;
+                  setForm((prev) => {
+                    const current = (prev.colorImages?.[colorName] || [])
+                      .filter(Boolean)
+                      .map((x) => String(x).trim())
+                      .filter(Boolean);
+                    return {
+                      ...prev,
+                      colorImages: {
+                        ...(prev.colorImages || {}),
+                        [colorName]: [...current, ...uploadedUrls],
+                      },
+                    };
+                  });
+                } catch (error) {
+                  notify(error.response?.data?.message || "Failed to upload color images", "error");
+                } finally {
+                  setUploadingColorByName((prev) => ({ ...prev, [colorName]: false }));
+                }
               };
 
               return (
@@ -553,6 +625,7 @@ export function AdminProductFormPage() {
                         type="file"
                         accept="image/*"
                         multiple
+                        disabled={Boolean(uploadingColorByName[colorName])}
                         className="hidden"
                         onChange={(e) => {
                           const files = e.target.files;
@@ -561,6 +634,9 @@ export function AdminProductFormPage() {
                         }}
                       />
                     </label>
+                    {uploadingColorByName[colorName] ? (
+                      <span className="text-xs text-muted">Uploading...</span>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -668,10 +744,11 @@ export function AdminProductFormPage() {
                 />
                 <div className="flex items-center gap-3">
                   <label className="flex-1 cursor-pointer rounded-lg border border-[#262626] bg-primary px-3 py-2 text-sm text-white text-center">
-                    Upload file
+                    {uploadingCategoryImage ? "Uploading..." : "Upload file"}
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={uploadingCategoryImage}
                       className="hidden"
                       onChange={(e) => handleNewCategoryImageFile(e.target.files?.[0])}
                     />
