@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { HiStar, HiOutlineHeart, HiHeart } from "react-icons/hi";
+import { HiStar, HiOutlineHeart, HiHeart, HiShare } from "react-icons/hi";
 import api from "../../api/client.js";
 import { addToCart } from "../../store/slices/cartSlice.js";
 import { ProductVariants } from "./ProductVariants.jsx";
@@ -27,6 +27,7 @@ export function ProductInfo({
   const [adding, setAdding] = useState(false);
   const [liked, setLiked] = useState(Boolean(product?.isWishlisted));
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     setLiked(Boolean(product?.isWishlisted));
@@ -135,6 +136,70 @@ export function ProductInfo({
     }
   };
 
+  const buildShareUrl = () => {
+    const shareUrl = new URL(`/product/${product.slug}`, window.location.origin);
+
+    if (color) {
+      shareUrl.searchParams.set("color", color);
+    }
+
+    // UTM params for analytics attribution on shared visits.
+    shareUrl.searchParams.set("utm_source", "share");
+    shareUrl.searchParams.set("utm_medium", "product_share");
+    shareUrl.searchParams.set("utm_campaign", "product_detail");
+
+    return shareUrl.toString();
+  };
+
+  const copyToClipboard = async (text) => {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  };
+
+  const shareProduct = async () => {
+    if (sharing) return;
+
+    const url = buildShareUrl();
+    setSharing(true);
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share({
+          title: product.name,
+          text: "Check out this product I found.",
+          url,
+        });
+        return;
+      }
+
+      await copyToClipboard(url);
+      notify("Product link copied to clipboard");
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+
+      try {
+        await copyToClipboard(url);
+        notify("Product link copied to clipboard");
+      } catch {
+        notify("Unable to share right now. Please try again.", "error");
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
     <div className="max-w-[420px] space-y-5">
       <div>
@@ -238,6 +303,17 @@ export function ProductInfo({
             ) : (
               <HiOutlineHeart className="w-5 h-5" />
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={shareProduct}
+            disabled={sharing}
+            aria-label="Share this product"
+            className="h-12 px-4 shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl border border-[#2f2f2f] text-white hover:bg-card transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <HiShare className="w-5 h-5" />
+            <span className="text-sm font-medium">Share</span>
           </button>
         </div>
 
