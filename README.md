@@ -85,3 +85,12 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
 Adjust images, ports, and env as needed for production.
 
 image upload options + final and push notifications
+
+### React StrictMode note (development only)
+
+In development, the client is wrapped with `React.StrictMode` in `client/src/main.jsx`.
+React intentionally double-invokes some lifecycle paths/effects to help surface side effects.
+That can look like duplicate network activity in DevTools even though production behavior is single-pass.
+
+This repo now uses RTK Query for product/detail/review catalog data, so identical in-flight requests are deduplicated by query key and shared from cache across components.
+If you are debugging custom `useEffect` diagnostics in development, prefer idempotent effects or lightweight dev guards to reduce log noise.
