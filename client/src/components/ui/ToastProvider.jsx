@@ -6,13 +6,19 @@ const ToastContext = createContext(null);
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const notify = useCallback((message, type = "success") => {
-    const id = crypto.randomUUID();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 2400);
+  const dismiss = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
+
+  const notify = useCallback((message, type = "success", options = {}) => {
+    const id = crypto.randomUUID();
+    const { duration = 2400, actionLabel, onAction } = options;
+
+    setToasts((prev) => [...prev, { id, message, type, actionLabel, onAction }]);
+    window.setTimeout(() => {
+      dismiss(id);
+    }, duration);
+  }, [dismiss]);
 
   const value = useMemo(() => ({ notify }), [notify]);
 
@@ -33,7 +39,21 @@ export function ToastProvider({ children }) {
                   : "border-border bg-card text-accent"
               }`}
             >
-              {toast.message}
+              <div className="flex items-center gap-3">
+                <span>{toast.message}</span>
+                {toast.actionLabel && toast.onAction ? (
+                  <button
+                    type="button"
+                    className="rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-border/50"
+                    onClick={() => {
+                      toast.onAction();
+                      dismiss(toast.id);
+                    }}
+                  >
+                    {toast.actionLabel}
+                  </button>
+                ) : null}
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>
