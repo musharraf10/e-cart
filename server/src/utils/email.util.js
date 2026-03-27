@@ -24,7 +24,7 @@ function buildTransporter() {
   return transporter;
 }
 
-export async function sendEmail({ to, subject, html }) {
+export async function sendEmail({ to, subject, html, text, attachments = [] }) {
   if (!to || !subject || !html) {
     throw new Error("sendEmail requires to, subject and html");
   }
@@ -37,5 +37,7 @@ export async function sendEmail({ to, subject, html }) {
     to,
     subject,
     html,
+    text,
+    attachments,
   });
 }
