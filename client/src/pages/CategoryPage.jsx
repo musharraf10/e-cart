@@ -1,8 +1,9 @@
 
 import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { useEffect, useRef, useState } from "react";
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
 
-export default function Categories({ categories }) {
+export default function Categories({ categories, withSeo = true }) {
     const scrollRef = useRef(null);
     const [isDown, setIsDown] = useState(false);
     const [startX, setStartX] = useState(0);
@@ -91,6 +92,13 @@ export default function Categories({ categories }) {
 
     return (
         <section className="space-y-4">
+            {withSeo && (
+                <SeoMeta
+                    title="Shop by Category | NoorFit"
+                    description="Explore NoorFit collections by category and discover styles tailored to your performance and comfort goals."
+                    canonicalUrl="/shop"
+                />
+            )}
             <SectionHeader title="Categories" subtitle="Browse by category" />
 
             <div className="relative overflow-hidden">
