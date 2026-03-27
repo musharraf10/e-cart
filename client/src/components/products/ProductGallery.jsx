@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { HiArrowLeft, HiArrowRight } from "react-icons/hi";
 
@@ -6,6 +6,8 @@ export function ProductGallery({ images = [], alt, variantKey }) {
   const safeImages = useMemo(() => images.filter(Boolean), [images]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [transitionKey, setTransitionKey] = useState(0);
+  const touchStartX = useRef(null);
+  const touchDeltaX = useRef(0);
 
   const imagesSignature = useMemo(() => safeImages.join("|"), [safeImages]);
 
@@ -25,6 +27,26 @@ export function ProductGallery({ images = [], alt, variantKey }) {
     setActiveIndex((index) => (index + 1) % safeImages.length);
   };
 
+  const handleTouchStart = (event) => {
+    touchStartX.current = event.touches?.[0]?.clientX ?? null;
+    touchDeltaX.current = 0;
+  };
+
+  const handleTouchMove = (event) => {
+    if (touchStartX.current == null) return;
+    const currentX = event.touches?.[0]?.clientX ?? touchStartX.current;
+    touchDeltaX.current = currentX - touchStartX.current;
+  };
+
+  const handleTouchEnd = () => {
+    if (safeImages.length < 2) return;
+    const threshold = 45;
+    if (touchDeltaX.current <= -threshold) goNext();
+    if (touchDeltaX.current >= threshold) goPrev();
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <motion.div
@@ -33,6 +55,10 @@ export function ProductGallery({ images = [], alt, variantKey }) {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25 }}
         className="relative min-h-[420px] sm:min-h-[520px] rounded-[20px] border border-[#262626] overflow-hidden bg-[#0f0f0f] flex items-center justify-center"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         {active ? (
           <img

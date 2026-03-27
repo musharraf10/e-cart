@@ -11,6 +11,17 @@ const variantSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const sizeChartRowSchema = new mongoose.Schema(
+  {
+    size: { type: String, required: true, trim: true, uppercase: true },
+    chest: { type: Number, min: 0, default: null },
+    waist: { type: Number, min: 0, default: null },
+    hip: { type: Number, min: 0, default: null },
+    length: { type: Number, min: 0, default: null },
+  },
+  { _id: false },
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -26,6 +37,11 @@ const productSchema = new mongoose.Schema(
     },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     variants: [variantSchema],
+    sizeChart: {
+      unit: { type: String, enum: ["in", "cm"], default: "in" },
+      notes: { type: String, default: "" },
+      rows: { type: [sizeChartRowSchema], default: [] },
+    },
     isVisible: { type: Boolean, default: true },
     isNewDrop: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },

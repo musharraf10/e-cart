@@ -138,9 +138,11 @@ export async function getProductBySlug(req, res) {
     ...withDerivedFields(plainProduct),
     isWishlisted,
     sizeChart: {
-      rows: siteSettings?.sizeChartRows || [],
-      unit: siteSettings?.sizeChartUnit || "in",
-      notes: siteSettings?.sizeChartNotes || "",
+      rows: plainProduct?.sizeChart?.rows?.length
+        ? plainProduct.sizeChart.rows
+        : siteSettings?.sizeChartRows || [],
+      unit: plainProduct?.sizeChart?.unit || siteSettings?.sizeChartUnit || "in",
+      notes: plainProduct?.sizeChart?.notes || siteSettings?.sizeChartNotes || "",
     },
   });
 }

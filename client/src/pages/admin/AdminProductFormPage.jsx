@@ -12,6 +12,15 @@ const createVariant = () => ({
   sku: "",
 });
 
+const createSizeChartRow = () => ({
+  id: `size-row-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  size: "",
+  chest: "",
+  waist: "",
+  hip: "",
+  length: "",
+});
+
 const defaultForm = {
   name: "",
   slug: "",
@@ -22,6 +31,11 @@ const defaultForm = {
   category: "",
   images: [""],
   colorImages: {},
+  sizeChart: {
+    unit: "in",
+    notes: "",
+    rows: [createSizeChartRow()],
+  },
   visible: true,
   newDrop: false,
 };
@@ -35,6 +49,18 @@ const normalizeVariants = (variants = []) => {
     stock: String(variant.stock ?? 0),
     price: String(variant.price ?? ""),
     sku: variant.sku || "",
+  }));
+};
+
+const normalizeSizeChartRows = (rows = []) => {
+  if (!rows.length) return [createSizeChartRow()];
+  return rows.map((row) => ({
+    id: row.id || `size-row-${row.size || Math.random().toString(16).slice(2)}`,
+    size: row.size || "",
+    chest: row.chest == null ? "" : String(row.chest),
+    waist: row.waist == null ? "" : String(row.waist),
+    hip: row.hip == null ? "" : String(row.hip),
+    length: row.length == null ? "" : String(row.length),
   }));
 };
 
@@ -98,6 +124,11 @@ export function AdminProductFormPage() {
               : product.category || "",
           images: product.images?.length ? product.images : [""],
           colorImages: normalizedColorImages,
+          sizeChart: {
+            unit: product.sizeChart?.unit === "cm" ? "cm" : "in",
+            notes: product.sizeChart?.notes || "",
+            rows: normalizeSizeChartRows(product.sizeChart?.rows || []),
+          },
           visible: product.isVisible ?? true,
           newDrop: product.isNewDrop ?? false,
         });
@@ -195,6 +226,41 @@ export function AdminProductFormPage() {
     );
   };
 
+  const setSizeChartRowField = (rowId, key, value) => {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...(prev.sizeChart || {}),
+        rows: (prev.sizeChart?.rows || []).map((row) =>
+          row.id === rowId ? { ...row, [key]: value } : row,
+        ),
+      },
+    }));
+  };
+
+  const addSizeChartRow = () => {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...(prev.sizeChart || {}),
+        rows: [...(prev.sizeChart?.rows || []), createSizeChartRow()],
+      },
+    }));
+  };
+
+  const removeSizeChartRow = (rowId) => {
+    setForm((prev) => {
+      const nextRows = (prev.sizeChart?.rows || []).filter((row) => row.id !== rowId);
+      return {
+        ...prev,
+        sizeChart: {
+          ...(prev.sizeChart || {}),
+          rows: nextRows.length ? nextRows : [createSizeChartRow()],
+        },
+      };
+    });
+  };
+
   const readFilesAsDataUrls = (files) =>
     Promise.all(
       Array.from(files || []).map(
@@ -238,6 +304,25 @@ export function AdminProductFormPage() {
         },
         {},
       ),
+      sizeChart: {
+        unit: form.sizeChart?.unit === "cm" ? "cm" : "in",
+        notes: form.sizeChart?.notes || "",
+        rows: (form.sizeChart?.rows || [])
+          .map((row) => ({
+            size: row.size.trim(),
+            chest: row.chest === "" ? null : Number(row.chest),
+            waist: row.waist === "" ? null : Number(row.waist),
+            hip: row.hip === "" ? null : Number(row.hip),
+            length: row.length === "" ? null : Number(row.length),
+          }))
+          .filter(
+            (row) =>
+              row.size &&
+              [row.chest, row.waist, row.hip, row.length].every(
+                (measurement) => measurement == null || !Number.isNaN(measurement),
+              ),
+          ),
+      },
       isVisible: form.visible,
       isNewDrop: form.newDrop,
     };
@@ -481,6 +566,70 @@ export function AdminProductFormPage() {
               );
             })
           )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Product Size Chart</p>
+            <button type="button" onClick={addSizeChartRow} className="text-xs px-2 py-1 border border-[#262626] rounded-full text-white hover:bg-[#262626]">
+              + Add size row
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3">
+            <label className="space-y-1">
+              <span className="text-xs text-muted">Unit</span>
+              <select
+                value={form.sizeChart?.unit || "in"}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    sizeChart: { ...(prev.sizeChart || {}), unit: e.target.value },
+                  }))
+                }
+                className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white"
+              >
+                <option value="in">Inches (in)</option>
+                <option value="cm">Centimeters (cm)</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-muted">Notes (optional)</span>
+              <input
+                value={form.sizeChart?.notes || ""}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    sizeChart: { ...(prev.sizeChart || {}), notes: e.target.value },
+                  }))
+                }
+                placeholder="Fit notes shown in size chart modal"
+                className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white"
+              />
+            </label>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="py-2">Size</th><th>Chest</th><th>Waist</th><th>Hip</th><th>Length</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(form.sizeChart?.rows || []).map((row) => (
+                  <tr key={row.id} className="border-t border-[#262626]">
+                    <td><input value={row.size} onChange={(e) => setSizeChartRowField(row.id, "size", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.chest} onChange={(e) => setSizeChartRowField(row.id, "chest", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.waist} onChange={(e) => setSizeChartRowField(row.id, "waist", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.hip} onChange={(e) => setSizeChartRowField(row.id, "hip", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.length} onChange={(e) => setSizeChartRowField(row.id, "length", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><button type="button" onClick={() => removeSizeChartRow(row.id)} className="text-xs text-red-400">Remove</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-3">
