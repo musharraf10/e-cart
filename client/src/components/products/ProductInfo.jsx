@@ -17,6 +17,7 @@ export function ProductInfo({
   setSize,
   setColor,
   setQty,
+  sizeChart,
   onWishlistChange,
 }) {
   const dispatch = useDispatch();
@@ -190,6 +191,7 @@ export function ProductInfo({
           color={color}
           setSize={setSize}
           setColor={setColor}
+          sizeChart={sizeChart}
         />
       </div>
 

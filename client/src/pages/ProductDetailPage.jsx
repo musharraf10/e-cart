@@ -129,6 +129,7 @@ export function ProductDetailPage() {
           setSize={setSize}
           setColor={setColor}
           setQty={setQty}
+          sizeChart={product.sizeChart}
           onWishlistChange={(isWishlisted) => {
             setProduct((prev) => (prev ? { ...prev, isWishlisted } : prev));
           }}

@@ -41,6 +41,8 @@ import {
   adminUpdateAnnouncement,
   adminToggleAnnouncement,
   adminDeleteAnnouncement,
+  adminGetSettings,
+  adminUpdateSettings,
 } from "../controllers/admin.controller.js";
 import { answerProductQuestion } from "../controllers/qa.controller.js";
 
@@ -98,6 +100,8 @@ router.get("/returns", adminListReturns);
 router.patch("/returns/:id/status", adminUpdateReturnStatus);
 
 router.get("/analytics", adminGetAnalytics);
+router.get("/settings", adminGetSettings);
+router.put("/settings", adminUpdateSettings);
 
 // Q&A: answers (admin-only via router.use(protect, admin))
 router.patch("/questions/:id/answer", answerProductQuestion);

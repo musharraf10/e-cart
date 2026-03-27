@@ -8,6 +8,7 @@ import { Coupon } from "../models/coupon.model.js";
 import { Announcement } from "../models/announcement.model.js";
 import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
+import { SiteSetting } from "../models/siteSetting.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
@@ -86,6 +87,28 @@ function totalVariantStock(product) {
     (sum, variant) => sum + (variant.stock || 0),
     0,
   );
+}
+
+async function getOrCreateSiteSettings() {
+  const settings = await SiteSetting.findOneAndUpdate(
+    { key: "global" },
+    {
+      $setOnInsert: {
+        key: "global",
+        storeName: "NoorFit",
+        contactEmail: "support@noorfit.com",
+        shippingFee: 5,
+        taxPercentage: 5,
+        currency: "USD",
+        sizeChartUnit: "in",
+        sizeChartNotes: "",
+        sizeChartRows: [],
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  return settings;
 }
 
 export async function getDashboardMetrics(req, res) {
@@ -940,4 +963,42 @@ export async function adminGetNotifications(req, res) {
   }
 
   res.json(notifications);
+}
+
+export async function adminGetSettings(req, res) {
+  const settings = await getOrCreateSiteSettings();
+  res.json(settings);
+}
+
+export async function adminUpdateSettings(req, res) {
+  const sizeChartRows = Array.isArray(req.body.sizeChartRows)
+    ? req.body.sizeChartRows
+      .map((row) => ({
+        size: String(row.size || "").trim().toUpperCase(),
+        chest: row.chest === "" || row.chest === undefined ? undefined : Number(row.chest),
+        waist: row.waist === "" || row.waist === undefined ? undefined : Number(row.waist),
+        hip: row.hip === "" || row.hip === undefined ? undefined : Number(row.hip),
+        length: row.length === "" || row.length === undefined ? undefined : Number(row.length),
+      }))
+      .filter((row) => row.size)
+    : [];
+
+  const payload = {
+    storeName: String(req.body.storeName || "").trim() || "NoorFit",
+    contactEmail: String(req.body.contactEmail || "").trim() || "support@noorfit.com",
+    shippingFee: Number(req.body.shippingFee) || 0,
+    taxPercentage: Number(req.body.taxPercentage) || 0,
+    currency: String(req.body.currency || "USD").trim().toUpperCase(),
+    sizeChartUnit: req.body.sizeChartUnit === "cm" ? "cm" : "in",
+    sizeChartNotes: String(req.body.sizeChartNotes || "").trim(),
+    sizeChartRows,
+  };
+
+  const settings = await SiteSetting.findOneAndUpdate(
+    { key: "global" },
+    { $set: payload, $setOnInsert: { key: "global" } },
+    { upsert: true, new: true, runValidators: true },
+  );
+
+  res.json(settings);
 }

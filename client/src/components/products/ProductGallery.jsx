@@ -1,30 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { HiArrowLeft, HiArrowRight } from "react-icons/hi";
 
 export function ProductGallery({ images = [], alt, variantKey }) {
   const safeImages = useMemo(() => images.filter(Boolean), [images]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [transitionKey, setTransitionKey] = useState(0);
 
   const imagesSignature = useMemo(() => safeImages.join("|"), [safeImages]);
 
   const active = safeImages[activeIndex];
 
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoomPos({ x, y });
-  };
-
   useEffect(() => {
     // Reset selected image when switching colors (or when images change).
     setActiveIndex(0);
-    setZoomPos({ x: 50, y: 50 });
     setTransitionKey((k) => k + 1);
   }, [variantKey, imagesSignature]);
 
+  const goPrev = () => {
+    setActiveIndex((index) => (index - 1 + safeImages.length) % safeImages.length);
+  };
+
+  const goNext = () => {
+    setActiveIndex((index) => (index + 1) % safeImages.length);
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
@@ -32,37 +31,55 @@ export function ProductGallery({ images = [], alt, variantKey }) {
         key={transitionKey}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.18 }}
-        className="rounded-xl bg-[#171717] border border-[#262626] overflow-hidden cursor-zoom-in flex items-center justify-center group p-4"
-        style={{ maxHeight: "500px" }}
-        onMouseMove={handleMouseMove}
+        transition={{ duration: 0.25 }}
+        className="relative min-h-[420px] sm:min-h-[520px] rounded-[20px] border border-[#262626] overflow-hidden bg-[#0f0f0f] flex items-center justify-center"
       >
         {active ? (
           <img
             src={active}
             alt={alt}
             loading="eager"
-            className="w-full max-h-[320px] md:max-h-[500px] object-contain transition-transform duration-300 group-hover:scale-125"
-            style={{ transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` }}
+            className="h-full w-full object-cover"
           />
         ) : (
           <div className="text-muted text-sm">No image</div>
         )}
-      </motion.div>
-      {safeImages.length > 1 && (
-        <div className="flex flex-wrap gap-3">
-          {safeImages.map((src, idx) => (
+
+        {safeImages.length > 1 && (
+          <>
             <button
-              key={src + idx}
               type="button"
-              onClick={() => setActiveIndex(idx)}
-              className={`w-[60px] h-[60px] rounded-lg overflow-hidden border-2 transition-colors ${idx === activeIndex ? "border-[#d4af37]" : "border-[#262626]"}`}
+              onClick={goPrev}
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/30 bg-black/30 p-2 text-white"
+              aria-label="Previous image"
             >
-              <img src={src} alt={`${alt} ${idx + 1}`} loading="lazy" className="w-full h-full object-cover" />
+              <HiArrowLeft className="h-5 w-5" />
             </button>
-          ))}
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={goNext}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/30 bg-black/30 p-2 text-white"
+              aria-label="Next image"
+            >
+              <HiArrowRight className="h-5 w-5" />
+            </button>
+
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                {safeImages.map((_, idx) => (
+                  <button
+                    key={`dot-${idx}`}
+                    type="button"
+                    aria-label={`Go to image ${idx + 1}`}
+                    onClick={() => setActiveIndex(idx)}
+                    className={`h-2.5 rounded-full transition-all ${idx === activeIndex ? "w-6 bg-white" : "w-2.5 bg-white/50"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </motion.div>
     </motion.div>
   );
 }
