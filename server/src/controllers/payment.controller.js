@@ -228,6 +228,21 @@ export async function verifyRazorpayPayment(req, res) {
     throw new Error("Order not found");
   }
 
+  if (!process.env.RAZORPAY_KEY_SECRET) {
+    res.status(503);
+    throw new Error("Payment verification is not configured");
+  }
+
+  if (!order.razorpayOrderId) {
+    res.status(400);
+    throw new Error("No Razorpay order exists for this order");
+  }
+
+  if (order.razorpayOrderId !== razorpayOrderId) {
+    res.status(400);
+    throw new Error("Razorpay order mismatch");
+  }
+
   const generatedSignature = crypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
     .update(`${razorpayOrderId}|${razorpayPaymentId}`)
@@ -250,6 +265,28 @@ export async function verifyRazorpayPayment(req, res) {
       orderId: order._id,
       paymentStatus: order.paymentStatus,
     });
+  }
+
+  if (razorpay) {
+    const payment = await razorpay.payments.fetch(razorpayPaymentId);
+    const expectedAmount = Math.round(Number(order.total) * 100);
+    const amountMatches = Number(payment?.amount) === expectedAmount;
+    const orderMatches = payment?.order_id === razorpayOrderId;
+    const statusIsValid = ["authorized", "captured"].includes(String(payment?.status || "").toLowerCase());
+
+    if (!amountMatches || !orderMatches || !statusIsValid) {
+      order.paymentStatus = "failed";
+      order.status = "pending";
+      order.razorpayPaymentId = razorpayPaymentId;
+      await order.save();
+
+      return res.status(400).json({
+        verified: false,
+        message: "Payment verification checks failed",
+        orderId: order._id,
+        paymentStatus: order.paymentStatus,
+      });
+    }
   }
 
   order.razorpayOrderId = razorpayOrderId;

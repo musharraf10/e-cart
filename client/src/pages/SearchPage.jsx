@@ -16,6 +16,7 @@ export function SearchPage() {
   const [q, setQ] = useState(params.get("q") || "");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(0);
 
@@ -43,6 +44,7 @@ export function SearchPage() {
       setPages(0);
       setPage(1);
       setLoading(false);
+      setErrorMessage("");
       return;
     }
 
@@ -58,6 +60,17 @@ export function SearchPage() {
         setProducts(expandProductsByVariant(data.products || []));
         setPage(data.page || pageFromUrl);
         setPages(data.pages || 0);
+        setErrorMessage("");
+      } catch (error) {
+        if (!active) return;
+        setProducts([]);
+        setPages(0);
+        setPage(1);
+        setErrorMessage(
+          error?.response
+            ? "Search is temporarily unavailable. Please try again."
+            : "Backend is not running. Please start the backend and retry.",
+        );
       } finally {
         if (active) setLoading(false);
       }
@@ -104,6 +117,11 @@ export function SearchPage() {
       </div>
 
       <div className="mt-6">
+        {errorMessage && (
+          <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {errorMessage}
+          </div>
+        )}
         {loading ? (
           <ProductGridSkeleton count={8} />
         ) : products.length ? (

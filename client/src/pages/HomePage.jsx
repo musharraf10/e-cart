@@ -27,6 +27,7 @@ export function HomePage() {
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("product_view_mode") || "grid");
   const [loading, setLoading] = useState(true);
   const [catalogLoading, setCatalogLoading] = useState(true);
+  const [backendError, setBackendError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -44,6 +45,19 @@ export function HomePage() {
         setNewDrops(dropRes.data.items || []);
         setTrendingProducts(trendingRes.data.items || []);
         setCategories(categoryRes.data || []);
+        setBackendError("");
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        setHeroProductsSource([]);
+        setNewDrops([]);
+        setTrendingProducts([]);
+        setCategories([]);
+        setBackendError(
+          error?.response
+            ? "Unable to load products right now. Please refresh in a moment."
+            : "Backend is unavailable. Please start the server and refresh.",
+        );
       })
       .finally(() => mounted && setLoading(false));
 
@@ -72,6 +86,18 @@ export function HomePage() {
         setCatalogProducts(data.items || []);
         setCatalogPages(data.totalPages || 1);
         setCatalogTotal(data.total || 0);
+        setBackendError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setCatalogProducts([]);
+        setCatalogPages(1);
+        setCatalogTotal(0);
+        setBackendError(
+          error?.response
+            ? "Unable to load products right now. Please refresh in a moment."
+            : "Backend is unavailable. Please start the server and refresh.",
+        );
       })
       .finally(() => {
         if (active) setCatalogLoading(false);
@@ -124,6 +150,12 @@ export function HomePage() {
           subtitle={catalogTotal > 0 ? `${catalogTotal} product${catalogTotal === 1 ? "" : "s"}` : "Explore everything in NoorFit"}
           action={<GridListToggle viewMode={viewMode} onChange={setViewMode} />}
         />
+
+        {backendError && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {backendError}
+          </div>
+        )}
 
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           <button

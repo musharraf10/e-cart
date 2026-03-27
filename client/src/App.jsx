@@ -9,6 +9,7 @@ import { useDispatch } from "react-redux";
 
 import { Layout } from "./components/layout/Layout.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
+import { ShopPage } from "./pages/ShopPage.jsx";
 import { SearchPage } from "./pages/SearchPage.jsx";
 import { ProductDetailPage } from "./pages/ProductDetailPage.jsx";
 import { CartPage } from "./pages/CartPage.jsx";
@@ -90,7 +91,7 @@ function AppShell() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/shop" element={<Navigate to="/" replace />} />
+        <Route path="/shop" element={<ShopPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/product/:slug" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
