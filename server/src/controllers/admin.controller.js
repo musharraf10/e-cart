@@ -10,6 +10,7 @@ import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
+import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
 
 function normalizeColorImages(
   colorImages = {},
@@ -494,6 +495,7 @@ export async function adminUpdateOrderStatus(req, res) {
   }
 
   const newStatus = req.body.status;
+  const previousStatus = order.status;
 
   if (!newStatus) {
     return res.status(400).json({ message: "Status is required" });
@@ -521,6 +523,10 @@ export async function adminUpdateOrderStatus(req, res) {
   await order.save();
 
   // 🔔 Notification
+  if (previousStatus !== newStatus && ["shipped", "delivered"].includes(newStatus)) {
+    await Promise.allSettled([sendStatusEmailByOrder(order, newStatus)]);
+  }
+
   if (["shipped", "delivered", "cancelled"].includes(order.status)) {
     await createNotification({
       userId: order.user,
