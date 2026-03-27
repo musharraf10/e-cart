@@ -22,11 +22,12 @@ export function AuthPage() {
 
   const isLogin = mode === "login";
   const isForgot = mode === "forgot";
+  const isRegister = mode === "register";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLogin && !acceptTerms) {
-      notify("Please accept Terms & Conditions before logging in.", "error");
+    if (isRegister && !acceptTerms) {
+      notify("Please accept Terms & Conditions to create your account.", "error");
       return;
     }
 
@@ -67,6 +68,13 @@ export function AuthPage() {
       notify(message, "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateMode = (nextMode) => {
+    setMode(nextMode);
+    if (nextMode !== "register") {
+      setAcceptTerms(false);
     }
   };
 
@@ -185,14 +193,14 @@ export function AuthPage() {
                 </button>
               </div>
               {isLogin && (
-                <button type="button" onClick={() => setMode("forgot")} className="inline-block text-accent text-xs mt-1.5 hover:underline">
+                <button type="button" onClick={() => updateMode("forgot")} className="inline-block text-accent text-xs mt-1.5 hover:underline">
                   Forgot password?
                 </button>
               )}
             </div>
           )}
 
-          {isLogin && (
+          {isRegister && (
             <label className="flex items-start gap-2 text-xs text-muted">
               <input
                 type="checkbox"
@@ -217,14 +225,14 @@ export function AuthPage() {
 
         <p className="text-center text-muted text-sm mt-6">
           {isForgot ? (
-            <button type="button" onClick={() => setMode("login")} className="text-accent font-medium hover:underline">Back to sign in</button>
+            <button type="button" onClick={() => updateMode("login")} className="text-accent font-medium hover:underline">Back to sign in</button>
           ) : isLogin ? (
             <>
-              Don&apos;t have an account? <button type="button" onClick={() => setMode("register")} className="text-accent font-medium hover:underline">Create one</button>
+              Don&apos;t have an account? <button type="button" onClick={() => updateMode("register")} className="text-accent font-medium hover:underline">Create one</button>
             </>
           ) : (
             <>
-              Already have an account? <button type="button" onClick={() => setMode("login")} className="text-accent font-medium hover:underline">Sign in</button>
+              Already have an account? <button type="button" onClick={() => updateMode("login")} className="text-accent font-medium hover:underline">Sign in</button>
             </>
           )}
         </p>
