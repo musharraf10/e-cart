@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Product } from "../models/product.model.js";
 import { User } from "../models/user.model.js";
+import { SiteSetting } from "../models/siteSetting.model.js";
 
 let productIndexInitPromise;
 
@@ -116,7 +117,10 @@ export async function listProducts(req, res) {
 }
 
 export async function getProductBySlug(req, res) {
-  const product = await Product.findOne({ slug: req.params.slug }).populate("category", "name slug");
+  const [product, siteSettings] = await Promise.all([
+    Product.findOne({ slug: req.params.slug }).populate("category", "name slug"),
+    SiteSetting.findOne({ key: "global" }).select("sizeChartRows sizeChartUnit sizeChartNotes"),
+  ]);
 
   if (!product || !product.isVisible) {
     res.status(404);
@@ -133,6 +137,11 @@ export async function getProductBySlug(req, res) {
   res.json({
     ...withDerivedFields(plainProduct),
     isWishlisted,
+    sizeChart: {
+      rows: siteSettings?.sizeChartRows || [],
+      unit: siteSettings?.sizeChartUnit || "in",
+      notes: siteSettings?.sizeChartNotes || "",
+    },
   });
 }
 
