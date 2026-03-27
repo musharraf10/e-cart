@@ -1,3 +1,5 @@
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
+
 const supportItems = [
   {
     title: "Email",
@@ -19,6 +21,11 @@ const supportItems = [
 export function SupportPage() {
   return (
     <div className="mx-auto w-full max-w-xl px-4 py-6">
+      <SeoMeta
+        title="Support NoorFit | Help with Orders, Returns & Account"
+        description="Contact NoorFit support for order updates, returns, delivery questions, and account help."
+        canonicalUrl="/support"
+      />
       <h1 className="text-xl font-semibold text-white">Support</h1>
       <p className="mt-2 text-sm text-muted">We are here to help with anything you need.</p>
 

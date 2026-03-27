@@ -94,3 +94,31 @@ That can look like duplicate network activity in DevTools even though production
 
 This repo now uses RTK Query for product/detail/review catalog data, so identical in-flight requests are deduplicated by query key and shared from cache across components.
 If you are debugging custom `useEffect` diagnostics in development, prefer idempotent effects or lightweight dev guards to reduce log noise.
+
+### SEO prerender output (production build)
+
+`client` build now generates static prerendered HTML files for key crawl routes:
+
+- `/`
+- `/shop`
+- `/about`
+- `/support`
+- top product detail pages at `/product/<slug>`
+
+By default, top products are fetched from `http://localhost:5000/api/products?sort=rating` during build.
+You can override behavior with build-time env vars:
+
+```bash
+PRERENDER_API_BASE_URL=https://api.example.com/api
+PRERENDER_SITE_ORIGIN=https://www.example.com
+PRERENDER_PRODUCT_LIMIT=12
+```
+
+Run:
+
+```bash
+cd client
+npm run build
+```
+
+The generated files are written under `client/dist`, including per-route `index.html` files containing pre-populated title/canonical/Open Graph/Twitter metadata for crawlers.
