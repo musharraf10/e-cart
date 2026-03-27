@@ -27,6 +27,13 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
 
 2. Environment:
    - Copy `server/.env.example` to `.env` and adjust values.
+   - For admin image uploads, add Cloudinary credentials:
+
+   ```env
+   CLOUDINARY_CLOUD_NAME=your_cloud_name
+   CLOUDINARY_API_KEY=your_api_key
+   CLOUDINARY_API_SECRET=your_api_secret
+   ```
 
 ### Stripe CLI Webhooks (Local Testing)
 
@@ -76,3 +83,5 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
   - `mongo` (MongoDB + volume)
 
 Adjust images, ports, and env as needed for production.
+
+image upload options + final and push notifications

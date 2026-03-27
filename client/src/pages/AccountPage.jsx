@@ -79,12 +79,12 @@ export function AccountPage() {
 
   return (
     <div className="min-h-screen w-full bg-primary overflow-x-hidden">
-      <div className="w-full max-w-[440px] mx-auto px-3 py-6 space-y-4">
+      <div className="w-full max-w-[440px] min-w-0 mx-auto px-3 py-6 space-y-4">
 
         {/* ── Profile card ──────────────────────────── */}
         <motion.div
           {...fadeUp(0)}
-          className="bg-card border border-border rounded-xl p-4 flex items-center gap-4"
+          className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 w-full min-w-0"
         >
           {/* avatar */}
           <div className="h-14 w-14 rounded-xl bg-primary border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -127,7 +127,7 @@ export function AccountPage() {
             <Link
               key={to}
               to={to}
-              className="flex items-center gap-3 px-4 py-3.5 active:bg-primary transition-colors"
+              className="flex items-center gap-3 px-4 py-3.5 active:bg-primary transition-colors min-w-0"
               style={{
                 borderBottom: i < NAV_ITEMS.length - 1 ? "1px solid #262626" : "none",
               }}
@@ -135,7 +135,7 @@ export function AccountPage() {
               <span className="h-9 w-9 rounded-xl bg-primary border border-border flex items-center justify-center flex-shrink-0">
                 <Icon className="w-4 h-4 text-muted" />
               </span>
-              <span className="flex-1 text-sm font-medium text-white">{label}</span>
+              <span className="flex-1 min-w-0 text-sm font-medium text-white truncate">{label}</span>
               <HiChevronRight className="w-4 h-4 text-border flex-shrink-0" />
             </Link>
           ))}
@@ -186,7 +186,7 @@ export function AccountPage() {
               <Link
                 key={o._id}
                 to={`/account/orders/${o._id}`}
-                className="flex items-center gap-3 px-4 py-3.5 active:bg-primary transition-colors"
+                className="flex items-center gap-3 px-4 py-3.5 active:bg-primary transition-colors min-w-0"
                 style={{
                   borderBottom:
                     i < Math.min(orders.length, 3) - 1 ? "1px solid #262626" : "none",
@@ -209,7 +209,9 @@ export function AccountPage() {
                     })}
                   </p>
                 </div>
-                <StatusBadge status={o.status} />
+                <div className="shrink-0">
+                  <StatusBadge status={o.status} />
+                </div>
               </Link>
             ))
           )}

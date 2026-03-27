@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { getColorSwatch } from "../../utils/productVariants.js";
+import { SizeChartModal } from "./SizeChartModal.jsx";
 
 export function ProductVariants({
   variants = [],
@@ -7,7 +8,9 @@ export function ProductVariants({
   color,
   setSize,
   setColor,
+  sizeChart,
 }) {
+  const [showSizeChart, setShowSizeChart] = useState(false);
   const allSizes = useMemo(
     () => [...new Set(variants.map((v) => v.size).filter(Boolean))],
     [variants],
@@ -103,7 +106,16 @@ export function ProductVariants({
 
       {sortedSizes.length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] uppercase tracking-wider text-muted">Size</p>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-[11px] uppercase tracking-wider text-muted">Size</p>
+            <button
+              type="button"
+              onClick={() => setShowSizeChart(true)}
+              className="text-xs font-medium text-[#9fc9ff] hover:text-white"
+            >
+              View size chart
+            </button>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {sortedSizes.map((variantSize) => {
@@ -130,6 +142,12 @@ export function ProductVariants({
           </div>
         </div>
       )}
+
+      <SizeChartModal
+        open={showSizeChart}
+        onClose={() => setShowSizeChart(false)}
+        sizeChart={sizeChart}
+      />
     </div>
   );
 }

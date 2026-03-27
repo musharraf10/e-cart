@@ -43,6 +43,15 @@ export function ProductQandA({ productId }) {
     setAnswerDraft(openItem.answer || "");
   }, [activeId, openItem?.answer]);
 
+  useEffect(() => {
+    if (!activeId) return;
+    const hasActiveItem = items.some((item) => item._id === activeId);
+    if (!hasActiveItem) {
+      setActiveId(null);
+      setAnswerDraft("");
+    }
+  }, [activeId, items]);
+
   const itemCountLabel = useMemo(() => {
     const count = items.length;
     return `${count} question${count === 1 ? "" : "s"}`;
@@ -54,7 +63,7 @@ export function ProductQandA({ productId }) {
         <div>
           <h3 className="text-lg font-semibold text-white">Questions & Answers</h3>
           <p className="text-muted text-sm mt-1">
-            {itemCountLabel}. Ask about sizing, fabric, fit, or delivery.
+            {itemCountLabel}. Tap a question to view the answer.
           </p>
         </div>
         {items.length > 3 && (
@@ -144,115 +153,117 @@ export function ProductQandA({ productId }) {
                 </div>
               </button>
 
-              <div className="mt-4 rounded-xl border border-[#2f2f2f] bg-[#1d1d1d] p-4 space-y-3">
-                {item.answer ? (
-                  <>
-                    <p className={`text-sm leading-6 text-white/90 ${!isOpen && item.answer.length > 180 ? "line-clamp-3" : ""}`}>
-                      <span className="text-accent font-semibold mr-1">A:</span>
-                      {item.answer}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                      {item.verified && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-emerald-300 font-semibold">
-                          <HiCheckCircle className="w-3.5 h-3.5" />
-                          Verified answer
-                        </span>
-                      )}
-                      {item.answeredBy && <span>Answered by {item.answeredBy}</span>}
-                    </div>
-                  </>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-muted text-sm">No answer yet.</p>
-                    {user && isOpen && (
-                      <div className="space-y-2">
-                        <textarea
-                          value={answerDraft}
-                          onChange={(e) => setAnswerDraft(e.target.value)}
-                          placeholder="Write an answer"
-                          rows={3}
-                          className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent resize-none"
-                        />
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            disabled={answerSubmitting}
-                            onClick={async () => {
-                              if (!answerDraft.trim()) return;
-                              try {
-                                setAnswerSubmitting(true);
-                                const endpoint = isAdmin
-                                  ? `/admin/questions/${item._id}/answer`
-                                  : `/products/questions/${item._id}/answer`;
-                                const { data } = await api.patch(endpoint, {
-                                  answer: answerDraft,
-                                });
-
-                                setItems((prev) =>
-                                  prev.map((q) =>
-                                    String(q._id) === String(data._id) ? data : q,
-                                  ),
-                                );
-                                notify("Answer submitted.");
-                              } catch {
-                                notify("Unable to submit answer", "error");
-                              } finally {
-                                setAnswerSubmitting(false);
-                              }
-                            }}
-                            className="rounded-xl bg-accent text-primary px-4 py-2 text-sm font-semibold hover:opacity-90 active:scale-95 transition-transform disabled:opacity-60"
-                          >
-                            {answerSubmitting ? "Submitting…" : "Submit answer"}
-                          </button>
-                          {isAdmin && (
-                            <span className="text-[11px] text-muted">
-                              Admin answers get a Verified badge.
-                            </span>
-                          )}
-                        </div>
+              {isOpen && (
+                <div className="mt-4 rounded-xl border border-[#2f2f2f] bg-[#1d1d1d] p-4 space-y-3">
+                  {item.answer ? (
+                    <>
+                      <p className="text-sm leading-6 text-white/90">
+                        <span className="text-accent font-semibold mr-1">A:</span>
+                        {item.answer}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                        {item.verified && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-emerald-300 font-semibold">
+                            <HiCheckCircle className="w-3.5 h-3.5" />
+                            Verified answer
+                          </span>
+                        )}
+                        {item.answeredBy && <span>Answered by {item.answeredBy}</span>}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-muted text-sm">No answer yet.</p>
+                      {user && (
+                        <div className="space-y-2">
+                          <textarea
+                            value={answerDraft}
+                            onChange={(e) => setAnswerDraft(e.target.value)}
+                            placeholder="Write an answer"
+                            rows={3}
+                            className="w-full rounded-xl border border-[#262626] bg-primary px-4 py-3 text-white text-sm placeholder-muted focus:outline-none focus:border-accent resize-none"
+                          />
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              disabled={answerSubmitting}
+                              onClick={async () => {
+                                if (!answerDraft.trim()) return;
+                                try {
+                                  setAnswerSubmitting(true);
+                                  const endpoint = isAdmin
+                                    ? `/admin/questions/${item._id}/answer`
+                                    : `/products/questions/${item._id}/answer`;
+                                  const { data } = await api.patch(endpoint, {
+                                    answer: answerDraft,
+                                  });
 
-                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#2f2f2f] pt-3 text-xs text-muted">
-                  <button
-                    type="button"
-                    disabled={helpfulLoadingId === item._id}
-                    onClick={async () => {
-                      const optimisticCount = Number(item.helpfulCount || 0) + 1;
-                      setHelpfulLoadingId(item._id);
-                      setItems((prev) =>
-                        prev.map((q) =>
-                          q._id === item._id ? { ...q, helpfulCount: optimisticCount } : q,
-                        ),
-                      );
+                                  setItems((prev) =>
+                                    prev.map((q) =>
+                                      String(q._id) === String(data._id) ? data : q,
+                                    ),
+                                  );
+                                  notify("Answer submitted.");
+                                } catch {
+                                  notify("Unable to submit answer", "error");
+                                } finally {
+                                  setAnswerSubmitting(false);
+                                }
+                              }}
+                              className="rounded-xl bg-accent text-primary px-4 py-2 text-sm font-semibold hover:opacity-90 active:scale-95 transition-transform disabled:opacity-60"
+                            >
+                              {answerSubmitting ? "Submitting…" : "Submit answer"}
+                            </button>
+                            {isAdmin && (
+                              <span className="text-[11px] text-muted">
+                                Admin answers get a Verified badge.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                      try {
-                        const { data } = await api.patch(`/products/questions/${item._id}/helpful`);
-                        setItems((prev) =>
-                          prev.map((q) => (q._id === item._id ? data : q)),
-                        );
-                      } catch {
+                  <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#2f2f2f] pt-3 text-xs text-muted">
+                    <button
+                      type="button"
+                      disabled={helpfulLoadingId === item._id}
+                      onClick={async () => {
+                        const optimisticCount = Number(item.helpfulCount || 0) + 1;
+                        setHelpfulLoadingId(item._id);
                         setItems((prev) =>
                           prev.map((q) =>
-                            q._id === item._id
-                              ? { ...q, helpfulCount: Math.max(0, optimisticCount - 1) }
-                              : q,
+                            q._id === item._id ? { ...q, helpfulCount: optimisticCount } : q,
                           ),
                         );
-                        notify("Unable to record feedback", "error");
-                      } finally {
-                        setHelpfulLoadingId(null);
-                      }
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[#323232] px-3 py-1.5 hover:border-accent/50 hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    <HiOutlineThumbUp className="w-4 h-4" />
-                    Helpful ({item.helpfulCount || 0})
-                  </button>
+
+                        try {
+                          const { data } = await api.patch(`/products/questions/${item._id}/helpful`);
+                          setItems((prev) =>
+                            prev.map((q) => (q._id === item._id ? data : q)),
+                          );
+                        } catch {
+                          setItems((prev) =>
+                            prev.map((q) =>
+                              q._id === item._id
+                                ? { ...q, helpfulCount: Math.max(0, optimisticCount - 1) }
+                                : q,
+                            ),
+                          );
+                          notify("Unable to record feedback", "error");
+                        } finally {
+                          setHelpfulLoadingId(null);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#323232] px-3 py-1.5 hover:border-accent/50 hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <HiOutlineThumbUp className="w-4 h-4" />
+                      Helpful ({item.helpfulCount || 0})
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </article>
           );
         })}

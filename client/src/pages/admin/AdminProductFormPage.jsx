@@ -12,6 +12,15 @@ const createVariant = () => ({
   sku: "",
 });
 
+const createSizeChartRow = () => ({
+  id: `size-row-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  size: "",
+  chest: "",
+  waist: "",
+  hip: "",
+  length: "",
+});
+
 const defaultForm = {
   name: "",
   slug: "",
@@ -22,6 +31,11 @@ const defaultForm = {
   category: "",
   images: [""],
   colorImages: {},
+  sizeChart: {
+    unit: "in",
+    notes: "",
+    rows: [createSizeChartRow()],
+  },
   visible: true,
   newDrop: false,
 };
@@ -35,6 +49,18 @@ const normalizeVariants = (variants = []) => {
     stock: String(variant.stock ?? 0),
     price: String(variant.price ?? ""),
     sku: variant.sku || "",
+  }));
+};
+
+const normalizeSizeChartRows = (rows = []) => {
+  if (!rows.length) return [createSizeChartRow()];
+  return rows.map((row) => ({
+    id: row.id || `size-row-${row.size || Math.random().toString(16).slice(2)}`,
+    size: row.size || "",
+    chest: row.chest == null ? "" : String(row.chest),
+    waist: row.waist == null ? "" : String(row.waist),
+    hip: row.hip == null ? "" : String(row.hip),
+    length: row.length == null ? "" : String(row.length),
   }));
 };
 
@@ -55,6 +81,9 @@ export function AdminProductFormPage() {
   const [newCategoryImage, setNewCategoryImage] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingMainImage, setUploadingMainImage] = useState(false);
+  const [uploadingColorByName, setUploadingColorByName] = useState({});
+  const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
 
   const title = useMemo(() => (isEdit ? "Edit product" : "Create product"), [isEdit]);
 
@@ -98,6 +127,11 @@ export function AdminProductFormPage() {
               : product.category || "",
           images: product.images?.length ? product.images : [""],
           colorImages: normalizedColorImages,
+          sizeChart: {
+            unit: product.sizeChart?.unit === "cm" ? "cm" : "in",
+            notes: product.sizeChart?.notes || "",
+            rows: normalizeSizeChartRows(product.sizeChart?.rows || []),
+          },
           visible: product.isVisible ?? true,
           newDrop: product.isNewDrop ?? false,
         });
@@ -166,6 +200,25 @@ export function AdminProductFormPage() {
     });
   };
 
+  const addUploadedMainImages = async (files) => {
+    if (!files?.length) return;
+    setUploadingMainImage(true);
+    try {
+      const uploadedUrls = await uploadMultipleFiles(files, "products");
+      if (!uploadedUrls.length) return;
+      setForm((prev) => {
+        const current = (prev.images || [])
+          .map((img) => String(img || "").trim())
+          .filter(Boolean);
+        return { ...prev, images: [...current, ...uploadedUrls] };
+      });
+    } catch (error) {
+      notify(error.response?.data?.message || "Failed to upload product image", "error");
+    } finally {
+      setUploadingMainImage(false);
+    }
+  };
+
   const updateColorImagesFor = (colorName, nextImages) => {
     setForm((prev) => ({
       ...prev,
@@ -195,17 +248,63 @@ export function AdminProductFormPage() {
     );
   };
 
-  const readFilesAsDataUrls = (files) =>
-    Promise.all(
-      Array.from(files || []).map(
-        (file) =>
-          new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(file);
-          }),
-      ),
-    );
+  const setSizeChartRowField = (rowId, key, value) => {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...(prev.sizeChart || {}),
+        rows: (prev.sizeChart?.rows || []).map((row) =>
+          row.id === rowId ? { ...row, [key]: value } : row,
+        ),
+      },
+    }));
+  };
+
+  const addSizeChartRow = () => {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...(prev.sizeChart || {}),
+        rows: [...(prev.sizeChart?.rows || []), createSizeChartRow()],
+      },
+    }));
+  };
+
+  const removeSizeChartRow = (rowId) => {
+    setForm((prev) => {
+      const nextRows = (prev.sizeChart?.rows || []).filter((row) => row.id !== rowId);
+      return {
+        ...prev,
+        sizeChart: {
+          ...(prev.sizeChart || {}),
+          rows: nextRows.length ? nextRows : [createSizeChartRow()],
+        },
+      };
+    });
+  };
+
+  const uploadImageFile = async (file, folder = "products") => {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+
+    const { data } = await api.post("/admin/uploads/image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return data?.url || "";
+  };
+
+  const uploadMultipleFiles = async (files, folder = "products") => {
+    const urls = [];
+    for (const file of Array.from(files || [])) {
+      const uploaded = await uploadImageFile(file, folder);
+      if (uploaded) urls.push(uploaded);
+    }
+    return urls;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -238,6 +337,25 @@ export function AdminProductFormPage() {
         },
         {},
       ),
+      sizeChart: {
+        unit: form.sizeChart?.unit === "cm" ? "cm" : "in",
+        notes: form.sizeChart?.notes || "",
+        rows: (form.sizeChart?.rows || [])
+          .map((row) => ({
+            size: row.size.trim(),
+            chest: row.chest === "" ? null : Number(row.chest),
+            waist: row.waist === "" ? null : Number(row.waist),
+            hip: row.hip === "" ? null : Number(row.hip),
+            length: row.length === "" ? null : Number(row.length),
+          }))
+          .filter(
+            (row) =>
+              row.size &&
+              [row.chest, row.waist, row.hip, row.length].every(
+                (measurement) => measurement == null || !Number.isNaN(measurement),
+              ),
+          ),
+      },
       isVisible: form.visible,
       isNewDrop: form.newDrop,
     };
@@ -285,14 +403,21 @@ export function AdminProductFormPage() {
     }
   };
 
-  const handleNewCategoryImageFile = (file) => {
+  const handleNewCategoryImageFile = async (file) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result;
-      if (typeof result === "string") setNewCategoryImage(result);
-    };
-    reader.readAsDataURL(file);
+    setUploadingCategoryImage(true);
+    try {
+      const uploadedUrl = await uploadImageFile(file, "categories");
+      if (uploadedUrl) {
+        setNewCategoryImage(uploadedUrl);
+      } else {
+        notify("Failed to upload category image", "error");
+      }
+    } catch (error) {
+      notify(error.response?.data?.message || "Failed to upload category image", "error");
+    } finally {
+      setUploadingCategoryImage(false);
+    }
   };
 
   return (
@@ -365,9 +490,24 @@ export function AdminProductFormPage() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Image URLs</p>
+            <p className="text-sm font-medium">Images</p>
             <button type="button" onClick={addImageField} className="text-xs px-2 py-1 border border-[#262626] rounded-full text-white hover:bg-[#262626]">+ Add Image</button>
           </div>
+          <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-[#262626] bg-primary px-3 py-2 text-sm text-white w-fit">
+            {uploadingMainImage ? "Uploading..." : "Upload image files"}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploadingMainImage}
+              className="hidden"
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files?.length) addUploadedMainImages(files);
+                e.target.value = "";
+              }}
+            />
+          </label>
           {form.images.map((url, idx) => (
             <div key={`image-${idx}`} className="flex gap-2 items-center">
               <input placeholder="https://..." value={url} onChange={(e) => setImageAt(idx, e.target.value)} className="flex-1 rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white" />
@@ -404,12 +544,29 @@ export function AdminProductFormPage() {
               })();
 
               const addUploadedFiles = async (files) => {
-                const dataUrls = (await readFilesAsDataUrls(files))
-                  .map((x) => (typeof x === "string" ? x : ""))
-                  .filter(Boolean);
-                if (!dataUrls.length) return;
-                const current = (form.colorImages?.[colorName] || []).filter(Boolean).map((x) => String(x).trim()).filter(Boolean);
-                updateColorImagesFor(colorName, [...current, ...dataUrls]);
+                if (!files?.length) return;
+                setUploadingColorByName((prev) => ({ ...prev, [colorName]: true }));
+                try {
+                  const uploadedUrls = await uploadMultipleFiles(files, `products/${colorName.toLowerCase()}`);
+                  if (!uploadedUrls.length) return;
+                  setForm((prev) => {
+                    const current = (prev.colorImages?.[colorName] || [])
+                      .filter(Boolean)
+                      .map((x) => String(x).trim())
+                      .filter(Boolean);
+                    return {
+                      ...prev,
+                      colorImages: {
+                        ...(prev.colorImages || {}),
+                        [colorName]: [...current, ...uploadedUrls],
+                      },
+                    };
+                  });
+                } catch (error) {
+                  notify(error.response?.data?.message || "Failed to upload color images", "error");
+                } finally {
+                  setUploadingColorByName((prev) => ({ ...prev, [colorName]: false }));
+                }
               };
 
               return (
@@ -468,6 +625,7 @@ export function AdminProductFormPage() {
                         type="file"
                         accept="image/*"
                         multiple
+                        disabled={Boolean(uploadingColorByName[colorName])}
                         className="hidden"
                         onChange={(e) => {
                           const files = e.target.files;
@@ -476,11 +634,78 @@ export function AdminProductFormPage() {
                         }}
                       />
                     </label>
+                    {uploadingColorByName[colorName] ? (
+                      <span className="text-xs text-muted">Uploading...</span>
+                    ) : null}
                   </div>
                 </div>
               );
             })
           )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Product Size Chart</p>
+            <button type="button" onClick={addSizeChartRow} className="text-xs px-2 py-1 border border-[#262626] rounded-full text-white hover:bg-[#262626]">
+              + Add size row
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3">
+            <label className="space-y-1">
+              <span className="text-xs text-muted">Unit</span>
+              <select
+                value={form.sizeChart?.unit || "in"}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    sizeChart: { ...(prev.sizeChart || {}), unit: e.target.value },
+                  }))
+                }
+                className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white"
+              >
+                <option value="in">Inches (in)</option>
+                <option value="cm">Centimeters (cm)</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-muted">Notes (optional)</span>
+              <input
+                value={form.sizeChart?.notes || ""}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    sizeChart: { ...(prev.sizeChart || {}), notes: e.target.value },
+                  }))
+                }
+                placeholder="Fit notes shown in size chart modal"
+                className="w-full rounded-lg border border-[#262626] bg-primary px-3 py-2 text-white"
+              />
+            </label>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="py-2">Size</th><th>Chest</th><th>Waist</th><th>Hip</th><th>Length</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(form.sizeChart?.rows || []).map((row) => (
+                  <tr key={row.id} className="border-t border-[#262626]">
+                    <td><input value={row.size} onChange={(e) => setSizeChartRowField(row.id, "size", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.chest} onChange={(e) => setSizeChartRowField(row.id, "chest", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.waist} onChange={(e) => setSizeChartRowField(row.id, "waist", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.hip} onChange={(e) => setSizeChartRowField(row.id, "hip", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><input type="number" min="0" value={row.length} onChange={(e) => setSizeChartRowField(row.id, "length", e.target.value)} className="w-full rounded border border-[#262626] bg-primary px-2 py-1.5 text-white" /></td>
+                    <td><button type="button" onClick={() => removeSizeChartRow(row.id)} className="text-xs text-red-400">Remove</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-3">
@@ -519,10 +744,11 @@ export function AdminProductFormPage() {
                 />
                 <div className="flex items-center gap-3">
                   <label className="flex-1 cursor-pointer rounded-lg border border-[#262626] bg-primary px-3 py-2 text-sm text-white text-center">
-                    Upload file
+                    {uploadingCategoryImage ? "Uploading..." : "Upload file"}
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={uploadingCategoryImage}
                       className="hidden"
                       onChange={(e) => handleNewCategoryImageFile(e.target.files?.[0])}
                     />

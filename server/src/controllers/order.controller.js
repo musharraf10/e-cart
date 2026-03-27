@@ -1,8 +1,7 @@
 import crypto from "crypto";
 import { Order } from "../models/order.model.js";
-import { User } from "../models/user.model.js";
-import { sendEmail } from "../utils/email.util.js";
 import { createNotification } from "../services/notification.service.js";
+import { sendOrderConfirmationEmail } from "../services/order-notification.service.js";
 import {
   buildOrderPayload,
   deductStockForItems,
@@ -31,23 +30,6 @@ function createCheckoutFingerprint({ items, shippingAddress, couponCode }) {
     .digest("hex");
 }
 
-
-async function sendOrderConfirmation(order) {
-  const user = await User.findById(order.user).select("name email");
-  if (!user?.email) return;
-
-  await sendEmail({
-    to: user.email,
-    subject: `Order Confirmation #${order._id.toString().slice(-6)}`,
-    html: `
-      <div style="font-family: Arial, sans-serif;">
-        <h2>Thanks for your order, ${user.name || "Customer"}!</h2>
-        <p>Your order <strong>#${order._id.toString().slice(-6)}</strong> has been placed.</p>
-        <p>Total: ₹${Number(order.total || 0).toFixed(2)}</p>
-      </div>
-    `,
-  });
-}
 
 async function buildValidatedOrderPayload({
   userId,
@@ -123,7 +105,7 @@ export async function createOrder(req, res) {
       type: "order",
       link: `/account/orders/${order._id}`,
     }),
-    sendOrderConfirmation(order),
+    sendOrderConfirmationEmail(order),
   ]);
 
   return res.status(201).json({ orderId: order._id, order });

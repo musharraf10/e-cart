@@ -8,8 +8,15 @@ import { Coupon } from "../models/coupon.model.js";
 import { Announcement } from "../models/announcement.model.js";
 import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
+import { SiteSetting } from "../models/siteSetting.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
+import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
+import {
+  getCloudinaryConfig,
+  isCloudinaryConfigured,
+  signCloudinaryParams,
+} from "../config/cloudinary.js";
 
 function normalizeColorImages(
   colorImages = {},
@@ -77,6 +84,30 @@ function normalizeProductPayload(payload) {
     next.price = Math.min(...next.variants.map((v) => v.price));
   }
 
+  const parsedSizeChartRows = Array.isArray(next.sizeChart?.rows)
+    ? next.sizeChart.rows
+        .map((row) => ({
+          size: String(row?.size || "").trim().toUpperCase(),
+          chest: row?.chest === "" || row?.chest == null ? null : Number(row.chest),
+          waist: row?.waist === "" || row?.waist == null ? null : Number(row.waist),
+          hip: row?.hip === "" || row?.hip == null ? null : Number(row.hip),
+          length: row?.length === "" || row?.length == null ? null : Number(row.length),
+        }))
+        .filter(
+          (row) =>
+            row.size &&
+            [row.chest, row.waist, row.hip, row.length].every(
+              (measurement) => measurement == null || !Number.isNaN(measurement),
+            ),
+        )
+    : [];
+
+  next.sizeChart = {
+    unit: next.sizeChart?.unit === "cm" ? "cm" : "in",
+    notes: String(next.sizeChart?.notes || "").trim(),
+    rows: parsedSizeChartRows,
+  };
+
   return next;
 }
 
@@ -85,6 +116,28 @@ function totalVariantStock(product) {
     (sum, variant) => sum + (variant.stock || 0),
     0,
   );
+}
+
+async function getOrCreateSiteSettings() {
+  const settings = await SiteSetting.findOneAndUpdate(
+    { key: "global" },
+    {
+      $setOnInsert: {
+        key: "global",
+        storeName: "NoorFit",
+        contactEmail: "support@noorfit.com",
+        shippingFee: 5,
+        taxPercentage: 5,
+        currency: "USD",
+        sizeChartUnit: "in",
+        sizeChartNotes: "",
+        sizeChartRows: [],
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  return settings;
 }
 
 export async function getDashboardMetrics(req, res) {
@@ -330,6 +383,57 @@ export async function adminCreateCategory(req, res) {
   res.status(201).json(category);
 }
 
+export async function adminUploadImage(req, res) {
+  if (!isCloudinaryConfigured()) {
+    res.status(500);
+    throw new Error("Cloudinary is not configured on the server");
+  }
+
+  if (!req.file) {
+    res.status(400);
+    throw new Error("Image file is required");
+  }
+
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+  const folder = String(req.body?.folder || "products").trim() || "products";
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signedParams = {
+    folder: `noorfit/${folder}`,
+    timestamp,
+  };
+  const signature = signCloudinaryParams(signedParams, apiSecret);
+  const base64Data = req.file.buffer.toString("base64");
+  const dataUri = `data:${req.file.mimetype};base64,${base64Data}`;
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: new URLSearchParams({
+      file: dataUri,
+      folder: signedParams.folder,
+      timestamp: String(timestamp),
+      api_key: apiKey,
+      signature,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    res.status(502);
+    throw new Error(errorPayload?.error?.message || "Cloudinary upload failed");
+  }
+
+  const result = await response.json();
+
+  res.status(201).json({
+    url: result.secure_url,
+    publicId: result.public_id,
+    width: result.width,
+    height: result.height,
+    format: result.format,
+    bytes: result.bytes,
+  });
+}
+
 // ────────────────────────────────────────────────
 // Product CRUD & Actions
 // ────────────────────────────────────────────────
@@ -487,13 +591,44 @@ export async function adminListOrders(req, res) {
 
 export async function adminUpdateOrderStatus(req, res) {
   const order = await Order.findById(req.params.id);
+
   if (!order) {
     res.status(404);
     throw new Error("Order not found");
   }
 
-  order.status = req.body.status || order.status;
+  const newStatus = req.body.status;
+  const previousStatus = order.status;
+
+  if (!newStatus) {
+    return res.status(400).json({ message: "Status is required" });
+  }
+
+  if (order.status === newStatus) {
+    return res.json(order);
+  }
+
+  order.status = newStatus;
+
+  if (newStatus === "delivered") {
+    order.deliveredAt = new Date();
+
+    if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
+      order.paymentStatus = "paid";
+      order.paidAt = new Date();
+    }
+  }
+
+  if (newStatus === "cancelled") {
+    order.cancelledAt = new Date();
+  }
+
   await order.save();
+
+  // 🔔 Notification
+  if (previousStatus !== newStatus && ["shipped", "delivered"].includes(newStatus)) {
+    await Promise.allSettled([sendStatusEmailByOrder(order, newStatus)]);
+  }
 
   if (["shipped", "delivered", "cancelled"].includes(order.status)) {
     await createNotification({
@@ -691,12 +826,14 @@ export async function adminCreateAnnouncement(req, res) {
   if (announcement.active) {
     const users = await User.find({ role: "customer" }).select("_id").lean();
     await Promise.allSettled(
-      users.map((user) => createNotification({
-        userId: user._id,
-        title: "New announcement",
-        message: announcement.text,
-        type: "system",
-      })),
+      users.map((user) =>
+        createNotification({
+          userId: user._id,
+          title: "New announcement",
+          message: announcement.text,
+          type: "system",
+        }),
+      ),
     );
   }
 
@@ -906,4 +1043,42 @@ export async function adminGetNotifications(req, res) {
   }
 
   res.json(notifications);
+}
+
+export async function adminGetSettings(req, res) {
+  const settings = await getOrCreateSiteSettings();
+  res.json(settings);
+}
+
+export async function adminUpdateSettings(req, res) {
+  const sizeChartRows = Array.isArray(req.body.sizeChartRows)
+    ? req.body.sizeChartRows
+      .map((row) => ({
+        size: String(row.size || "").trim().toUpperCase(),
+        chest: row.chest === "" || row.chest === undefined ? undefined : Number(row.chest),
+        waist: row.waist === "" || row.waist === undefined ? undefined : Number(row.waist),
+        hip: row.hip === "" || row.hip === undefined ? undefined : Number(row.hip),
+        length: row.length === "" || row.length === undefined ? undefined : Number(row.length),
+      }))
+      .filter((row) => row.size)
+    : [];
+
+  const payload = {
+    storeName: String(req.body.storeName || "").trim() || "NoorFit",
+    contactEmail: String(req.body.contactEmail || "").trim() || "support@noorfit.com",
+    shippingFee: Number(req.body.shippingFee) || 0,
+    taxPercentage: Number(req.body.taxPercentage) || 0,
+    currency: String(req.body.currency || "USD").trim().toUpperCase(),
+    sizeChartUnit: req.body.sizeChartUnit === "cm" ? "cm" : "in",
+    sizeChartNotes: String(req.body.sizeChartNotes || "").trim(),
+    sizeChartRows,
+  };
+
+  const settings = await SiteSetting.findOneAndUpdate(
+    { key: "global" },
+    { $set: payload, $setOnInsert: { key: "global" } },
+    { upsert: true, new: true, runValidators: true },
+  );
+
+  res.json(settings);
 }

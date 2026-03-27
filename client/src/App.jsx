@@ -18,6 +18,10 @@ import { CancelPage } from "./pages/CancelPage.jsx";
 import { AuthPage } from "./pages/AuthPage.jsx";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage.jsx";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage.jsx";
+import { TermsPage } from "./pages/TermsPage.jsx";
+import { PrivacyPage } from "./pages/PrivacyPage.jsx";
+import { SupportPage } from "./pages/SupportPage.jsx";
+import { AboutPage } from "./pages/AboutPage.jsx";
 
 import { ProtectedRoute } from "./components/routes/ProtectedRoute.jsx";
 import { AdminRoute } from "./components/routes/AdminRoute.jsx";
@@ -102,6 +106,10 @@ function AppShell() {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/about" element={<AboutPage />} />
 
         {/* Authenticated user routes */}
         <Route element={<ProtectedRoute />}>
