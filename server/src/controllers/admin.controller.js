@@ -79,6 +79,30 @@ function normalizeProductPayload(payload) {
     next.price = Math.min(...next.variants.map((v) => v.price));
   }
 
+  const parsedSizeChartRows = Array.isArray(next.sizeChart?.rows)
+    ? next.sizeChart.rows
+        .map((row) => ({
+          size: String(row?.size || "").trim().toUpperCase(),
+          chest: row?.chest === "" || row?.chest == null ? null : Number(row.chest),
+          waist: row?.waist === "" || row?.waist == null ? null : Number(row.waist),
+          hip: row?.hip === "" || row?.hip == null ? null : Number(row.hip),
+          length: row?.length === "" || row?.length == null ? null : Number(row.length),
+        }))
+        .filter(
+          (row) =>
+            row.size &&
+            [row.chest, row.waist, row.hip, row.length].every(
+              (measurement) => measurement == null || !Number.isNaN(measurement),
+            ),
+        )
+    : [];
+
+  next.sizeChart = {
+    unit: next.sizeChart?.unit === "cm" ? "cm" : "in",
+    notes: String(next.sizeChart?.notes || "").trim(),
+    rows: parsedSizeChartRows,
+  };
+
   return next;
 }
 
