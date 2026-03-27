@@ -137,7 +137,7 @@ export function ProductCard({ product, compact = false }) {
             </h3>
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-muted min-h-4">
-                {activeColor ? `Color: ${activeColor}` : "Standard"}
+                Color:
               </p>
               {availableColors.length > 1 && (
                 <div className="flex items-center gap-1.5">
@@ -161,7 +161,7 @@ export function ProductCard({ product, compact = false }) {
               <span className={`text-white font-semibold ${compact ? "text-sm" : "text-base"}`}>
                 ${displayPrice.toFixed(2)}
               </span>
-              <span className="text-muted text-xs h-4 leading-4">
+              <span className="text-muted text-xs h-4 leading-4 line-through">
                 {product.originalPrice && product.originalPrice > displayPrice
                   ? `$${product.originalPrice.toFixed(2)}`
                   : inventory < 1
@@ -172,7 +172,7 @@ export function ProductCard({ product, compact = false }) {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="h-9 w-9 rounded-xl bg-accent text-primary inline-flex items-center justify-center active:scale-[0.98] transition-transform"
+              className="h-5 w-5 rounded-xl bg-accent text-primary inline-flex items-center justify-center active:scale-[0.98] transition-transform"
               aria-label="Quick add"
             >
               <HiPlus className="w-5 h-5" />
