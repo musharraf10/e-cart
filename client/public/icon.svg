@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="#111827"/>
+
+  <!-- NF Monogram -->
+  <g fill="#A6D238">
+
+    <!-- N -->
+    <path d="M14 48 L14 16 L22 16 L30 40 L30 16 L36 16 L36 48 L28 48 L20 24 L20 48 Z"/>
+
+    <!-- F -->
+    <path d="M38 16 L52 16 L52 22 L44 22 L44 30 L50 30 L50 36 L44 36 L44 48 L38 48 Z"/>
+
+  </g>
+
+</svg>
