@@ -11,6 +11,7 @@ import { ProductQandA } from "../components/products/ProductQandA.jsx";
 import { RelatedProducts } from "../components/products/RelatedProducts.jsx";
 import { RecommendedProducts } from "../components/products/RecommendedProducts.jsx";
 import { getColorImageSet, getProductColors } from "../utils/productVariants.js";
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
 
 export function ProductDetailPage() {
   const { slug } = useParams();
@@ -94,6 +95,25 @@ export function ProductDetailPage() {
     [product],
   );
 
+  const seoMeta = useMemo(() => {
+    if (!product) return null;
+
+    const summary = product.summary || product.shortDescription || product.description || "Premium NoorFit product crafted for all-day comfort.";
+    const imageSource =
+      product.thumbnail ||
+      product.images?.[0]?.url ||
+      product.images?.[0] ||
+      product.variants?.find((variant) => Array.isArray(variant.images) && variant.images.length > 0)?.images?.[0];
+
+    return {
+      title: `${product.name} | NoorFit`,
+      description: summary,
+      canonicalUrl: `/product/${slug}`,
+      type: "product",
+      image: imageSource,
+    };
+  }, [product, slug]);
+
   if (!product) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -109,6 +129,15 @@ export function ProductDetailPage() {
       transition={{ duration: 0.3 }}
       className="max-w-6xl mx-auto px-4 space-y-8"
     >
+      {seoMeta && (
+        <SeoMeta
+          title={seoMeta.title}
+          description={seoMeta.description}
+          canonicalUrl={seoMeta.canonicalUrl}
+          type={seoMeta.type}
+          image={seoMeta.image}
+        />
+      )}
       <section className="grid gap-10 md:grid-cols-2">
         <div className="space-y-4">
           <ProductGallery

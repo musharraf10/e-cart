@@ -9,6 +9,7 @@ import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { ProductGridSkeleton, ProductListSkeleton } from "../components/ui/LoadingSkeleton.jsx";
 import { expandProductsByVariant } from "../utils/productVariants.js";
 import { useShopScrollRestoration } from "../hooks/useShopScrollRestoration.js";
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -208,6 +209,11 @@ export function ShopPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col lg:flex-row gap-8">
+      <SeoMeta
+        title="Shop NoorFit | Performance Clothing for Everyday Movement"
+        description="Browse the NoorFit shop by category, size, color, and price to find performance-ready styles that match your routine."
+        canonicalUrl="/shop"
+      />
       <aside className="lg:w-64 flex-shrink-0">
         <div className="rounded-xl bg-card border border-[#262626] p-4 space-y-6 sticky top-24">
           <div className="flex items-center justify-between">

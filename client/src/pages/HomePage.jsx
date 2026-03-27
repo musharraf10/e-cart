@@ -11,6 +11,7 @@ import { GridListToggle } from "../components/ui/GridListToggle.jsx";
 import Categories from "../pages/CategoryPage.jsx";
 import api from "../api/client.js";
 import { expandProductsByVariant } from "../utils/productVariants.js";
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
 
 const CATALOG_LIMIT = 12;
 
@@ -120,11 +121,16 @@ export function HomePage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="space-y-12">
+      <SeoMeta
+        title="NoorFit | Modest Activewear & New Drops"
+        description="Discover NoorFit essentials, trending activewear, and new drops designed for everyday comfort and confidence."
+        canonicalUrl="/"
+      />
       <section>
         <HeroCarousel products={heroProducts} />
       </section>
 
-      <Categories categories={categories} />
+      <Categories categories={categories} withSeo={false} />
 
       <section>
         <SectionHeader title="New Drops" subtitle="Freshly added styles" />
