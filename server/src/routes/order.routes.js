@@ -6,6 +6,7 @@ import {
   listMyOrders,
   getOrderById,
   getOrderStatus,
+  getOrderTimeline,
   downloadOrderInvoice,
   updateOrderStatus,
 } from "../controllers/order.controller.js";
@@ -16,6 +17,7 @@ router.post("/", protect, createOrder);
 router.post("/create-pending", protect, createPendingOrder);
 router.get("/me", protect, listMyOrders);
 router.get("/status/:orderId", protect, getOrderStatus);
+router.get("/:id/timeline", protect, getOrderTimeline);
 router.post("/:id/update-status", protect, admin, updateOrderStatus);
 router.get("/:id/invoice", protect, downloadOrderInvoice);
 router.get("/:id", protect, getOrderById);
