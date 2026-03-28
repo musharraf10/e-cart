@@ -101,15 +101,16 @@ export function AuthPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className="
-    min-h-screen 
+    min-h-[100dvh]
     flex flex-col 
-    justify-center 
-    px-4 
-    sm:items-center sm:justify-center
+    justify-start
+    py-6
+    px-4
+    sm:items-center sm:justify-center sm:py-10
     bg-black
   "
     >
-      <div className="relative rounded-2xl bg-card border border-[#262626] p-6 sm:p-8 md:p-10 shadow-card">
+      <div className="relative w-full max-w-md rounded-2xl bg-card border border-[#262626] p-6 sm:p-8 md:p-10 shadow-card">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
             <span className="text-primary font-bold text-lg">N</span>

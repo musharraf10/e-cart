@@ -10,8 +10,8 @@ export function Layout({ children }) {
 
   if (isAuthPage) {
     return (
-      <div className="min-h-screen flex flex-col bg-primary w-full max-w-full overflow-x-hidden">
-        <main className="flex-1 flex items-center justify-center p-4 w-full max-w-full overflow-x-hidden">
+      <div className="min-h-[100dvh] flex flex-col bg-primary w-full max-w-full overflow-x-hidden">
+        <main className="flex-1 flex items-start sm:items-center justify-center p-0 sm:p-4 w-full max-w-full overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>

@@ -25,7 +25,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed top-20 right-4 z-[60] space-y-2 pointer-events-none">
+      <div className="fixed top-[max(1rem,env(safe-area-inset-top,0px))] left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-[120] w-[calc(100vw-1.5rem)] max-w-md space-y-2 pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
