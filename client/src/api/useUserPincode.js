@@ -1,81 +1,104 @@
 import { useEffect, useState } from "react";
 
+const PIN_REGEX = /^[1-9][0-9]{5}$/;
+
 export default function useUserPincode() {
   const [pincode, setPincode] = useState(null);
+  const [source, setSource] = useState(null); // gps | google | ip | cache
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const saved = localStorage.getItem("noorfit_pincode");
-    if (saved) {
-      setPincode(saved);
-      return;
-    }
-
-    const savePin = (code) => {
-      if (!code) return;
+    const savePin = (code, src) => {
+      if (!PIN_REGEX.test(code)) return;
       setPincode(code);
-      localStorage.setItem("noorfit_pincode", code);
+      setSource(src);
+      localStorage.setItem(
+        "noorfit_pincode",
+        JSON.stringify({ code, src, ts: Date.now() }),
+      );
     };
 
-    const getPincodeFromCoords = async (lat, lon) => {
+    // 🔥 CACHE with expiry (7 days)
+    const cached = localStorage.getItem("noorfit_pincode");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        const isFresh = Date.now() - parsed.ts < 7 * 24 * 60 * 60 * 1000;
+
+        if (parsed.code && isFresh) {
+          setPincode(parsed.code);
+          setSource("cache");
+        }
+      } catch {}
+    }
+
+    // 🌍 GOOGLE GEOCODING (MAIN ACCURACY LAYER)
+    const getFromGoogle = async (lat, lng) => {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`,
         );
-
         const data = await res.json();
 
-        const code = data?.address?.postcode;
-        const country = data?.address?.country_code;
+        const result = data.results?.[0];
+        const comp = result?.address_components || [];
 
-        // accept only India
-        if (country === "in" && code) {
-          savePin(code);
-        } else {
-          console.log("Invalid country result:", country);
+        const postal = comp.find((c) =>
+          c.types.includes("postal_code"),
+        )?.long_name;
+
+        const country = comp.find((c) =>
+          c.types.includes("country"),
+        )?.short_name;
+
+        if (country === "IN" && PIN_REGEX.test(postal)) {
+          savePin(postal, "google");
         }
-      } catch (err) {
-        console.log("Reverse geocode error:", err);
+      } catch (e) {
+        console.log("Google geocode failed", e);
       }
     };
 
-    const getIPLocation = async () => {
+    // 📡 IP fallback
+    const getFromIP = async () => {
       try {
         const res = await fetch("https://ipapi.co/json/");
         const data = await res.json();
 
-        if (data?.country_code === "IN" && data?.postal) {
-          savePin(data.postal);
+        if (data?.country_code === "IN" && PIN_REGEX.test(data?.postal)) {
+          savePin(data.postal, "ip");
         }
-      } catch (err) {
-        console.log("IP location error:", err);
+      } catch (e) {
+        console.log("IP failed", e);
       }
     };
 
+    // 📍 GPS detection
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
 
-          // ignore very rough locations (often wrong IP locations)
-          if (accuracy && accuracy > 5000) {
-            console.log("Low accuracy location ignored");
-            getIPLocation();
-            return;
+          // 🔥 Only trust high accuracy GPS
+          if (accuracy && accuracy < 1500) {
+            await getFromGoogle(latitude, longitude);
+          } else {
+            console.log("Low accuracy GPS → fallback");
+            getFromIP();
           }
-
-          getPincodeFromCoords(latitude, longitude);
         },
-        () => {
-          getIPLocation();
+        () => getFromIP(),
+        {
+          enableHighAccuracy: true,
+          timeout: 8000,
+          maximumAge: 0,
         },
-        { enableHighAccuracy: true, timeout: 10000 },
       );
     } else {
-      getIPLocation();
+      getFromIP();
     }
   }, []);
 
-  return pincode;
+  return { pincode, source };
 }

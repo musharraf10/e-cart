@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import useUserPincode from "../../api/useUserPincode.js";
 
 export function DeliveryEstimator() {
-  const detectedPincode = useUserPincode();
+  const { pincode: detectedPincode, source } = useUserPincode();
   const [pin, setPin] = useState("");
   const [estimate, setEstimate] = useState(null);
   const [error, setError] = useState("");
@@ -60,10 +60,13 @@ export function DeliveryEstimator() {
           maxLength={6}
         />
       </div>
-      {detectedPincode && (
-        <p className="text-xs text-muted">
-          Auto-detected pincode: <span className="text-white">{detectedPincode}</span>
-        </p>
+      {detectedPincode && !pin && (
+        <button
+          onClick={() => setPin(detectedPincode)}
+          className="text-xs text-accent underline"
+        >
+          Use detected pincode ({detectedPincode}) via {source}
+        </button>
       )}
       {error && <p className="text-sm text-red-300">{error}</p>}
       {estimate && !error && (
