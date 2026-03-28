@@ -78,6 +78,16 @@ const shippingFailedEventSchema = new mongoose.Schema(
     error: String,
     retryCount: { type: Number, default: 0 },
     lastTriedAt: { type: Date, default: Date.now },
+    processed: { type: Boolean, default: false },
+  },
+  { _id: false },
+);
+
+const shippingMetricsSchema = new mongoose.Schema(
+  {
+    totalEvents: { type: Number, default: 0 },
+    failedEvents: { type: Number, default: 0 },
+    lastEventAt: Date,
   },
   { _id: false },
 );
@@ -105,6 +115,7 @@ const orderShippingSchema = new mongoose.Schema(
     events: { type: [shippingEventSchema], default: [] },
     webhookLogs: { type: [shippingWebhookLogSchema], default: [] },
     failedEvents: { type: [shippingFailedEventSchema], default: [] },
+    metrics: { type: shippingMetricsSchema, default: () => ({}) },
     trackingUrl: String,
     estimatedDelivery: Date,
     deliveredAt: Date,

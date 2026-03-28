@@ -1,5 +1,5 @@
 import { Order } from "../models/order.model.js";
-import { normalizeOrderStatus } from "../utils/statusMapper.js";
+import { mapExternalStatus, normalizeOrderStatus } from "../utils/statusMapper.js";
 import { canTransitionStatus } from "../utils/statusTransition.js";
 
 export const SHIPPING_PROVIDER = {
@@ -40,6 +40,10 @@ function ensureShippingEnvelope(order) {
 
   if (!Array.isArray(order.shipping.failedEvents)) {
     order.shipping.failedEvents = [];
+  }
+
+  if (!order.shipping.metrics || typeof order.shipping.metrics !== "object") {
+    order.shipping.metrics = { totalEvents: 0, failedEvents: 0 };
   }
 
   if (order.shipping.statusHistory.length === 0) {
@@ -158,14 +162,14 @@ export function createShipment(order, shippingProvider = SHIPPING_PROVIDER.MOCK)
 }
 
 export async function processShippingWebhookEvent(data) {
-  const normalizedStatus = normalizeOrderStatus(data?.status);
+  const normalizedStatus = mapExternalStatus(data?.status);
 
   if (!data?.orderId || !normalizedStatus) {
     return { processed: false, reason: "invalid_payload" };
   }
 
   const order = await Order.findById(data.orderId).select(
-    "_id status shipping.status shipping.statusHistory shipping.events shipping.webhookLogs createdAt",
+    "_id status shipping.status shipping.statusHistory shipping.events shipping.webhookLogs shipping.failedEvents createdAt",
   );
   if (!order) {
     return { processed: false, reason: "order_not_found", orderId: data.orderId };
@@ -198,7 +202,23 @@ export async function processShippingWebhookEvent(data) {
 
   const currentStatus =
     normalizeOrderStatus(shipping.status) || normalizeOrderStatus(order.status) || "pending";
+
+  const failedEvent = data.eventId
+    ? shipping.failedEvents.find((event) => event?.eventId === data.eventId)
+    : null;
+  if (failedEvent?.processed) {
+    return {
+      processed: true,
+      updated: false,
+      ignored: true,
+      reason: "already_processed_after_retry",
+      status: currentStatus,
+      orderId: order._id.toString(),
+    };
+  }
+
   if (currentStatus === normalizedStatus) {
+    await markFailedEventProcessed(order._id, data.eventId);
     return {
       processed: true,
       updated: false,
@@ -253,6 +273,8 @@ export async function processShippingWebhookEvent(data) {
     };
   }
 
+  await markFailedEventProcessed(order._id, data.eventId);
+
   return {
     processed: true,
     updated: true,
@@ -267,13 +289,47 @@ export function handleWebhook(data) {
   return {
     provider: data?.provider || SHIPPING_PROVIDER.MOCK,
     orderId: data?.orderId,
-    status: normalizeOrderStatus(data?.status),
+    status: mapExternalStatus(data?.status),
     trackingId: data?.trackingId,
     awbCode: data?.awbCode,
     eventId: data?.eventId,
     trackingUrl: data?.trackingUrl,
     eventTime: data?.eventTime || new Date().toISOString(),
   };
+}
+
+export async function updateShippingMetrics(
+  orderId,
+  { incrementTotal = true, incrementFailed = false, eventTime } = {},
+) {
+  if (!orderId) {
+    return { updated: false, reason: "missing_order_id" };
+  }
+
+  const safeEventTime = getSafeDate(eventTime, new Date());
+  if (!safeEventTime) {
+    return { updated: false, reason: "invalid_event_time" };
+  }
+
+  try {
+    await Order.updateOne(
+      { _id: orderId },
+      {
+        $inc: {
+          ...(incrementTotal ? { "shipping.metrics.totalEvents": 1 } : {}),
+          ...(incrementFailed ? { "shipping.metrics.failedEvents": 1 } : {}),
+        },
+        $set: { "shipping.metrics.lastEventAt": safeEventTime },
+      },
+    );
+    return { updated: true };
+  } catch (error) {
+    console.error("[shipping-webhook] failed to update metrics", {
+      message: error?.message,
+      orderId,
+    });
+    return { updated: false, reason: "metrics_update_failed" };
+  }
 }
 
 export async function logShippingWebhookEvent(data, rawPayload) {
@@ -318,6 +374,7 @@ export async function recordFailedShippingEvent(data, error) {
         "shipping.failedEvents.$.error": error?.message || "unknown_error",
         "shipping.failedEvents.$.lastTriedAt": now,
         "shipping.failedEvents.$.payload": data,
+        "shipping.failedEvents.$.processed": false,
       },
     },
   );
@@ -336,10 +393,27 @@ export async function recordFailedShippingEvent(data, error) {
           error: error?.message || "unknown_error",
           retryCount: 1,
           lastTriedAt: now,
+          processed: false,
         },
       },
     },
   );
 
   return { stored: true };
+}
+
+export async function markFailedEventProcessed(orderId, eventId) {
+  if (!orderId || !eventId) return { updated: false, reason: "missing_identifiers" };
+
+  await Order.updateOne(
+    { _id: orderId, "shipping.failedEvents.eventId": eventId },
+    {
+      $set: {
+        "shipping.failedEvents.$.processed": true,
+        "shipping.failedEvents.$.lastTriedAt": new Date(),
+      },
+    },
+  );
+
+  return { updated: true };
 }

@@ -217,6 +217,26 @@ export async function getOrderStatus(req, res) {
   });
 }
 
+export async function getOrderTimeline(req, res) {
+  const order = await Order.findOne({ _id: req.params.id, user: req.user._id }).select(
+    "_id shipping.statusHistory shipping.events",
+  );
+
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found");
+  }
+
+  const statusHistory = Array.isArray(order.shipping?.statusHistory) ? order.shipping.statusHistory : [];
+  const events = Array.isArray(order.shipping?.events) ? order.shipping.events : [];
+
+  return res.json({
+    orderId: order._id,
+    statusHistory,
+    events,
+  });
+}
+
 
 export async function updateOrderStatus(req, res) {
   const order = await Order.findById(req.params.id);

@@ -27,6 +27,18 @@ export function normalizeOrderStatus(status) {
   return null;
 }
 
+export function mapExternalStatus(status) {
+  const mappedStatus = normalizeOrderStatus(status);
+  if (mappedStatus) {
+    return mappedStatus;
+  }
+
+  console.warn("[shipping] unknown external status received, defaulting to in_transit", {
+    externalStatus: status,
+  });
+  return "in_transit";
+}
+
 export function isFinalOrderStatus(status) {
   return normalizeOrderStatus(status) === "delivered";
 }
