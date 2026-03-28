@@ -111,15 +111,15 @@ export function Header() {
                     <>
                       <NotificationBell />
                       <NavLink
-                      to="/account"
-                      className={({ isActive }) =>
-                        `p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
-                        }`
-                      }
-                      aria-label="Account"
-                    >
-                      <HiUser className="w-6 h-6" />
-                    </NavLink>
+                        to="/account"
+                        className={({ isActive }) =>
+                          `p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
+                          }`
+                        }
+                        aria-label="Account"
+                      >
+                        <HiUser className="w-6 h-6" />
+                      </NavLink>
                     </>
                   ) : (
                     <NavLink
