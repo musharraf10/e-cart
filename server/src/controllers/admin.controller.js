@@ -12,7 +12,7 @@ import { SiteSetting } from "../models/siteSetting.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
-import { updateOrderShippingStatus } from "../services/shippingService.js";
+import { updateOrderStatus } from "../services/shippingService.js";
 import { normalizeOrderStatus } from "../utils/statusMapper.js";
 import {
   getCloudinaryConfig,
@@ -89,17 +89,25 @@ function normalizeProductPayload(payload) {
   const parsedSizeChartRows = Array.isArray(next.sizeChart?.rows)
     ? next.sizeChart.rows
         .map((row) => ({
-          size: String(row?.size || "").trim().toUpperCase(),
-          chest: row?.chest === "" || row?.chest == null ? null : Number(row.chest),
-          waist: row?.waist === "" || row?.waist == null ? null : Number(row.waist),
+          size: String(row?.size || "")
+            .trim()
+            .toUpperCase(),
+          chest:
+            row?.chest === "" || row?.chest == null ? null : Number(row.chest),
+          waist:
+            row?.waist === "" || row?.waist == null ? null : Number(row.waist),
           hip: row?.hip === "" || row?.hip == null ? null : Number(row.hip),
-          length: row?.length === "" || row?.length == null ? null : Number(row.length),
+          length:
+            row?.length === "" || row?.length == null
+              ? null
+              : Number(row.length),
         }))
         .filter(
           (row) =>
             row.size &&
             [row.chest, row.waist, row.hip, row.length].every(
-              (measurement) => measurement == null || !Number.isNaN(measurement),
+              (measurement) =>
+                measurement == null || !Number.isNaN(measurement),
             ),
         )
     : [];
@@ -407,16 +415,19 @@ export async function adminUploadImage(req, res) {
   const base64Data = req.file.buffer.toString("base64");
   const dataUri = `data:${req.file.mimetype};base64,${base64Data}`;
 
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: "POST",
-    body: new URLSearchParams({
-      file: dataUri,
-      folder: signedParams.folder,
-      timestamp: String(timestamp),
-      api_key: apiKey,
-      signature,
-    }),
-  });
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    {
+      method: "POST",
+      body: new URLSearchParams({
+        file: dataUri,
+        folder: signedParams.folder,
+        timestamp: String(timestamp),
+        api_key: apiKey,
+        signature,
+      }),
+    },
+  );
 
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => ({}));
@@ -599,7 +610,9 @@ export async function adminUpdateOrderStatus(req, res) {
     throw new Error("Order not found");
   }
 
-  const requestedStatus = String(req.body?.status || "").trim().toLowerCase();
+  const requestedStatus = String(req.body?.status || "")
+    .trim()
+    .toLowerCase();
   const previousStatus = order.status;
 
   if (!requestedStatus) {
@@ -614,17 +627,28 @@ export async function adminUpdateOrderStatus(req, res) {
     if (!normalized) {
       return res.status(400).json({ message: "Invalid status" });
     }
-    updateOrderShippingStatus(order, normalized);
+    updateOrderStatus(order, normalized, {
+      source: "admin",
+      eventId: `admin-${order._id}-${Date.now()}`,
+      eventTime: new Date(),
+    });
   }
 
-  if (order.status === "delivered" && order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
+  if (
+    order.status === "delivered" &&
+    order.paymentMethod === "cod" &&
+    order.paymentStatus !== "paid"
+  ) {
     order.paymentStatus = "paid";
     order.paidAt = new Date();
   }
 
   await order.save();
 
-  if (previousStatus !== order.status && ["shipped", "delivered"].includes(order.status)) {
+  if (
+    previousStatus !== order.status &&
+    ["shipped", "delivered"].includes(order.status)
+  ) {
     await Promise.allSettled([sendStatusEmailByOrder(order, order.status)]);
   }
 
@@ -1051,22 +1075,39 @@ export async function adminGetSettings(req, res) {
 export async function adminUpdateSettings(req, res) {
   const sizeChartRows = Array.isArray(req.body.sizeChartRows)
     ? req.body.sizeChartRows
-      .map((row) => ({
-        size: String(row.size || "").trim().toUpperCase(),
-        chest: row.chest === "" || row.chest === undefined ? undefined : Number(row.chest),
-        waist: row.waist === "" || row.waist === undefined ? undefined : Number(row.waist),
-        hip: row.hip === "" || row.hip === undefined ? undefined : Number(row.hip),
-        length: row.length === "" || row.length === undefined ? undefined : Number(row.length),
-      }))
-      .filter((row) => row.size)
+        .map((row) => ({
+          size: String(row.size || "")
+            .trim()
+            .toUpperCase(),
+          chest:
+            row.chest === "" || row.chest === undefined
+              ? undefined
+              : Number(row.chest),
+          waist:
+            row.waist === "" || row.waist === undefined
+              ? undefined
+              : Number(row.waist),
+          hip:
+            row.hip === "" || row.hip === undefined
+              ? undefined
+              : Number(row.hip),
+          length:
+            row.length === "" || row.length === undefined
+              ? undefined
+              : Number(row.length),
+        }))
+        .filter((row) => row.size)
     : [];
 
   const payload = {
     storeName: String(req.body.storeName || "").trim() || "NoorFit",
-    contactEmail: String(req.body.contactEmail || "").trim() || "support@noorfit.com",
+    contactEmail:
+      String(req.body.contactEmail || "").trim() || "support@noorfit.com",
     shippingFee: Number(req.body.shippingFee) || 0,
     taxPercentage: Number(req.body.taxPercentage) || 0,
-    currency: String(req.body.currency || "USD").trim().toUpperCase(),
+    currency: String(req.body.currency || "USD")
+      .trim()
+      .toUpperCase(),
     sizeChartUnit: req.body.sizeChartUnit === "cm" ? "cm" : "in",
     sizeChartNotes: String(req.body.sizeChartNotes || "").trim(),
     sizeChartRows,

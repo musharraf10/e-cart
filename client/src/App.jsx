@@ -175,63 +175,63 @@ function AppShell() {
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/shop" element={<ShopPage />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/product/:slug" element={<ProductDetailPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/checkout/resume/:orderId" element={<CheckoutResumePage />} />
-        <Route path="/success" element={<SuccessPage />} />
-        <Route path="/cancel" element={<CancelPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/support" element={<SupportPage />} />
-        <Route path="/about" element={<AboutPage />} />
+              {/* Public routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/product/:slug" element={<ProductDetailPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/checkout/resume/:orderId" element={<CheckoutResumePage />} />
+              <Route path="/success" element={<SuccessPage />} />
+              <Route path="/cancel" element={<CancelPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/login" element={<AuthPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/support" element={<SupportPage />} />
+              <Route path="/about" element={<AboutPage />} />
 
-        {/* Authenticated user routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/order-status/:orderId" element={<OrderStatusPage />} />
+              {/* Authenticated user routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/order-status/:orderId" element={<OrderStatusPage />} />
 
-          <Route path="/account" element={<AccountLayout />}>
-            <Route index element={<AccountPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="addresses" element={<AddressPage />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="orders/:id" element={<OrderDetailsPage />} />
-            <Route path="wishlist" element={<WishlistPage />} />
-            <Route path="settings" element={<AccountSettingsPage />} />
-          </Route>
-        </Route>
+                <Route path="/account" element={<AccountLayout />}>
+                  <Route index element={<AccountPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="addresses" element={<AddressPage />} />
+                  <Route path="orders" element={<OrdersPage />} />
+                  <Route path="orders/:id" element={<OrderDetailsPage />} />
+                  <Route path="wishlist" element={<WishlistPage />} />
+                  <Route path="settings" element={<AccountSettingsPage />} />
+                </Route>
+              </Route>
 
-        {/* Admin routes – protected by AdminRoute */}
-        <Route element={<AdminRoute />}>
-          <Route path="/admin" element={<AdminOpsLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="products" element={<AdminProductsPage />} />
-            <Route path="products/new" element={<AdminProductFormPage />} />
-            <Route path="products/edit/:id" element={<AdminProductFormPage />} />
-            <Route path="inventory" element={<AdminInventoryPage />} />
-            <Route path="orders" element={<AdminOrdersPage />} />
-            <Route path="customers" element={<AdminCustomersPage />} />
-            <Route path="coupons" element={<AdminCouponsPage />} />
-            <Route path="announcements" element={<AdminAnnouncementsPage />} />
-            <Route path="reviews" element={<AdminReviewsPage />} />
-            <Route path="drops" element={<AdminDropsPage />} />
-            <Route path="returns" element={<AdminReturnsPage />} />
-            <Route path="analytics" element={<AdminAnalyticsPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
-          </Route>
-        </Route>
+              {/* Admin routes – protected by AdminRoute */}
+              <Route element={<AdminRoute />}>
+                <Route path="/admin" element={<AdminOpsLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboardPage />} />
+                  <Route path="products" element={<AdminProductsPage />} />
+                  <Route path="products/new" element={<AdminProductFormPage />} />
+                  <Route path="products/edit/:id" element={<AdminProductFormPage />} />
+                  <Route path="inventory" element={<AdminInventoryPage />} />
+                  <Route path="orders" element={<AdminOrdersPage />} />
+                  <Route path="customers" element={<AdminCustomersPage />} />
+                  <Route path="coupons" element={<AdminCouponsPage />} />
+                  <Route path="announcements" element={<AdminAnnouncementsPage />} />
+                  <Route path="reviews" element={<AdminReviewsPage />} />
+                  <Route path="drops" element={<AdminDropsPage />} />
+                  <Route path="returns" element={<AdminReturnsPage />} />
+                  <Route path="analytics" element={<AdminAnalyticsPage />} />
+                  <Route path="settings" element={<AdminSettingsPage />} />
+                </Route>
+              </Route>
 
-        {/* Optional: 404 fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Optional: 404 fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
