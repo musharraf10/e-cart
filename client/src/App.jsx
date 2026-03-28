@@ -137,6 +137,16 @@ function AppShell() {
     };
   }, [notify]);
 
+
+  useEffect(() => {
+    if (!installOutcome) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setInstallOutcome(null);
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [installOutcome]);
   const handleInstallClick = async () => {
     if (!installPromptEvent) return;
 

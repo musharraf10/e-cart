@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import api from "../../api/client.js";
 import { setCredentials } from "../../store/slices/authSlice.js";
@@ -7,6 +7,8 @@ export function ProfilePage() {
   const dispatch = useDispatch();
   const token = useSelector((s) => s.auth.token);
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -28,6 +30,27 @@ export function ProfilePage() {
       });
     });
   }, []);
+
+
+  const uploadAvatar = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingAvatar(true);
+      const formData = new FormData();
+      formData.append("image", file);
+      const { data } = await api.post("/users/profile/image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (data?.url) {
+        setForm((prev) => ({ ...prev, avatar: data.url }));
+      }
+    } finally {
+      setUploadingAvatar(false);
+      event.target.value = "";
+    }
+  };
 
   const save = async (e) => {
     e.preventDefault();
@@ -74,12 +97,31 @@ export function ProfilePage() {
             )}
           </div>
           {isEditing && (
-            <input
-              className="mt-4 bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-2 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors w-full max-w-md"
-              placeholder="Avatar URL"
-              value={form.avatar}
-              onChange={(e) => setForm({ ...form, avatar: e.target.value })}
-            />
+            <div className="mt-4 w-full max-w-md space-y-3">
+              <input
+                className="bg-[#0f0f0f] border border-[#262626] rounded-xl px-4 py-2 text-white text-sm placeholder-[#a1a1aa] focus:outline-none focus:border-[#d4af37] transition-colors w-full"
+                placeholder="Avatar URL"
+                value={form.avatar}
+                onChange={(e) => setForm({ ...form, avatar: e.target.value })}
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="rounded-xl border border-[#303030] px-4 py-2 text-sm text-white hover:bg-[#202020] disabled:opacity-50"
+                >
+                  {uploadingAvatar ? "Uploading..." : "Upload profile image"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={uploadAvatar}
+                />
+              </div>
+            </div>
           )}
         </div>
 

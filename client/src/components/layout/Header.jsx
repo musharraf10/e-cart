@@ -53,8 +53,8 @@ export function Header() {
           <div className="grid grid-cols-[auto_1fr_auto] items-center h-16 gap-3">
             <div className="flex items-center gap-2">
               {isHome ? (
-                <Link to="/" className="text-xl font-bold tracking-tight text-white">
-                  NoorFit
+                <Link to="/" className="inline-flex items-center" aria-label="Go to home">
+                  <img src="/icons/icon-192.png" alt="" className="h-8 w-8 rounded-md" />
                 </Link>
               ) : (
                 <button

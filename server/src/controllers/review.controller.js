@@ -3,6 +3,7 @@ import { Review } from "../models/review.model.js";
 import { Product } from "../models/product.model.js";
 import { Order } from "../models/order.model.js";
 import { User } from "../models/user.model.js";
+import { uploadImageBufferToCloudinary } from "../utils/cloudinaryUpload.util.js";
 
 async function recalculateProductRatings(productId) {
   const visibleReviews = await Review.find({ product: productId, isHidden: false });
@@ -103,12 +104,22 @@ export async function createReview(req, res) {
     throw new Error("You already reviewed this product");
   }
 
-  const images =
-    Array.isArray(req.files) && req.files.length
-      ? req.files
-          .map((f) => (f?.filename ? `/uploads/reviews/${f.filename}` : null))
-          .filter(Boolean)
-      : [];
+  let images = [];
+  if (Array.isArray(req.files) && req.files.length) {
+    images = (
+      await Promise.all(
+        req.files.slice(0, 5).map(async (file) => {
+          if (!file?.buffer) return null;
+          const uploaded = await uploadImageBufferToCloudinary({
+            buffer: file.buffer,
+            mimetype: file.mimetype,
+            folder: "reviews",
+          });
+          return uploaded.url;
+        }),
+      )
+    ).filter(Boolean);
+  }
 
   try {
     const review = await Review.create({
