@@ -19,6 +19,52 @@ const orderItemSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const shippingStatusHistorySchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "confirmed",
+        "packed",
+        "shipped",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+      ],
+      required: true,
+    },
+    time: { type: Date, default: Date.now },
+  },
+  { _id: false },
+);
+
+const orderShippingSchema = new mongoose.Schema(
+  {
+    provider: { type: String, default: "mock" },
+    courier: String,
+    trackingId: String,
+    awbCode: String,
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "confirmed",
+        "packed",
+        "shipped",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+      ],
+      default: "pending",
+    },
+    statusHistory: { type: [shippingStatusHistorySchema], default: [] },
+    estimatedDelivery: Date,
+    deliveredAt: Date,
+  },
+  { _id: false },
+);
+
 const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -31,6 +77,7 @@ const orderSchema = new mongoose.Schema(
       postalCode: String,
       country: String,
     },
+    shipping: { type: orderShippingSchema, default: () => ({}) },
     paymentMethod: { type: String, enum: ["online", "cod"], required: true },
     paymentStatus: {
       type: String,
@@ -56,7 +103,10 @@ const orderSchema = new mongoose.Schema(
         "pending",
         "processing",
         "confirmed",
+        "packed",
         "shipped",
+        "in_transit",
+        "out_for_delivery",
         "delivered",
         "cancelled",
       ],

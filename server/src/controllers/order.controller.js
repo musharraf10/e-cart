@@ -3,6 +3,8 @@ import { Order } from "../models/order.model.js";
 import { User } from "../models/user.model.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendOrderConfirmationEmail } from "../services/order-notification.service.js";
+import { createShipment, updateOrderShippingStatus } from "../services/shippingService.js";
+import { normalizeOrderStatus } from "../utils/statusMapper.js";
 import { generateInvoicePdfBuffer } from "../utils/invoice.util.js";
 import {
   buildOrderPayload,
@@ -92,7 +94,11 @@ export async function createOrder(req, res) {
     ...orderPayload,
     paymentMethod,
     paymentStatus: "pending",
-    status: "processing",
+    status: "confirmed",
+    shipping: {
+      status: "confirmed",
+      statusHistory: [{ status: "confirmed", time: new Date() }],
+    },
     stockDeducted: true,
     couponApplied: Boolean(orderPayload.couponCode),
   });
@@ -159,6 +165,10 @@ export async function createPendingOrder(req, res) {
     paymentMethod: "online",
     paymentStatus: "pending",
     status: "pending",
+    shipping: {
+      status: "pending",
+      statusHistory: [{ status: "pending", time: new Date() }],
+    },
     stockDeducted: false,
     couponApplied: false,
     checkoutFingerprint,
@@ -200,9 +210,43 @@ export async function getOrderStatus(req, res) {
   return res.json({
     exists: true,
     orderId: order._id,
-    orderStatus: order.status,
+    orderStatus: order.shipping?.status || order.status,
     paymentStatus: order.paymentStatus,
     isFinal: ["confirmed", "cancelled"].includes(order.status),
+    order,
+  });
+}
+
+
+export async function updateOrderStatus(req, res) {
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found");
+  }
+
+  const status = normalizeOrderStatus(req.body?.status);
+  if (!status) {
+    return res.status(400).json({
+      message:
+        "Invalid status. Use: pending, confirmed, packed, shipped, in_transit, out_for_delivery, delivered",
+    });
+  }
+
+  updateOrderShippingStatus(order, status);
+
+  if (status === "delivered" && order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
+    order.paymentStatus = "paid";
+    order.paidAt = new Date();
+  }
+
+  createShipment(order);
+
+  await order.save();
+
+  return res.json({
+    message: "Order status updated",
     order,
   });
 }

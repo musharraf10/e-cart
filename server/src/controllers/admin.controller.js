@@ -12,6 +12,8 @@ import { SiteSetting } from "../models/siteSetting.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
+import { updateOrderShippingStatus } from "../services/shippingService.js";
+import { normalizeOrderStatus } from "../utils/statusMapper.js";
 import {
   getCloudinaryConfig,
   isCloudinaryConfigured,
@@ -597,37 +599,33 @@ export async function adminUpdateOrderStatus(req, res) {
     throw new Error("Order not found");
   }
 
-  const newStatus = req.body.status;
+  const requestedStatus = String(req.body?.status || "").trim().toLowerCase();
   const previousStatus = order.status;
 
-  if (!newStatus) {
+  if (!requestedStatus) {
     return res.status(400).json({ message: "Status is required" });
   }
 
-  if (order.status === newStatus) {
-    return res.json(order);
-  }
-
-  order.status = newStatus;
-
-  if (newStatus === "delivered") {
-    order.deliveredAt = new Date();
-
-    if (order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
-      order.paymentStatus = "paid";
-      order.paidAt = new Date();
-    }
-  }
-
-  if (newStatus === "cancelled") {
+  if (requestedStatus === "cancelled") {
+    order.status = "cancelled";
     order.cancelledAt = new Date();
+  } else {
+    const normalized = normalizeOrderStatus(requestedStatus);
+    if (!normalized) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    updateOrderShippingStatus(order, normalized);
+  }
+
+  if (order.status === "delivered" && order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
+    order.paymentStatus = "paid";
+    order.paidAt = new Date();
   }
 
   await order.save();
 
-  // 🔔 Notification
-  if (previousStatus !== newStatus && ["shipped", "delivered"].includes(newStatus)) {
-    await Promise.allSettled([sendStatusEmailByOrder(order, newStatus)]);
+  if (previousStatus !== order.status && ["shipped", "delivered"].includes(order.status)) {
+    await Promise.allSettled([sendStatusEmailByOrder(order, order.status)]);
   }
 
   if (["shipped", "delivered", "cancelled"].includes(order.status)) {

@@ -4,12 +4,15 @@ import { useSelector } from "react-redux";
 import api from "../../api/client.js";
 import { useToast } from "../../components/ui/ToastProvider.jsx";
 
-const steps = ["pending", "confirmed", "processing", "shipped", "delivered"];
+const steps = ["pending", "confirmed", "packed", "shipped", "in_transit", "out_for_delivery", "delivered"];
 
 const statusColors = {
   pending: "bg-[#52525b] text-white",
   confirmed: "bg-[#d4af37] text-white",
+  packed: "bg-[#f59e0b] text-white",
   processing: "bg-[#d4af37] text-white",
+  in_transit: "bg-[#6366f1] text-white",
+  out_for_delivery: "bg-[#8b5cf6] text-white",
   shipped: "bg-[#3b82f6] text-white",
   delivered: "bg-[#22c55e] text-white",
   cancelled: "bg-[#ef4444] text-white",
@@ -39,13 +42,29 @@ export function OrderDetailsPage() {
   });
 
   useEffect(() => {
-    api.get(`/orders/${id}`).then(({ data }) => setOrder(data));
+    let mounted = true;
+    let intervalId;
+
+    const fetchOrder = async () => {
+      const { data } = await api.get(`/orders/${id}`);
+      if (!mounted) return;
+      setOrder(data);
+    };
+
+    fetchOrder();
+    intervalId = window.setInterval(fetchOrder, 12000);
+
+    return () => {
+      mounted = false;
+      if (intervalId) window.clearInterval(intervalId);
+    };
   }, [id]);
 
   useEffect(() => {
     let mounted = true;
     const loadReviewStatus = async () => {
-      if (!order || order.status !== "delivered" || !user) return;
+      const activeStatus = order?.shipping?.status || order?.status;
+      if (!order || activeStatus !== "delivered" || !user) return;
       const productIds = Array.from(
         new Set(
           (order.items || [])
@@ -150,7 +169,8 @@ export function OrderDetailsPage() {
   };
 
   const downloadInvoice = async () => {
-    if (!order?._id || order.status !== "delivered") return;
+    const activeStatus = order?.shipping?.status || order?.status;
+    if (!order?._id || activeStatus !== "delivered") return;
 
     setDownloadingInvoice(true);
     try {
@@ -178,6 +198,9 @@ export function OrderDetailsPage() {
     return (
       <div className="text-sm text-[#a1a1aa]">Loading order details...</div>
     );
+
+  const currentStatus = order.shipping?.status || order.status;
+  const shippingInfoAvailable = Boolean(order.shipping);
 
   return (
     <div className="space-y-6">
@@ -227,7 +250,7 @@ export function OrderDetailsPage() {
                       ${item.price.toFixed(2)}
                     </p>
 
-                    {order.status === "delivered" && user && (
+                    {currentStatus === "delivered" && user && (
                       <div className="mt-4 flex items-center gap-3">
                         {loadingReviews ? (
                           <span className="text-xs text-[#a1a1aa]">Checking review status…</span>
@@ -297,7 +320,7 @@ export function OrderDetailsPage() {
                 </span>
               </div>
             </div>
-            {order.status === "delivered" && (
+            {currentStatus === "delivered" && (
               <button
                 type="button"
                 onClick={downloadInvoice}
@@ -314,29 +337,42 @@ export function OrderDetailsPage() {
               Order Status
             </h2>
             <div
-              className={`px-4 py-2 rounded-full text-center text-sm font-semibold mb-6 ${statusColors[order.status] || statusColors.pending
+              className={`px-4 py-2 rounded-full text-center text-sm font-semibold mb-6 ${statusColors[currentStatus] || statusColors.pending
                 }`}
             >
-              {order.status.toUpperCase()}
+              {String(currentStatus).replace(/_/g, " ").toUpperCase()}
             </div>
+
+            {shippingInfoAvailable ? (
+              <div className="mb-5 space-y-1 text-xs text-[#a1a1aa]">
+                {order.shipping?.trackingId && <p>Tracking ID: {order.shipping.trackingId}</p>}
+                {order.shipping?.estimatedDelivery && (
+                  <p>
+                    Estimated delivery: {new Date(order.shipping.estimatedDelivery).toLocaleDateString("en-US")}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="mb-5 text-xs text-[#a1a1aa]">Processing order...</p>
+            )}
 
             <div className="space-y-3">
               {steps.map((step) => (
                 <div
                   key={step}
-                  className={`flex items-center gap-3 text-sm ${steps.indexOf(step) <= steps.indexOf(order.status)
+                  className={`flex items-center gap-3 text-sm ${steps.indexOf(step) <= steps.indexOf(currentStatus)
                       ? "opacity-100"
                       : "opacity-50"
                     }`}
                 >
                   <div
-                    className={`w-3 h-3 rounded-full ${steps.indexOf(step) <= steps.indexOf(order.status)
+                    className={`w-3 h-3 rounded-full ${steps.indexOf(step) <= steps.indexOf(currentStatus)
                         ? "bg-[#d4af37]"
                         : "bg-[#262626]"
                       }`}
                   ></div>
                   <span
-                    className={`capitalize ${steps.indexOf(step) <= steps.indexOf(order.status)
+                    className={`capitalize ${steps.indexOf(step) <= steps.indexOf(currentStatus)
                         ? "text-white"
                         : "text-[#a1a1aa]"
                       }`}
