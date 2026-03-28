@@ -1,6 +1,7 @@
 import { User } from "../models/user.model.js";
 import { Address } from "../models/address.model.js";
 import { Order } from "../models/order.model.js";
+import { uploadImageBufferToCloudinary } from "../utils/cloudinaryUpload.util.js";
 
 export async function getUserProfile(req, res) {
   res.json(req.user);
@@ -54,6 +55,22 @@ export async function updateUserProfile(req, res) {
 
   const safeUser = await User.findById(user._id).select("-password");
   res.json(safeUser);
+}
+
+
+export async function uploadProfileImage(req, res) {
+  if (!req.file?.buffer) {
+    res.status(400);
+    throw new Error("Profile image file is required");
+  }
+
+  const uploaded = await uploadImageBufferToCloudinary({
+    buffer: req.file.buffer,
+    mimetype: req.file.mimetype,
+    folder: "profiles",
+  });
+
+  res.status(201).json(uploaded);
 }
 
 export async function listAddresses(req, res) {
