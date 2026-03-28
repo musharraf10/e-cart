@@ -100,17 +100,19 @@ export function AuthPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="
-    min-h-[100dvh]
-    flex flex-col 
-    justify-start
-    py-6
-    px-4
-    sm:items-center sm:justify-center sm:py-10
-    bg-black
-  "
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1.5rem 1rem",
+        backgroundColor: "#000",
+        zIndex: 10,
+        overflowY: "auto",
+      }}
     >
-      <div className="relative w-full max-w-md rounded-2xl bg-card border border-[#262626] p-6 sm:p-8 md:p-10 shadow-card">
+      <div className="relative w-full max-w-lg rounded-2xl bg-card border border-[#262626] p-6 sm:p-8 md:p-10 shadow-card overflow-y-auto max-h-[calc(100dvh-3rem)]">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
             <span className="text-primary font-bold text-lg">N</span>
