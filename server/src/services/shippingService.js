@@ -34,6 +34,14 @@ function ensureShippingEnvelope(order) {
     order.shipping.events = [];
   }
 
+  if (!Array.isArray(order.shipping.webhookLogs)) {
+    order.shipping.webhookLogs = [];
+  }
+
+  if (!Array.isArray(order.shipping.failedEvents)) {
+    order.shipping.failedEvents = [];
+  }
+
   if (order.shipping.statusHistory.length === 0) {
     order.shipping.statusHistory.push({
       status: order.shipping.status,
@@ -156,28 +164,103 @@ export async function processShippingWebhookEvent(data) {
     return { processed: false, reason: "invalid_payload" };
   }
 
-  const order = await Order.findById(data.orderId);
+  const order = await Order.findById(data.orderId).select(
+    "_id status shipping.status shipping.statusHistory shipping.events shipping.webhookLogs createdAt",
+  );
   if (!order) {
     return { processed: false, reason: "order_not_found", orderId: data.orderId };
   }
 
   const shipping = ensureShippingEnvelope(order);
-  if (data.trackingId) shipping.trackingId = data.trackingId;
-  if (data.awbCode) shipping.awbCode = data.awbCode;
-  if (data.courier) shipping.courier = data.courier;
-
-  const result = updateOrderStatus(order, normalizedStatus, {
-    source: "webhook",
-    eventId: data.eventId,
-    eventTime: data.eventTime,
-    trackingUrl: data.trackingUrl,
-  });
-
-  if (result.updated) {
-    await order.save();
+  const eventTime = getSafeDate(data.eventTime, new Date());
+  if (!eventTime) {
+    return { processed: false, reason: "invalid_event_time", orderId: data.orderId };
   }
 
-  return { processed: true, ...result, orderId: order._id.toString() };
+  const lastHistoryEntry = getLastHistoryEntry(order);
+  if (lastHistoryEntry?.time && new Date(eventTime) < new Date(lastHistoryEntry.time)) {
+    return { processed: true, updated: false, ignored: true, reason: "out_of_order", status: shipping.status };
+  }
+
+  const duplicateEventCount = data.eventId
+    ? shipping.webhookLogs.filter((log) => log?.eventId === data.eventId).length
+    : 0;
+  if (data.eventId && duplicateEventCount > 1) {
+    return {
+      processed: true,
+      updated: false,
+      ignored: true,
+      reason: "duplicate_event",
+      status: shipping.status,
+      orderId: order._id.toString(),
+    };
+  }
+
+  const currentStatus =
+    normalizeOrderStatus(shipping.status) || normalizeOrderStatus(order.status) || "pending";
+  if (currentStatus === normalizedStatus) {
+    return {
+      processed: true,
+      updated: false,
+      ignored: true,
+      reason: "duplicate_status",
+      status: currentStatus,
+      orderId: order._id.toString(),
+    };
+  }
+
+  if (!canTransitionStatus(currentStatus, normalizedStatus)) {
+    const error = new Error(`Invalid status transition: ${currentStatus} -> ${normalizedStatus}`);
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const updateDoc = {
+    $set: {
+      status: normalizedStatus,
+      "shipping.status": normalizedStatus,
+      ...(data.trackingId ? { "shipping.trackingId": data.trackingId } : {}),
+      ...(data.awbCode ? { "shipping.awbCode": data.awbCode } : {}),
+      ...(data.courier ? { "shipping.courier": data.courier } : {}),
+      ...(data.trackingUrl ? { "shipping.trackingUrl": data.trackingUrl } : {}),
+      ...(normalizedStatus === "delivered" ? { "shipping.deliveredAt": eventTime, deliveredAt: eventTime } : {}),
+    },
+    $push: {
+      "shipping.statusHistory": { status: normalizedStatus, time: eventTime },
+      "shipping.events": {
+        status: normalizedStatus,
+        source: "webhook",
+        ...(data.eventId ? { eventId: data.eventId } : {}),
+        time: eventTime,
+      },
+    },
+  };
+
+  const updatedOrder = await Order.findOneAndUpdate(
+    { _id: order._id, "shipping.status": currentStatus },
+    updateDoc,
+    { new: true },
+  );
+
+  if (!updatedOrder) {
+    return {
+      processed: true,
+      updated: false,
+      ignored: true,
+      reason: "concurrent_update",
+      status: currentStatus,
+      orderId: order._id.toString(),
+    };
+  }
+
+  return {
+    processed: true,
+    updated: true,
+    ignored: false,
+    reason: null,
+    status: normalizedStatus,
+    orderId: order._id.toString(),
+  };
 }
 
 export function handleWebhook(data) {
@@ -191,4 +274,72 @@ export function handleWebhook(data) {
     trackingUrl: data?.trackingUrl,
     eventTime: data?.eventTime || new Date().toISOString(),
   };
+}
+
+export async function logShippingWebhookEvent(data, rawPayload) {
+  if (!data?.orderId) {
+    return { logged: false, reason: "missing_order_id" };
+  }
+
+  try {
+    await Order.updateOne(
+      { _id: data.orderId },
+      {
+        $push: {
+          "shipping.webhookLogs": {
+            eventId: data.eventId,
+            source: "webhook",
+            payload: rawPayload,
+            receivedAt: new Date(),
+          },
+        },
+      },
+    );
+    return { logged: true };
+  } catch (error) {
+    console.error("[shipping-webhook] failed to write webhook log", {
+      message: error?.message,
+      orderId: data?.orderId,
+      eventId: data?.eventId,
+    });
+    return { logged: false, reason: "log_write_failed" };
+  }
+}
+
+export async function recordFailedShippingEvent(data, error) {
+  if (!data?.orderId) return { stored: false, reason: "missing_order_id" };
+
+  const now = new Date();
+  const updateExistingResult = await Order.updateOne(
+    { _id: data.orderId, "shipping.failedEvents.eventId": data.eventId },
+    {
+      $inc: { "shipping.failedEvents.$.retryCount": 1 },
+      $set: {
+        "shipping.failedEvents.$.error": error?.message || "unknown_error",
+        "shipping.failedEvents.$.lastTriedAt": now,
+        "shipping.failedEvents.$.payload": data,
+      },
+    },
+  );
+
+  if (updateExistingResult.modifiedCount > 0) {
+    return { stored: true, updated: true };
+  }
+
+  await Order.updateOne(
+    { _id: data.orderId },
+    {
+      $push: {
+        "shipping.failedEvents": {
+          eventId: data.eventId,
+          payload: data,
+          error: error?.message || "unknown_error",
+          retryCount: 1,
+          lastTriedAt: now,
+        },
+      },
+    },
+  );
+
+  return { stored: true };
 }
