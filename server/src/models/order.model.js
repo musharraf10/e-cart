@@ -61,6 +61,27 @@ const shippingEventSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const shippingWebhookLogSchema = new mongoose.Schema(
+  {
+    eventId: String,
+    source: { type: String, enum: ["webhook", "admin", "mock"], default: "webhook" },
+    payload: { type: mongoose.Schema.Types.Mixed },
+    receivedAt: { type: Date, default: Date.now },
+  },
+  { _id: false },
+);
+
+const shippingFailedEventSchema = new mongoose.Schema(
+  {
+    eventId: String,
+    payload: { type: mongoose.Schema.Types.Mixed },
+    error: String,
+    retryCount: { type: Number, default: 0 },
+    lastTriedAt: { type: Date, default: Date.now },
+  },
+  { _id: false },
+);
+
 const orderShippingSchema = new mongoose.Schema(
   {
     provider: { type: String, default: "mock" },
@@ -82,6 +103,8 @@ const orderShippingSchema = new mongoose.Schema(
     },
     statusHistory: { type: [shippingStatusHistorySchema], default: [] },
     events: { type: [shippingEventSchema], default: [] },
+    webhookLogs: { type: [shippingWebhookLogSchema], default: [] },
+    failedEvents: { type: [shippingFailedEventSchema], default: [] },
     trackingUrl: String,
     estimatedDelivery: Date,
     deliveredAt: Date,
