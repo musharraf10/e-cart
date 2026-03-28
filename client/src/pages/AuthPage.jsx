@@ -97,10 +97,17 @@ export function AuthPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="w-full max-w-md"
+      transition={{ duration: 0.3 }}
+      className="
+    min-h-screen 
+    flex flex-col 
+    justify-center 
+    px-4 
+    sm:items-center sm:justify-center
+    bg-black
+  "
     >
       <div className="relative rounded-2xl bg-card border border-[#262626] p-6 sm:p-8 md:p-10 shadow-card">
         <div className="flex items-center gap-3 mb-8">

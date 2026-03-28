@@ -1,8 +1,16 @@
 import bcrypt from "bcryptjs";
 import { User } from "../models/user.model.js";
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/token.util.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../utils/token.util.js";
 import { getFirebaseAdminAuth } from "../config/firebase-admin.js";
-import { generateRawToken, hashToken, tokenExpiry } from "../utils/security.util.js";
+import {
+  generateRawToken,
+  hashToken,
+  tokenExpiry,
+} from "../utils/security.util.js";
 import { sendEmail } from "../utils/email.util.js";
 
 const refreshCookieName = "noorfit_refresh";
@@ -36,7 +44,13 @@ function setRefreshCookie(res, token) {
 
 function clearRefreshCookie(res) {
   const secure = process.env.NODE_ENV === "production";
-  const cookie = [`${refreshCookieName}=`, "HttpOnly", "SameSite=Lax", "Path=/api/auth", "Max-Age=0"];
+  const cookie = [
+    `${refreshCookieName}=`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/api/auth",
+    "Max-Age=0",
+  ];
 
   if (secure) cookie.push("Secure");
   res.setHeader("Set-Cookie", cookie.join("; "));
@@ -80,7 +94,7 @@ async function buildAuthResponse(user, res) {
 }
 
 async function sendVerificationEmail(user, rawToken) {
-  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const clientBaseUrl = process.env.CLIENT_URL || "http://10.16.38.220:5173/";
   const verifyUrl = `${clientBaseUrl}/verify-email?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
 
   await sendEmail({
@@ -98,7 +112,7 @@ async function sendVerificationEmail(user, rawToken) {
 }
 
 async function sendPasswordResetEmail(user, rawToken) {
-  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const clientBaseUrl = process.env.CLIENT_URL || "http://10.16.38.220:5173/";
   const resetUrl = `${clientBaseUrl}/reset-password?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
 
   await sendEmail({
@@ -182,11 +196,15 @@ export async function resendVerificationEmail(req, res) {
   const user = await User.findOne({ email: normalizedEmail });
 
   if (!user || user.authProvider !== "local") {
-    return res.json({ message: "If the account exists, a verification email has been sent." });
+    return res.json({
+      message: "If the account exists, a verification email has been sent.",
+    });
   }
 
   if (user.isVerified) {
-    return res.json({ message: "Your email is already verified. Please log in." });
+    return res.json({
+      message: "Your email is already verified. Please log in.",
+    });
   }
 
   const rawVerifyToken = generateRawToken();
@@ -196,7 +214,9 @@ export async function resendVerificationEmail(req, res) {
 
   await sendVerificationEmail(user, rawVerifyToken);
 
-  return res.json({ message: "Verification email sent. Please check your inbox." });
+  return res.json({
+    message: "Verification email sent. Please check your inbox.",
+  });
 }
 
 export async function forgotPassword(req, res) {
@@ -205,7 +225,9 @@ export async function forgotPassword(req, res) {
 
   const user = await User.findOne({ email: normalizedEmail });
   if (!user || user.authProvider !== "local") {
-    return res.json({ message: "If that email exists, a reset link has been sent." });
+    return res.json({
+      message: "If that email exists, a reset link has been sent.",
+    });
   }
 
   const rawResetToken = generateRawToken();
@@ -215,7 +237,9 @@ export async function forgotPassword(req, res) {
 
   await sendPasswordResetEmail(user, rawResetToken);
 
-  return res.json({ message: "If that email exists, a reset link has been sent." });
+  return res.json({
+    message: "If that email exists, a reset link has been sent.",
+  });
 }
 
 export async function resetPassword(req, res) {
@@ -242,7 +266,9 @@ export async function resetPassword(req, res) {
   user.passwordResetTokenExpiry = null;
   await user.save();
 
-  res.json({ message: "Password reset successful. Please log in with your new password." });
+  res.json({
+    message: "Password reset successful. Please log in with your new password.",
+  });
 }
 
 export async function login(req, res) {
@@ -256,7 +282,9 @@ export async function login(req, res) {
 
   if (!user.password) {
     res.status(400);
-    throw new Error("This account uses Google sign-in. Please continue with Google.");
+    throw new Error(
+      "This account uses Google sign-in. Please continue with Google.",
+    );
   }
 
   if (!(await user.matchPassword(password))) {
