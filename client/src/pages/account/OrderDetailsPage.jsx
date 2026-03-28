@@ -23,6 +23,7 @@ export function OrderDetailsPage() {
   const [order, setOrder] = useState(null);
   const [reviewedByProductId, setReviewedByProductId] = useState({});
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   const [reviewModal, setReviewModal] = useState({
     open: false,
@@ -145,6 +146,31 @@ export function OrderDetailsPage() {
       notify("Thank you! Your review has been submitted.");
     } catch (err) {
       notify(err.response?.data?.message || "Unable to submit review", "error");
+    }
+  };
+
+  const downloadInvoice = async () => {
+    if (!order?._id || order.status !== "delivered") return;
+
+    setDownloadingInvoice(true);
+    try {
+      const response = await api.get(`/orders/${order._id}/invoice`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const fileUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = `invoice-${order._id.slice(-8).toUpperCase()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(fileUrl);
+      notify("Invoice downloaded successfully.");
+    } catch (err) {
+      notify(err.response?.data?.message || "Unable to download invoice", "error");
+    } finally {
+      setDownloadingInvoice(false);
     }
   };
 
@@ -271,6 +297,16 @@ export function OrderDetailsPage() {
                 </span>
               </div>
             </div>
+            {order.status === "delivered" && (
+              <button
+                type="button"
+                onClick={downloadInvoice}
+                disabled={downloadingInvoice}
+                className="mt-5 w-full rounded-xl border border-accent/50 bg-accent/10 px-4 py-2.5 text-sm font-semibold text-accent hover:bg-accent/20 disabled:opacity-60"
+              >
+                {downloadingInvoice ? "Preparing invoice..." : "Download Invoice"}
+              </button>
+            )}
           </div>
 
           <div className="bg-[#171717] border border-[#262626] rounded-2xl p-8 shadow-xl">
