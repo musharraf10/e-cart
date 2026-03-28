@@ -25,8 +25,10 @@ const formatCurrency = (amount) => {
 const STATUS_META = {
   pending: { color: "#facc15", bg: "rgba(250,204,21,0.10)", label: "Pending" },
   confirmed: { color: "#38bdf8", bg: "rgba(56,189,248,0.10)", label: "Confirmed" },
-  processing: { color: "#a6c655", bg: "rgba(166,198,85,0.12)", label: "Processing" },
+  packed: { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", label: "Packed" },
   shipped: { color: "#c084fc", bg: "rgba(192,132,252,0.10)", label: "Shipped" },
+  in_transit: { color: "#6366f1", bg: "rgba(99,102,241,0.10)", label: "In Transit" },
+  out_for_delivery: { color: "#8b5cf6", bg: "rgba(139,92,246,0.10)", label: "Out for Delivery" },
   delivered: { color: "#4ade80", bg: "rgba(74,222,128,0.10)", label: "Delivered" },
   cancelled: { color: "#f87171", bg: "rgba(248,113,113,0.10)", label: "Cancelled" },
   refunded: { color: "#fb923c", bg: "rgba(251,146,60,0.10)", label: "Refunded" },
@@ -108,6 +110,32 @@ function StatusSelect({ value, onChange }) {
   );
 }
 
+
+function QuickStatusButton({ label, status, orderId, onDone }) {
+  const [loading, setLoading] = useState(false);
+
+  const apply = async () => {
+    try {
+      setLoading(true);
+      await api.post(`/orders/${orderId}/update-status`, { status });
+      onDone();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={apply}
+      disabled={loading}
+      className="rounded-lg border border-[#262626] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white hover:border-[#a6c655] disabled:opacity-50"
+    >
+      {loading ? "Updating..." : label}
+    </button>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton() {
   return (
@@ -132,7 +160,7 @@ function OrderRow({ o, onStatusChange }) {
 
   const handleChange = async (e) => {
     setUpdating(true);
-    await api.patch(`/admin/orders/${o._id}/status`, { status: e.target.value });
+    await api.post(`/orders/${o._id}/update-status`, { status: e.target.value });
     setFlash(true);
     setTimeout(() => setFlash(false), 700);
     onStatusChange();
@@ -192,7 +220,7 @@ function OrderRow({ o, onStatusChange }) {
           </div>
         </div>
 
-        <StatusBadge status={o.status} />
+        <StatusBadge status={o.shipping?.status || o.status} />
       </div>
 
       {/* divider */}
@@ -228,7 +256,7 @@ function OrderRow({ o, onStatusChange }) {
             </span>
             <div style={{ opacity: updating ? 0.5 : 1, pointerEvents: updating ? "none" : "auto" }}
               className="transition-opacity duration-150">
-              <StatusSelect value={o.status} onChange={handleChange} />
+              <StatusSelect value={o.shipping?.status || o.status} onChange={handleChange} />
             </div>
 
             <AnimatePresence>
@@ -255,6 +283,12 @@ function OrderRow({ o, onStatusChange }) {
             </AnimatePresence>
           </div>
         </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <QuickStatusButton label="Mark as Packed" status="packed" orderId={o._id} onDone={onStatusChange} />
+        <QuickStatusButton label="Mark as Shipped" status="shipped" orderId={o._id} onDone={onStatusChange} />
+        <QuickStatusButton label="Mark as Delivered" status="delivered" orderId={o._id} onDone={onStatusChange} />
       </div>
     </motion.div>
   );
