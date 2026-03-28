@@ -10,13 +10,8 @@ module.exports = {
         accent: "#a6c25e",
       },
       fontFamily: {
-        sans: [
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "sans-serif",
-        ],
+        sans: ["Inter", "sans-serif"],
+        heading: ["General Sans", "sans-serif"],
       },
       borderRadius: {
         xl: "16px",

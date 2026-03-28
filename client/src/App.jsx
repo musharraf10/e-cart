@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Routes,
   Route,
@@ -56,6 +57,7 @@ import { AdminSettingsPage } from "./pages/admin/ops/AdminSettingsPage.jsx";
 import { initializeAuth } from "./store/slices/authSlice.js";
 import { ToastProvider, useToast } from "./components/ui/ToastProvider.jsx";
 import { DesktopBlockScreen } from "./components/layout/DesktopBlockScreen.jsx";
+import { GlobalLoader } from "./components/ui/GlobalLoader.jsx";
 import { activateWaitingServiceWorker } from "./pwa/register-sw.js";
 
 function AppShell() {
@@ -67,6 +69,15 @@ function AppShell() {
   );
   const [installPromptEvent, setInstallPromptEvent] = useState(null);
   const [installOutcome, setInstallOutcome] = useState(null);
+  const [showGlobalLoader, setShowGlobalLoader] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowGlobalLoader(false);
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     dispatch(initializeAuth());
@@ -152,8 +163,18 @@ function AppShell() {
   }
 
   return (
-    <Layout>
-      <Routes>
+    <>
+      <GlobalLoader show={showGlobalLoader} />
+      <Layout>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <Routes>
         {/* Public routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/shop" element={<ShopPage />} />
@@ -211,42 +232,45 @@ function AppShell() {
 
         {/* Optional: 404 fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      {installPromptEvent ? (
-        <div className="fixed inset-x-3 bottom-20 z-[70] rounded-2xl border border-border bg-card/95 p-3 shadow-card backdrop-blur">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Install NoorFit</p>
-              <p className="text-xs text-muted-foreground">Get faster access and offline browsing.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground"
-                onClick={() => {
-                  setInstallOutcome("dismissed");
-                  setInstallPromptEvent(null);
-                }}
-              >
-                Not now
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-background"
-                onClick={handleInstallClick}
-              >
-                Install
-              </button>
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+        {installPromptEvent ? (
+          <div className="fixed inset-x-3 bottom-20 z-[70] rounded-2xl border border-border bg-card/95 p-3 shadow-card backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Install NoorFit</p>
+                <p className="text-xs text-muted-foreground">Get faster access and offline browsing.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground"
+                  onClick={() => {
+                    setInstallOutcome("dismissed");
+                    setInstallPromptEvent(null);
+                  }}
+                >
+                  Not now
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-background"
+                  onClick={handleInstallClick}
+                >
+                  Install
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
-      {installOutcome ? (
-        <div className="fixed bottom-4 left-1/2 z-[70] -translate-x-1/2 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground">
-          Install outcome: {installOutcome}
-        </div>
-      ) : null}
-    </Layout>
+        ) : null}
+        {installOutcome ? (
+          <div className="fixed bottom-4 left-1/2 z-[70] -translate-x-1/2 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-muted-foreground">
+            Install outcome: {installOutcome}
+          </div>
+        ) : null}
+      </Layout>
+    </>
   );
 }
 

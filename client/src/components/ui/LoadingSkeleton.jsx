@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 export function LoadingSkeleton({ className = "" }) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-[#262626] ${className}`}
+      className={`skeleton-shimmer rounded-xl bg-[#262626] ${className}`}
       aria-hidden
     />
   );

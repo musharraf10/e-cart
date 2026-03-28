@@ -383,7 +383,7 @@ export function ShopPage() {
                     disabled={loadingMore}
                     className="inline-flex items-center gap-2 rounded-xl border border-[#262626] px-6 py-2 text-sm text-white transition duration-200 hover:bg-card active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loadingMore ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : null}
+                    {loadingMore ? <span className="skeleton-shimmer h-2.5 w-10 rounded-full" aria-hidden /> : null}
                     {loadingMore ? "Loading..." : "Load More"}
                   </button>
                 ) : (
