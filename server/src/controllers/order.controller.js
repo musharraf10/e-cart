@@ -3,7 +3,7 @@ import { Order } from "../models/order.model.js";
 import { User } from "../models/user.model.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendOrderConfirmationEmail } from "../services/order-notification.service.js";
-import { createShipment, updateOrderShippingStatus } from "../services/shippingService.js";
+import { createShipment, updateOrderStatus as applyOrderStatusUpdate } from "../services/shippingService.js";
 import { normalizeOrderStatus } from "../utils/statusMapper.js";
 import { generateInvoicePdfBuffer } from "../utils/invoice.util.js";
 import {
@@ -234,7 +234,21 @@ export async function updateOrderStatus(req, res) {
     });
   }
 
-  updateOrderShippingStatus(order, status);
+  const result = applyOrderStatusUpdate(order, status, {
+    source: "admin",
+    eventId: req.body?.eventId,
+    eventTime: req.body?.eventTime,
+    trackingUrl: req.body?.trackingUrl,
+  });
+
+  if (result.ignored) {
+    return res.status(200).json({
+      message: `Status update ignored (${result.reason})`,
+      order,
+      ignored: true,
+      reason: result.reason,
+    });
+  }
 
   if (status === "delivered" && order.paymentMethod === "cod" && order.paymentStatus !== "paid") {
     order.paymentStatus = "paid";
