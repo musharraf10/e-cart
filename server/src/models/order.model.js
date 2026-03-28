@@ -39,6 +39,28 @@ const shippingStatusHistorySchema = new mongoose.Schema(
   { _id: false },
 );
 
+const shippingEventSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "confirmed",
+        "packed",
+        "shipped",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+      ],
+      required: true,
+    },
+    source: { type: String, enum: ["mock", "webhook", "admin"], default: "mock" },
+    eventId: String,
+    time: { type: Date, default: Date.now },
+  },
+  { _id: false },
+);
+
 const orderShippingSchema = new mongoose.Schema(
   {
     provider: { type: String, default: "mock" },
@@ -59,6 +81,8 @@ const orderShippingSchema = new mongoose.Schema(
       default: "pending",
     },
     statusHistory: { type: [shippingStatusHistorySchema], default: [] },
+    events: { type: [shippingEventSchema], default: [] },
+    trackingUrl: String,
     estimatedDelivery: Date,
     deliveredAt: Date,
   },
