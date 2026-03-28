@@ -11,7 +11,7 @@ export function HeroBanner({ title, subtitle, children, className = "" }) {
       <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-transparent pointer-events-none" />
       <div className="relative z-10 max-w-2xl">
         {title && (
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-tight">
+          <h1 className="font-heading text-4xl md:text-6xl font-medium text-white tracking-tight leading-tight">
             {title}
           </h1>
         )}
