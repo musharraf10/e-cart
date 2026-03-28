@@ -18,8 +18,12 @@
     "express": "^4.19.2",
     "express-async-errors": "^3.1.1",
 <<<<<<< HEAD
+<<<<<<< HEAD
     "firebase": "^12.11.0",
 =======
+=======
+    "firebase": "^12.11.0",
+>>>>>>> a5c67b81d302c9cae24ca1adbd4b18eda63e0f98
     "firebase-admin": "^13.7.0",
 >>>>>>> 5656f6a125016ce9d1664a410d8b808db1b176d7
     "helmet": "^7.1.0",

@@ -40,7 +40,7 @@ function getCheckoutIssues(items, address) {
 function Spinner({ label }) {
   return (
     <div className="flex items-center gap-3 text-sm text-muted-foreground">
-      <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+      <span className="skeleton-shimmer h-2 w-10 rounded-full" aria-hidden />
       <span>{label}</span>
     </div>
   );

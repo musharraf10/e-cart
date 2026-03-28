@@ -6,20 +6,26 @@ const ToastContext = createContext(null);
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const notify = useCallback((message, type = "success") => {
-    const id = crypto.randomUUID();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 2400);
+  const dismiss = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
+
+  const notify = useCallback((message, type = "success", options = {}) => {
+    const id = crypto.randomUUID();
+    const { duration = 2400, actionLabel, onAction } = options;
+
+    setToasts((prev) => [...prev, { id, message, type, actionLabel, onAction }]);
+    window.setTimeout(() => {
+      dismiss(id);
+    }, duration);
+  }, [dismiss]);
 
   const value = useMemo(() => ({ notify }), [notify]);
 
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed top-20 right-4 z-[60] space-y-2 pointer-events-none">
+      <div className="fixed top-[max(1rem,env(safe-area-inset-top,0px))] left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-[120] w-[calc(100vw-1.5rem)] max-w-md space-y-2 pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
@@ -33,7 +39,21 @@ export function ToastProvider({ children }) {
                   : "border-border bg-card text-accent"
               }`}
             >
-              {toast.message}
+              <div className="flex items-center gap-3">
+                <span>{toast.message}</span>
+                {toast.actionLabel && toast.onAction ? (
+                  <button
+                    type="button"
+                    className="rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-border/50"
+                    onClick={() => {
+                      toast.onAction();
+                      dismiss(toast.id);
+                    }}
+                  >
+                    {toast.actionLabel}
+                  </button>
+                ) : null}
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>

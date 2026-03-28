@@ -9,6 +9,7 @@ import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { ProductGridSkeleton, ProductListSkeleton } from "../components/ui/LoadingSkeleton.jsx";
 import { expandProductsByVariant } from "../utils/productVariants.js";
 import { useShopScrollRestoration } from "../hooks/useShopScrollRestoration.js";
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -208,6 +209,11 @@ export function ShopPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col lg:flex-row gap-8">
+      <SeoMeta
+        title="Shop NoorFit | Performance Clothing for Everyday Movement"
+        description="Browse the NoorFit shop by category, size, color, and price to find performance-ready styles that match your routine."
+        canonicalUrl="/shop"
+      />
       <aside className="lg:w-64 flex-shrink-0">
         <div className="rounded-xl bg-card border border-[#262626] p-4 space-y-6 sticky top-24">
           <div className="flex items-center justify-between">
@@ -377,7 +383,7 @@ export function ShopPage() {
                     disabled={loadingMore}
                     className="inline-flex items-center gap-2 rounded-xl border border-[#262626] px-6 py-2 text-sm text-white transition duration-200 hover:bg-card active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loadingMore ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : null}
+                    {loadingMore ? <span className="skeleton-shimmer h-2.5 w-10 rounded-full" aria-hidden /> : null}
                     {loadingMore ? "Loading..." : "Load More"}
                   </button>
                 ) : (

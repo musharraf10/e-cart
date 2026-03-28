@@ -51,8 +51,8 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
    docker compose up --build
    ```
 
-   - API: `http://localhost:5000`
-   - Client: `http://localhost:5173`
+   - API: `http://10.16.38.220:5000`
+   - Client: `http://10.16.38.220:5173/`
    - MongoDB: `mongodb://mongo:27017/noorfit`
 
 6. Run locally without Docker:
@@ -85,3 +85,40 @@ NoorFit is a scalable MERN‑stack Progressive Web App (PWA) for a clothing e‑
 Adjust images, ports, and env as needed for production.
 
 image upload options + final and push notifications
+
+### React StrictMode note (development only)
+
+In development, the client is wrapped with `React.StrictMode` in `client/src/main.jsx`.
+React intentionally double-invokes some lifecycle paths/effects to help surface side effects.
+That can look like duplicate network activity in DevTools even though production behavior is single-pass.
+
+This repo now uses RTK Query for product/detail/review catalog data, so identical in-flight requests are deduplicated by query key and shared from cache across components.
+If you are debugging custom `useEffect` diagnostics in development, prefer idempotent effects or lightweight dev guards to reduce log noise.
+
+### SEO prerender output (production build)
+
+`client` build now generates static prerendered HTML files for key crawl routes:
+
+- `/`
+- `/shop`
+- `/about`
+- `/support`
+- top product detail pages at `/product/<slug>`
+
+By default, top products are fetched from `http://10.16.38.220:5000/api/products?sort=rating` during build.
+You can override behavior with build-time env vars:
+
+```bash
+PRERENDER_API_BASE_URL=https://api.example.com/api
+PRERENDER_SITE_ORIGIN=https://www.example.com
+PRERENDER_PRODUCT_LIMIT=12
+```
+
+Run:
+
+```bash
+cd client
+npm run build
+```
+
+The generated files are written under `client/dist`, including per-route `index.html` files containing pre-populated title/canonical/Open Graph/Twitter metadata for crawlers.

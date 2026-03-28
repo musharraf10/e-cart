@@ -1,17 +1,32 @@
 import axios from "axios";
-import { store } from "../store/store.js";
 import { logout, setCredentials } from "../store/slices/authSlice.js";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://10.16.38.220:5000/api",
   withCredentials: true,
 });
 
 let refreshPromise = null;
+let storeRef = null;
+
+export const injectStore = (store) => {
+  storeRef = store;
+};
+
+const getAccessToken = () => {
+  if (storeRef) {
+    return storeRef.getState().auth.token;
+  }
+
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("noorfit_token");
+  }
+
+  return null;
+};
 
 api.interceptors.request.use((config) => {
-  const state = store.getState();
-  const token = state.auth.token || (typeof window !== "undefined" ? localStorage.getItem("noorfit_token") : null);
+  const token = getAccessToken();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -47,8 +62,12 @@ api.interceptors.response.use(
       }
 
       const { data } = await refreshPromise;
-      const user = store.getState().auth.user;
-      store.dispatch(setCredentials({ user, token: data.token }));
+      const user = storeRef?.getState().auth.user ?? null;
+
+      if (storeRef) {
+        storeRef.dispatch(setCredentials({ user, token: data.token }));
+      }
+
       originalRequest.headers.Authorization = `Bearer ${data.token}`;
       return api(originalRequest);
     } catch (refreshError) {
@@ -57,7 +76,11 @@ api.interceptors.response.use(
       } catch {
         // best effort cookie cleanup
       }
-      store.dispatch(logout());
+
+      if (storeRef) {
+        storeRef.dispatch(logout());
+      }
+
       throw refreshError;
     }
   },

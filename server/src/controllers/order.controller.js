@@ -1,7 +1,9 @@
 import crypto from "crypto";
 import { Order } from "../models/order.model.js";
+import { User } from "../models/user.model.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendOrderConfirmationEmail } from "../services/order-notification.service.js";
+import { generateInvoicePdfBuffer } from "../utils/invoice.util.js";
 import {
   buildOrderPayload,
   deductStockForItems,
@@ -203,4 +205,32 @@ export async function getOrderStatus(req, res) {
     isFinal: ["confirmed", "cancelled"].includes(order.status),
     order,
   });
+}
+
+export async function downloadOrderInvoice(req, res) {
+  const order = await Order.findOne({ _id: req.params.id, user: req.user._id }).lean();
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found");
+  }
+
+  if (order.status !== "delivered") {
+    res.status(400);
+    throw new Error("Invoice is available only after delivery");
+  }
+
+  const customer = await User.findById(req.user._id).select("name email").lean();
+  const invoiceBuffer = await generateInvoicePdfBuffer({
+    order,
+    customer,
+    options: {
+      taxRate: Number(process.env.INVOICE_TAX_RATE || 0),
+      currency: process.env.INVOICE_CURRENCY || "INR",
+    },
+  });
+
+  const invoiceId = order._id.toString().slice(-8).toUpperCase();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `inline; filename="invoice-${invoiceId}.pdf"`);
+  res.send(invoiceBuffer);
 }

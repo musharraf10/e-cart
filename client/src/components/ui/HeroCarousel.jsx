@@ -62,7 +62,7 @@ export function HeroCarousel({ products = [] }) {
             transition={{ duration: 0.4 }}
             className="space-y-3 md:space-y-4"
           >
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-tight">
+            <h1 className="font-heading text-4xl md:text-6xl text-white tracking-tight leading-tight font-medium">
               {active.title}
             </h1>
             <p className="text-muted text-sm md:text-base">
@@ -96,4 +96,3 @@ export function HeroCarousel({ products = [] }) {
     </section>
   );
 }
-

@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import api from "../api/client.js";
 import { ProductGallery } from "../components/products/ProductGallery.jsx";
 import { ProductInfo } from "../components/products/ProductInfo.jsx";
 import { ProductSpecs } from "../components/products/ProductSpecs.jsx";
@@ -11,59 +10,105 @@ import { ProductQandA } from "../components/products/ProductQandA.jsx";
 import { RelatedProducts } from "../components/products/RelatedProducts.jsx";
 import { RecommendedProducts } from "../components/products/RecommendedProducts.jsx";
 import { getColorImageSet, getProductColors } from "../utils/productVariants.js";
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
+import {
+  STALE_TIME_SECONDS,
+  useGetProductBySlugQuery,
+  useGetProductsQuery,
+  useGetRelatedProductsQuery,
+  useGetReviewsQuery,
+} from "../store/apis/catalogApi.js";
 
 export function ProductDetailPage() {
   const { slug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [product, setProduct] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [canReview, setCanReview] = useState(false);
   const [size, setSize] = useState("");
   const [color, setColor] = useState("");
   const [qty, setQty] = useState(1);
   const [openPanel, setOpenPanel] = useState("desc");
+  const [localWishlisted, setLocalWishlisted] = useState(null);
+  const devColorSyncRef = useRef("");
+
+  const queryOptions = useMemo(
+    () => ({
+      refetchOnMountOrArgChange: STALE_TIME_SECONDS,
+    }),
+    [],
+  );
+
+  const { data: productData, isLoading: productLoading } = useGetProductBySlugQuery(slug, {
+    ...queryOptions,
+    skip: !slug,
+  });
+
+  const product = useMemo(() => {
+    if (!productData) return null;
+    if (localWishlisted === null) return productData;
+    return { ...productData, isWishlisted: localWishlisted };
+  }, [localWishlisted, productData]);
+
+  const productId = productData?._id;
+  const categoryId = productData?.category?._id || productData?.category;
+
+  const { data: reviewsData } = useGetReviewsQuery(productId, {
+    ...queryOptions,
+    skip: !productId,
+  });
+
+  const { data: relatedItems = [], isLoading: relatedLoading } = useGetRelatedProductsQuery(
+    { productId, categoryId },
+    {
+      ...queryOptions,
+      skip: !productId,
+    },
+  );
+
+  const { data: recommendedSource, isLoading: recommendedLoading } = useGetProductsQuery(
+    { limit: 10, sort: "newest" },
+    queryOptions,
+  );
+
+  const recommendedItems = useMemo(() => {
+    const items = recommendedSource?.items || [];
+    if (!productId) return items.slice(0, 8);
+    return items.filter((entry) => entry._id !== productId).slice(0, 8);
+  }, [productId, recommendedSource]);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await api.get(`/products/${slug}`);
-      setProduct(data);
-      setQty(1);
-      setSize("");
+    if (!productData) return;
 
-      const colors = getProductColors(data);
-      const queryColor = searchParams.get("color") || "";
-      const requestedColor = colors.find((entry) => entry === queryColor);
-      const firstAvailableColor =
-        colors.find((entry) =>
-          (data.variants || [])
-            .filter((variant) => variant.color === entry)
-            .some((variant) => Number(variant.stock || 0) > 0),
-        ) || colors[0] || "";
-      const safeColor = requestedColor || firstAvailableColor;
+    setQty(1);
+    setSize("");
+    setLocalWishlisted(null);
 
-      setColor(safeColor);
+    const colors = getProductColors(productData);
+    const queryColor = searchParams.get("color") || "";
+    const requestedColor = colors.find((entry) => entry === queryColor);
+    const firstAvailableColor =
+      colors.find((entry) =>
+        (productData.variants || [])
+          .filter((variant) => variant.color === entry)
+          .some((variant) => Number(variant.stock || 0) > 0),
+      ) ||
+      colors[0] ||
+      "";
 
-      if (safeColor && safeColor !== queryColor) {
-        const nextParams = new URLSearchParams(searchParams);
-        nextParams.set("color", safeColor);
-        setSearchParams(nextParams, { replace: true });
-      }
+    const safeColor = requestedColor || firstAvailableColor;
+    setColor(safeColor);
 
-      const reviewRes = await api.get(`/reviews/${data._id}`);
-      setReviews(reviewRes.data?.reviews || []);
-      setCanReview(Boolean(reviewRes.data?.canReview));
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+    if (safeColor && safeColor !== queryColor) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("color", safeColor);
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [productData, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!product || !color) return;
 
     setQty(1);
 
-    const available = (product.variants || []).filter(
-      (variant) => variant.color === color && Number(variant.stock || 0) > 0,
-    );
+    const available = (product.variants || []).filter((variant) => variant.color === color && Number(variant.stock || 0) > 0);
 
     setSize((currentSize) => {
       const stillValid = available.some((variant) => variant.size === currentSize);
@@ -71,6 +116,15 @@ export function ProductDetailPage() {
       return available[0]?.size || "";
     });
 
+    const queryColor = searchParams.get("color") || "";
+    if (queryColor === color) return;
+
+    const syncSignature = `${product._id}-${color}`;
+    if (import.meta.env.DEV && devColorSyncRef.current === syncSignature) {
+      return;
+    }
+
+    devColorSyncRef.current = syncSignature;
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("color", color);
     setSearchParams(nextParams, { replace: true });
@@ -94,7 +148,30 @@ export function ProductDetailPage() {
     [product],
   );
 
-  if (!product) {
+  const seoMeta = useMemo(() => {
+    if (!product) return null;
+
+    const summary =
+      product.summary ||
+      product.shortDescription ||
+      product.description ||
+      "Premium NoorFit product crafted for all-day comfort.";
+    const imageSource =
+      product.thumbnail ||
+      product.images?.[0]?.url ||
+      product.images?.[0] ||
+      product.variants?.find((variant) => Array.isArray(variant.images) && variant.images.length > 0)?.images?.[0];
+
+    return {
+      title: `${product.name} | NoorFit`,
+      description: summary,
+      canonicalUrl: `/product/${slug}`,
+      type: "product",
+      image: imageSource,
+    };
+  }, [product, slug]);
+
+  if (productLoading || !product) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="animate-pulse rounded-xl bg-card border border-[#262626] w-full max-w-4xl h-96" />
@@ -103,20 +180,19 @@ export function ProductDetailPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="max-w-6xl mx-auto px-4 space-y-8"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="max-w-6xl mx-auto px-4 space-y-8">
+      {seoMeta && (
+        <SeoMeta
+          title={seoMeta.title}
+          description={seoMeta.description}
+          canonicalUrl={seoMeta.canonicalUrl}
+          type={seoMeta.type}
+          image={seoMeta.image}
+        />
+      )}
       <section className="grid gap-10 md:grid-cols-2">
         <div className="space-y-4">
-          <ProductGallery
-            key={color}
-            images={galleryImages}
-            alt={color ? `${product.name} in ${color}` : product.name}
-            variantKey={color}
-          />
+          <ProductGallery key={color} images={galleryImages} alt={color ? `${product.name} in ${color}` : product.name} variantKey={color} />
           {(!galleryImages || galleryImages.length === 0) && (
             <p className="text-sm text-muted">This color has no dedicated images yet, so fallback product media is shown.</p>
           )}
@@ -131,7 +207,7 @@ export function ProductDetailPage() {
           setQty={setQty}
           sizeChart={product.sizeChart}
           onWishlistChange={(isWishlisted) => {
-            setProduct((prev) => (prev ? { ...prev, isWishlisted } : prev));
+            setLocalWishlisted(isWishlisted);
           }}
         />
       </section>
@@ -148,8 +224,16 @@ export function ProductDetailPage() {
               <span className="text-muted">{openPanel === panel.key ? "−" : "+"}</span>
             </button>
             {openPanel === panel.key && panel.key === "desc" && <p className="mt-3 text-sm text-muted">{panel.content}</p>}
-            {openPanel === panel.key && panel.key === "spec" && <div className="mt-4"><ProductSpecs product={product} /></div>}
-            {openPanel === panel.key && panel.key === "delivery" && <div className="mt-4"><DeliveryEstimator /></div>}
+            {openPanel === panel.key && panel.key === "spec" && (
+              <div className="mt-4">
+                <ProductSpecs product={product} />
+              </div>
+            )}
+            {openPanel === panel.key && panel.key === "delivery" && (
+              <div className="mt-4">
+                <DeliveryEstimator />
+              </div>
+            )}
           </div>
         ))}
       </section>
@@ -171,23 +255,19 @@ export function ProductDetailPage() {
 
       <ProductReviews
         productId={product._id}
-        reviews={reviews}
-        setReviews={setReviews}
+        reviews={reviewsData?.reviews || []}
         ratingsAverage={product.ratingsAverage}
         ratingsCount={product.ratingsCount}
-        canReview={canReview}
+        canReview={Boolean(reviewsData?.canReview)}
       />
 
       <div className="mt-8">
-        <RelatedProducts
-          productId={product._id}
-          categoryId={product.category?._id || product.category}
-        />
+        <RelatedProducts items={relatedItems} loading={relatedLoading} />
       </div>
 
       <ProductQandA productId={product._id} />
 
-      <RecommendedProducts excludeProductId={product._id} />
+      <RecommendedProducts items={recommendedItems} loading={recommendedLoading} />
     </motion.div>
   );
 }

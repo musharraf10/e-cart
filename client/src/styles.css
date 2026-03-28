@@ -1,3 +1,5 @@
+@import url("https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=inter@400,500,600,700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,10 +11,19 @@
     overflow-x: hidden;
   }
   body {
-    @apply font-sans text-white bg-primary antialiased;
+    @apply font-sans text-sm text-white bg-primary antialiased;
     background-color: #0f0f0f;
     max-width: 100%;
     overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-medium;
   }
 }
 
@@ -37,6 +48,24 @@ body {
   }
   .safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(90deg, #202020 0%, #2c2c2c 50%, #202020 100%);
+    background-size: 240% 100%;
+    animation: skeleton-shimmer 1.2s linear infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 140% 0;
+  }
+
+  100% {
+    background-position: -140% 0;
   }
 }
 

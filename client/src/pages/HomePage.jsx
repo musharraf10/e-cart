@@ -9,78 +9,65 @@ import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { HorizontalProductRow } from "../components/ui/HorizontalProductRow.jsx";
 import { GridListToggle } from "../components/ui/GridListToggle.jsx";
 import Categories from "../pages/CategoryPage.jsx";
-import api from "../api/client.js";
 import { expandProductsByVariant } from "../utils/productVariants.js";
+import { SeoMeta } from "../components/seo/SeoMeta.jsx";
+import {
+  STALE_TIME_SECONDS,
+  useGetCategoriesQuery,
+  useGetProductsQuery,
+} from "../store/apis/catalogApi.js";
 
 const CATALOG_LIMIT = 12;
 
 export function HomePage() {
-  const [heroProductsSource, setHeroProductsSource] = useState([]);
-  const [newDrops, setNewDrops] = useState([]);
-  const [trendingProducts, setTrendingProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [catalogProducts, setCatalogProducts] = useState([]);
   const [catalogPage, setCatalogPage] = useState(1);
-  const [catalogPages, setCatalogPages] = useState(1);
-  const [catalogTotal, setCatalogTotal] = useState(0);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("product_view_mode") || "grid");
-  const [loading, setLoading] = useState(true);
-  const [catalogLoading, setCatalogLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
+  const queryOptions = useMemo(
+    () => ({
+      refetchOnMountOrArgChange: STALE_TIME_SECONDS,
+    }),
+    [],
+  );
 
-    Promise.all([
-      api.get("/products", { params: { limit: 20, sort: "newest" } }),
-      api.get("/products", { params: { onlyNewDrops: true, limit: 12 } }),
-      api.get("/products", { params: { sort: "rating", limit: 8 } }),
-      api.get("/categories"),
-    ])
-      .then(([allRes, dropRes, trendingRes, categoryRes]) => {
-        if (!mounted) return;
-        setHeroProductsSource(allRes.data.items || []);
-        setNewDrops(dropRes.data.items || []);
-        setTrendingProducts(trendingRes.data.items || []);
-        setCategories(categoryRes.data || []);
-      })
-      .finally(() => mounted && setLoading(false));
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const allProductsQuery = useGetProductsQuery({ limit: 20, sort: "newest" }, queryOptions);
+  const newDropsQuery = useGetProductsQuery({ onlyNewDrops: true, limit: 12 }, queryOptions);
+  const trendingQuery = useGetProductsQuery({ sort: "rating", limit: 8 }, queryOptions);
+  const categoriesQuery = useGetCategoriesQuery(undefined, queryOptions);
+  const catalogQuery = useGetProductsQuery(
+    {
+      limit: CATALOG_LIMIT,
+      page: catalogPage,
+      ...(selectedCategory ? { category: selectedCategory } : {}),
+    },
+    queryOptions,
+  );
 
   useEffect(() => {
     localStorage.setItem("product_view_mode", viewMode);
   }, [viewMode]);
 
-  useEffect(() => {
-    let active = true;
-    setCatalogLoading(true);
-    api
-      .get("/products", {
-        params: {
-          limit: CATALOG_LIMIT,
-          page: catalogPage,
-          ...(selectedCategory ? { category: selectedCategory } : {}),
-        },
-      })
-      .then(({ data }) => {
-        if (!active) return;
-        setCatalogProducts(data.items || []);
-        setCatalogPages(data.totalPages || 1);
-        setCatalogTotal(data.total || 0);
-      })
-      .finally(() => {
-        if (active) setCatalogLoading(false);
-      });
+  const heroProductsSource = allProductsQuery.data?.items || [];
+  const newDrops = newDropsQuery.data?.items || [];
+  const trendingProducts = trendingQuery.data?.items || [];
+  const categories = categoriesQuery.data || [];
+  const catalogProducts = catalogQuery.data?.items || [];
+  const catalogPages = catalogQuery.data?.totalPages || 1;
+  const catalogTotal = catalogQuery.data?.total || 0;
 
-    return () => {
-      active = false;
-    };
-  }, [selectedCategory, catalogPage]);
+  const loading =
+    allProductsQuery.isLoading ||
+    newDropsQuery.isLoading ||
+    trendingQuery.isLoading ||
+    categoriesQuery.isLoading;
+
+  const catalogLoading = catalogQuery.isLoading;
+
+  const backendError =
+    allProductsQuery.isError || newDropsQuery.isError || trendingQuery.isError || categoriesQuery.isError || catalogQuery.isError
+      ? "Unable to load products right now. Please refresh in a moment."
+      : "";
 
   const heroProducts = useMemo(() => expandProductsByVariant(heroProductsSource).slice(0, 4), [heroProductsSource]);
   const expandedNewDrops = useMemo(() => expandProductsByVariant(newDrops), [newDrops]);
@@ -94,11 +81,16 @@ export function HomePage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="space-y-12">
+      <SeoMeta
+        title="NoorFit | Modest Activewear & New Drops"
+        description="Discover NoorFit essentials, trending activewear, and new drops designed for everyday comfort and confidence."
+        canonicalUrl="/"
+      />
       <section>
         <HeroCarousel products={heroProducts} />
       </section>
 
-      <Categories categories={categories} />
+      <Categories categories={categories} withSeo={false} />
 
       <section>
         <SectionHeader title="New Drops" subtitle="Freshly added styles" />
@@ -124,6 +116,12 @@ export function HomePage() {
           subtitle={catalogTotal > 0 ? `${catalogTotal} product${catalogTotal === 1 ? "" : "s"}` : "Explore everything in NoorFit"}
           action={<GridListToggle viewMode={viewMode} onChange={setViewMode} />}
         />
+
+        {backendError && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            {backendError}
+          </div>
+        )}
 
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           <button

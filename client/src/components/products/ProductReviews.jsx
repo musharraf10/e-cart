@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { HiBadgeCheck, HiStar } from "react-icons/hi";
-import api from "../../api/client.js";
+import { useCreateReviewMutation } from "../../store/apis/catalogApi.js";
 import { useToast } from "../ui/ToastProvider.jsx";
 
 function StarRow({ rating, size = "w-4 h-4" }) {
@@ -17,21 +17,15 @@ function StarRow({ rating, size = "w-4 h-4" }) {
   );
 }
 
-export function ProductReviews({
-  productId,
-  reviews,
-  setReviews,
-  ratingsAverage,
-  ratingsCount,
-  canReview,
-}) {
+export function ProductReviews({ productId, reviews = [], ratingsAverage, ratingsCount, canReview }) {
   const user = useSelector((s) => s.auth.user);
   const { notify } = useToast();
+  const [createReview, { isLoading: submitting }] = useCreateReviewMutation();
+
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
   const breakdown = useMemo(() => {
@@ -41,7 +35,6 @@ export function ProductReviews({
     });
     return map;
   }, [reviews]);
-
 
   const displayAverage = useMemo(() => {
     if (!reviews.length) return Number(ratingsAverage) || 0;
@@ -64,43 +57,38 @@ export function ProductReviews({
 
   const myReview = useMemo(() => {
     if (!user) return null;
-    return reviews.find(
-      (r) => String(getUserId(r.user)) === String(getUserId(user)),
-    );
+    return reviews.find((r) => String(getUserId(r.user)) === String(getUserId(user)));
   }, [reviews, user]);
 
   const submit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+
     try {
       const ratingNumber = Number(rating);
-
       if (images.length > 0) {
         const formData = new FormData();
         formData.append("rating", String(ratingNumber));
         if (comment.trim()) formData.append("comment", comment.trim());
         images.forEach((file) => formData.append("images", file));
 
-        await api.post(`/reviews/${productId}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        await createReview({ productId, payload: formData, isMultipart: true }).unwrap();
       } else {
-        await api.post(`/reviews/${productId}`, {
-          rating: ratingNumber,
-          comment,
-        });
+        await createReview({
+          productId,
+          payload: {
+            rating: ratingNumber,
+            comment,
+          },
+        }).unwrap();
       }
-      const { data } = await api.get(`/reviews/${productId}`);
-      setReviews(data.reviews || []);
+
       setComment("");
       setRating(5);
       imagePreviews.forEach((src) => URL.revokeObjectURL(src));
       setImages([]);
       setImagePreviews([]);
     } catch (err) {
-      notify(err.response?.data?.message || "Unable to submit review", "error");
-    } finally {
-      setSubmitting(false);
+      notify(err?.data?.message || "Unable to submit review", "error");
     }
   };
 
@@ -127,17 +115,13 @@ export function ProductReviews({
       <div className="grid md:grid-cols-[220px,1fr] gap-6">
         <div className="rounded-2xl  p-5">
           <div className="flex items-center gap-3">
-            <p className="text-3xl font-semibold text-white">
-              {displayAverage.toFixed(1)}
-            </p>
+            <p className="text-3xl font-semibold text-white">{displayAverage.toFixed(1)}</p>
             <div>
               <StarRow rating={displayAverage} />
               <p className="text-xs text-muted mt-1">Overall product rating</p>
             </div>
           </div>
-          <p className="text-muted text-sm mt-4">
-            Based on {displayCount} verified customer reviews.
-          </p>
+          <p className="text-muted text-sm mt-4">Based on {displayCount} verified customer reviews.</p>
 
           <div className="mt-5 space-y-2.5">
             {[5, 4, 3, 2, 1].map((n) => {
@@ -159,16 +143,11 @@ export function ProductReviews({
 
         <div className="space-y-4">
           {(showAll ? sorted : sorted.slice(0, 3)).map((r) => (
-            <article
-              key={r._id}
-              className="rounded-2xl border border-[#2a2a2a] bg-gradient-to-b from-[#181818] to-[#121212] p-5 space-y-3"
-            >
+            <article key={r._id} className="rounded-2xl border border-[#2a2a2a] bg-gradient-to-b from-[#181818] to-[#121212] p-5 space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-2 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-white font-semibold text-sm md:text-base truncate">
-                      {r.user?.name || "Customer"}
-                    </p>
+                    <p className="text-white font-semibold text-sm md:text-base truncate">{r.user?.name || "Customer"}</p>
                     {r.isVerifiedPurchase === true && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
                         <HiBadgeCheck className="w-3.5 h-3.5" />
@@ -184,9 +163,7 @@ export function ProductReviews({
               </div>
 
               {r.comment ? (
-                <p className="text-sm leading-6 text-white/90 whitespace-pre-line">
-                  {r.comment}
-                </p>
+                <p className="text-sm leading-6 text-white/90 whitespace-pre-line">{r.comment}</p>
               ) : (
                 <p className="text-sm text-muted">Customer left a rating without a written review.</p>
               )}
@@ -194,25 +171,15 @@ export function ProductReviews({
               {Array.isArray(r.images) && r.images.length > 0 && (
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   {r.images.slice(0, 6).map((img) => (
-                    <div
-                      key={img}
-                      className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden"
-                    >
-                      <img
-                        src={img}
-                        alt="Review upload"
-                        className="w-full h-20 object-cover"
-                        loading="lazy"
-                      />
+                    <div key={img} className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden">
+                      <img src={img} alt="Review upload" className="w-full h-20 object-cover" loading="lazy" />
                     </div>
                   ))}
                 </div>
               )}
             </article>
           ))}
-          {reviews.length === 0 && (
-            <p className="text-muted text-sm">No reviews yet.</p>
-          )}
+          {reviews.length === 0 && <p className="text-muted text-sm">No reviews yet.</p>}
         </div>
       </div>
 
@@ -244,9 +211,7 @@ export function ProductReviews({
             />
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted">
-                Photos (optional, up to 5)
-              </label>
+              <label className="text-xs font-semibold text-muted">Photos (optional, up to 5)</label>
               <input
                 type="file"
                 accept="image/*"
@@ -262,16 +227,8 @@ export function ProductReviews({
               {imagePreviews.length > 0 && (
                 <div className="grid grid-cols-4 gap-2">
                   {imagePreviews.map((src, idx) => (
-                    <div
-                      key={src}
-                      className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden"
-                    >
-                      <img
-                        src={src}
-                        alt={`Preview ${idx + 1}`}
-                        className="w-full h-20 object-cover"
-                        loading="lazy"
-                      />
+                    <div key={src} className="rounded-xl border border-[#262626] bg-[#0f0f0f] overflow-hidden">
+                      <img src={src} alt={`Preview ${idx + 1}`} className="w-full h-20 object-cover" loading="lazy" />
                     </div>
                   ))}
                 </div>
@@ -292,9 +249,7 @@ export function ProductReviews({
       ) : user && myReview ? (
         <div className="border-t border-[#262626] pt-6">
           <p className="text-white font-medium text-sm">Thanks for your review!</p>
-          <p className="text-muted text-sm mt-1">
-            You can only submit one review per product.
-          </p>
+          <p className="text-muted text-sm mt-1">You can only submit one review per product.</p>
         </div>
       ) : (
         <p className="text-muted text-sm">Sign in to write a review.</p>
