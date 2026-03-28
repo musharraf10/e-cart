@@ -254,6 +254,8 @@ export async function updateOrderStatus(req, res) {
     });
   }
 
+  const previousStatus = order.status;
+
   const result = applyOrderStatusUpdate(order, status, {
     source: "admin",
     eventId: req.body?.eventId,
@@ -278,6 +280,16 @@ export async function updateOrderStatus(req, res) {
   createShipment(order);
 
   await order.save();
+
+  if (previousStatus !== order.status) {
+    await createNotification({
+      userId: order.user,
+      title: `Order ${order.status}`,
+      message: `Your order #${order._id.toString().slice(-6)} moved from ${previousStatus} to ${order.status}.`,
+      type: "order",
+      link: `/account/orders/${order._id}`,
+    });
+  }
 
   return res.json({
     message: "Order status updated",

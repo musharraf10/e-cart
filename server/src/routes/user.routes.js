@@ -4,6 +4,7 @@ import {
   getUserProfile,
   listSavedCards,
   updateUserProfile,
+  uploadProfileImage,
   listAddresses,
   createAddress,
   updateAddress,
@@ -14,6 +15,7 @@ import {
   changePassword,
   deleteAccount,
 } from "../controllers/user.controller.js";
+import { uploadSingleImage } from "../middleware/upload.middleware.js";
 
 const router = express.Router();
 
@@ -21,6 +23,7 @@ router.use(protect);
 
 router.get("/profile", getUserProfile);
 router.put("/profile", updateUserProfile);
+router.post("/profile/image", uploadSingleImage, uploadProfileImage);
 router.get("/saved-cards", listSavedCards);
 
 router.get("/addresses", listAddresses);

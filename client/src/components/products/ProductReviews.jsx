@@ -141,9 +141,10 @@ export function ProductReviews({ productId, reviews = [], ratingsAverage, rating
           </div>
         </div>
 
-        <div className="space-y-4">
-          {(showAll ? sorted : sorted.slice(0, 3)).map((r) => (
-            <article key={r._id} className="rounded-2xl border border-[#2a2a2a] bg-gradient-to-b from-[#181818] to-[#121212] p-5 space-y-3">
+        <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-4 snap-x snap-mandatory">
+            {(showAll ? sorted : sorted.slice(0, 3)).map((r) => (
+            <article key={r._id} className="min-w-[280px] max-w-[320px] snap-start rounded-2xl border border-[#2a2a2a] bg-gradient-to-b from-[#181818] to-[#121212] p-5 space-y-3 shrink-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-2 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -178,8 +179,9 @@ export function ProductReviews({ productId, reviews = [], ratingsAverage, rating
                 </div>
               )}
             </article>
-          ))}
-          {reviews.length === 0 && <p className="text-muted text-sm">No reviews yet.</p>}
+            ))}
+          </div>
+          {reviews.length === 0 && <p className="text-muted text-sm px-1">No reviews yet.</p>}
         </div>
       </div>
 
