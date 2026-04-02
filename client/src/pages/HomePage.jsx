@@ -1,100 +1,83 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { HeroCarousel } from "../components/ui/HeroCarousel.jsx";
-import { ProductGrid } from "../components/ui/ProductGrid.jsx";
-import { ProductGridSkeleton } from "../components/ui/LoadingSkeleton.jsx";
-import { ProductCard } from "../components/products/ProductCard.jsx";
-import { SectionHeader } from "../components/ui/SectionHeader.jsx";
 import { HorizontalProductRow } from "../components/ui/HorizontalProductRow.jsx";
-import Categories from "../pages/CategoryPage.jsx";
+import { ProductGridSkeleton } from "../components/ui/LoadingSkeleton.jsx";
+import { CategoryChips } from "../features/home/components/CategoryChips.jsx";
+import { NewCollectionGrid } from "../features/home/components/NewCollectionGrid.jsx";
+import { ReviewsSection } from "../features/home/components/ReviewsSection.jsx";
+import { fetchHomeSections } from "../features/home/api/homeSections.js";
 import api from "../api/client.js";
 import { expandProductsByVariant } from "../utils/productVariants.js";
 
 export function HomePage() {
   const [allProducts, setAllProducts] = useState([]);
   const [newDrops, setNewDrops] = useState([]);
-  const [trendingProducts, setTrendingProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [activeCategory, setActiveCategory] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
 
-    Promise.all([
-      api.get("/products", { params: { limit: 40, sort: "newest" } }),
-      api.get("/products", { params: { onlyNewDrops: true, limit: 12 } }),
-      api.get("/products", { params: { sort: "rating", limit: 8 } }),
-      api.get("/categories"),
-    ])
-      .then(([allRes, dropRes, trendingRes, categoryRes]) => {
-        if (!mounted) return;
-        setAllProducts(allRes.data.items || []);
-        setNewDrops(dropRes.data.items || []);
-        setTrendingProducts(trendingRes.data.items || []);
-        setCategories(categoryRes.data || []);
-      })
-      .finally(() => mounted && setLoading(false));
+    (async () => {
+      setLoading(true);
+      const [allRes, newRes, categoriesRes, sectionRes] = await Promise.all([
+        api.get("/products", { params: { limit: 36, sort: "newest" } }),
+        api.get("/products", { params: { onlyNewDrops: true, limit: 8 } }),
+        api.get("/categories"),
+        fetchHomeSections(),
+      ]);
+
+      if (!mounted) return;
+      setAllProducts(allRes.data.items || []);
+      setNewDrops(newRes.data.items || []);
+      setCategories(categoriesRes.data || []);
+      setSections(sectionRes || []);
+      setLoading(false);
+    })();
 
     return () => {
       mounted = false;
     };
   }, []);
 
-  const heroProducts = useMemo(() => expandProductsByVariant(allProducts).slice(0, 4), [allProducts]);
-  const expandedNewDrops = useMemo(() => expandProductsByVariant(newDrops), [newDrops]);
-  const expandedTrendingProducts = useMemo(() => expandProductsByVariant(trendingProducts), [trendingProducts]);
-  const expandedAllProducts = useMemo(() => expandProductsByVariant(allProducts), [allProducts]);
+  const expandedAll = useMemo(() => expandProductsByVariant(allProducts), [allProducts]);
+  const expandedNew = useMemo(() => expandProductsByVariant(newDrops), [newDrops]);
+  const heroProducts = expandedAll.slice(0, 6);
+
+  const filteredProducts = useMemo(() => {
+    if (!activeCategory) return expandedAll;
+    return expandedAll.filter((item) => {
+      const slug = item.category?.slug;
+      return slug === activeCategory;
+    });
+  }, [activeCategory, expandedAll]);
+
+  const enabledSections = useMemo(() => {
+    return (sections || [])
+      .filter((item) => item.isActive)
+      .sort((a, b) => a.order - b.order);
+  }, [sections]);
+
+  const sectionMap = {
+    hero: <HeroCarousel products={heroProducts} />,
+    categories: <CategoryChips categories={categories} active={activeCategory} onSelect={setActiveCategory} />,
+    products: (
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Products</h2>
+        {loading ? <ProductGridSkeleton count={4} /> : <HorizontalProductRow products={filteredProducts.slice(0, 12)} />}
+      </section>
+    ),
+    newCollection: <NewCollectionGrid products={expandedNew.length ? expandedNew : filteredProducts.slice(0, 8)} />,
+    reviews: <ReviewsSection />,
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.18 }}
-      className="space-y-12"
-    >
-      <section>
-        <HeroCarousel products={heroProducts} />
-      </section>
-
-      <Categories categories={categories} />
-
-      <section>
-        <SectionHeader title="New Drops" subtitle="Freshly added styles" />
-        {loading ? <ProductGridSkeleton count={4} /> : <HorizontalProductRow products={expandedNewDrops} />}
-      </section>
-
-      <section>
-        <SectionHeader title="Trending Products" subtitle="Most loved by shoppers" />
-        {loading ? (
-          <ProductGridSkeleton count={8} />
-        ) : (
-          <ProductGrid>
-            {expandedTrendingProducts.map((product) => (
-              <ProductCard key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} product={product} />
-            ))}
-          </ProductGrid>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <SectionHeader title="All Products" subtitle="Explore everything in NoorFit" />
-        {loading ? (
-          <ProductGridSkeleton count={8} />
-        ) : expandedAllProducts.length ? (
-          <ProductGrid>
-            {expandedAllProducts.map((product) => (
-              <motion.div key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} layout>
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-          </ProductGrid>
-        ) : (
-          <div className="rounded-xl bg-card border border-[#262626] py-10 text-center text-muted">
-            No products found.
-          </div>
-        )}
-      </section>
-    </motion.div>
+    <div className="space-y-6 pb-4">
+      {enabledSections.map((section) => (
+        <div key={section.key}>{sectionMap[section.key] || null}</div>
+      ))}
+    </div>
   );
 }

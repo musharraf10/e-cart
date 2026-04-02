@@ -1,33 +1,27 @@
 module.exports = {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        primary: "#0f0f0f",
-        card: "#171717",
-        muted: "#a1a1aa",
-        border: "#262626",
-        accent: "#a6c655",
+        "bg-primary": "hsl(var(--bg-primary) / <alpha-value>)",
+        primary: "hsl(var(--bg-primary) / <alpha-value>)",
+        card: "hsl(var(--bg-secondary) / <alpha-value>)",
+        muted: "hsl(var(--text-muted) / <alpha-value>)",
+        border: "hsl(var(--border-subtle) / <alpha-value>)",
+
+        "bg-secondary": "hsl(var(--bg-secondary) / <alpha-value>)",
+        "text-primary": "hsl(var(--text-primary) / <alpha-value>)",
+        "text-muted": "hsl(var(--text-muted) / <alpha-value>)",
+        "border-subtle": "hsl(var(--border-subtle) / <alpha-value>)",
+        accent: "hsl(var(--accent) / <alpha-value>)",
+        danger: "hsl(var(--danger) / <alpha-value>)",
       },
       fontFamily: {
-        sans: [
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "sans-serif",
-        ],
-      },
-      borderRadius: {
-        xl: "16px",
+        sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
       },
       boxShadow: {
-        card: "0 4px 24px rgba(0,0,0,0.25)",
-        "accent-glow": "0 0 24px rgba(212,175,55,0.15)",
-      },
-      transitionDuration: {
-        200: "200ms",
-        300: "300ms",
+        card: "0 8px 28px rgba(0,0,0,0.18)",
       },
     },
   },
