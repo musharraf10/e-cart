@@ -27,7 +27,7 @@ export function AnnouncementBar() {
 
   if (loading) {
     return (
-      <div className="h-9 bg-bg-secondary text-text-primary border-b border-border-subtle flex items-center justify-center text-[11px] font-semibold">
+      <div className="h-9 bg-[#a6c655] text-black flex items-center justify-center text-[11px] font-semibold">
         <span className="opacity-70">Loading offers…</span>
       </div>
     );

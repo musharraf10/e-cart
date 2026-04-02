@@ -1,27 +1,24 @@
 module.exports = {
-  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        primary: "rgb(var(--bg-primary) / <alpha-value>)",
-        card: "rgb(var(--bg-secondary) / <alpha-value>)",
-        muted: "rgb(var(--text-muted) / <alpha-value>)",
-        border: "rgb(var(--border-subtle) / <alpha-value>)",
-        accent: "rgb(var(--text-primary) / <alpha-value>)",
-        "bg-primary": "rgb(var(--bg-primary) / <alpha-value>)",
-        "bg-secondary": "rgb(var(--bg-secondary) / <alpha-value>)",
-        "text-primary": "rgb(var(--text-primary) / <alpha-value>)",
-        "text-muted": "rgb(var(--text-muted) / <alpha-value>)",
-        "border-subtle": "rgb(var(--border-subtle) / <alpha-value>)",
+        primary: "#000000",
+        card: "#111111",
+        muted: "#a1a1aa",
+        border: "#262626",
+        accent: "#a6c25e",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        heading: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Inter", "sans-serif"],
+        heading: ["General Sans", "sans-serif"],
       },
       borderRadius: {
-        xl: "14px",
-        "2xl": "18px",
+        xl: "16px",
+      },
+      boxShadow: {
+        card: "0 4px 24px rgba(0,0,0,0.25)",
+        "accent-glow": "0 0 24px rgba(212,175,55,0.15)",
       },
       transitionDuration: {
         200: "200ms",
