@@ -10,8 +10,8 @@ export function Layout({ children }) {
 
   if (isAuthPage) {
     return (
-      <div className="min-h-[100dvh] flex flex-col bg-bg-primary w-full overflow-x-hidden">
-        <main className="flex-1 flex items-start sm:items-center justify-center p-0 sm:p-4 w-full overflow-y-auto overflow-x-hidden">
+      <div className="min-h-[100dvh] flex flex-col bg-primary w-full max-w-full overflow-x-hidden">
+        <main className="flex-1 flex items-start sm:items-center justify-center p-0 sm:p-4 w-full max-w-full overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>
@@ -19,15 +19,15 @@ export function Layout({ children }) {
   }
 
   if (isAdminRoute) {
-    return <div className="h-screen w-screen overflow-hidden bg-bg-primary">{children}</div>;
+    return <div className="h-screen w-screen overflow-hidden bg-primary">{children}</div>;
   }
 
   return (
-    <div className="min-h-screen w-screen flex flex-col bg-bg-primary overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-primary w-full max-w-full overflow-x-hidden">
       <AnnouncementBar />
       <Header />
-      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden">
-        <div className="w-full px-4 py-3 md:py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0))] md:pb-6">
+      <main className="flex-1 w-full max-w-full overflow-y-auto overflow-x-hidden">
+        <div className="max-w-7xl mx-auto w-full max-w-full px-4 py-4 md:py-8 pb-[calc(6rem+env(safe-area-inset-bottom,0))] md:pb-8">
           {children}
         </div>
       </main>

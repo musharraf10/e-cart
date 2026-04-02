@@ -80,7 +80,7 @@ export function HomePage() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="space-y-8">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="space-y-12">
       <SeoMeta
         title="NoorFit | Modest Activewear & New Drops"
         description="Discover NoorFit essentials, trending activewear, and new drops designed for everyday comfort and confidence."
@@ -118,7 +118,7 @@ export function HomePage() {
         />
 
         {backendError && (
-          <div className="rounded-xl border border-border-subtle bg-bg-secondary px-4 py-3 text-sm text-text-muted">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
             {backendError}
           </div>
         )}
@@ -173,7 +173,7 @@ export function HomePage() {
               type="button"
               disabled={catalogPage <= 1}
               onClick={() => setCatalogPage((prev) => prev - 1)}
-              className="rounded-xl border border-border px-4 py-2 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl border border-border px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Previous
             </button>
@@ -182,7 +182,7 @@ export function HomePage() {
               type="button"
               disabled={catalogPage >= catalogPages}
               onClick={() => setCatalogPage((prev) => prev + 1)}
-              className="rounded-xl border border-border px-4 py-2 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl border border-border px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
             </button>

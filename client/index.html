@@ -13,17 +13,9 @@
       content="NoorFit – a modern clothing e‑commerce experience crafted for comfort and designed for life."
     />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#000000" />
-    <script>
-      (() => {
-        const storedTheme = localStorage.getItem("theme");
-        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const theme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : (systemDark ? "dark" : "light");
-        if (theme === "dark") document.documentElement.classList.add("dark");
-      })();
-    </script>
+    <meta name="theme-color" content="#0f0f0f" />
   </head>
-  <body class="bg-bg-primary text-text-primary max-w-full overflow-x-hidden">
+  <body class="bg-[#0f0f0f] max-w-full overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,26 +1,8 @@
-@import url("https://api.fontshare.com/v2/css?f[]=inter@400,500,600,700&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=inter@400,500,600,700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  color-scheme: light;
-  --bg-primary: 255 255 255;
-  --bg-secondary: 245 245 245;
-  --text-primary: 0 0 0;
-  --text-muted: 115 115 115;
-  --border-subtle: 229 229 229;
-}
-
-:root.dark {
-  color-scheme: dark;
-  --bg-primary: 0 0 0;
-  --bg-secondary: 23 23 23;
-  --text-primary: 255 255 255;
-  --text-muted: 163 163 163;
-  --border-subtle: 38 38 38;
-}
 
 @layer base {
   html {
@@ -28,13 +10,11 @@
     max-width: 100%;
     overflow-x: hidden;
   }
-
   body {
-    @apply font-sans text-sm antialiased bg-bg-primary text-text-primary tracking-[0.01em];
-    min-height: 100dvh;
+    @apply font-sans text-sm text-white bg-primary antialiased;
+    background-color: #0f0f0f;
     max-width: 100%;
     overflow-x: hidden;
-    transition: background-color 220ms ease, color 220ms ease;
   }
 
   h1,
@@ -43,24 +23,29 @@
   h4,
   h5,
   h6 {
-    @apply font-semibold tracking-[0.01em] text-text-primary;
+    @apply font-heading font-medium;
   }
 }
 
-@layer utilities {
-  * {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
+html,
+body {
+  overflow-x: hidden;
+}
 
+/* Focus ring for accessibility */
+@layer utilities {
+  /* Hide scrollbar visuals globally (scroll still works). */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
   *::-webkit-scrollbar {
     display: none;
   }
 
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary;
   }
-
   .safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
@@ -68,7 +53,7 @@
   .skeleton-shimmer {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(90deg, rgb(var(--bg-secondary)) 0%, rgb(var(--border-subtle)) 50%, rgb(var(--bg-secondary)) 100%);
+    background: linear-gradient(90deg, #202020 0%, #2c2c2c 50%, #202020 100%);
     background-size: 240% 100%;
     animation: skeleton-shimmer 1.2s linear infinite;
   }
@@ -84,44 +69,53 @@
   }
 }
 
+::-webkit-scrollbar {
+  display: none;
+}
 .carousel-scroll {
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 16px;
-  margin-bottom: -16px;
+
+  /* Hide scrollbar by pushing it out */
+  padding-bottom: 20px;
+  margin-bottom: -20px;
+
   -webkit-overflow-scrolling: touch;
 }
 
+/* Optional hide */
+.carousel-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .announcement-bar {
-  background-color: rgb(var(--bg-secondary));
-  color: rgb(var(--text-primary));
-  height: 34px;
+  background-color: #a6c655;
+  color: #000000;
+  height: 36px;
   display: flex;
   align-items: center;
   overflow: hidden;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
-  border-bottom: 1px solid rgb(var(--border-subtle));
 }
 
 .announcement-track {
   display: inline-flex;
-  gap: 40px;
+  gap: 48px;
   animation: announcement-marquee 25s linear infinite;
   will-change: transform;
 }
 
 .announcement-text {
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 @keyframes announcement-marquee {
   0% {
     transform: translateX(0);
   }
-
   100% {
     transform: translateX(-50%);
   }
