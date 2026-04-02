@@ -18,6 +18,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
+import homeRoutes from "./routes/home.routes.js";
 import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -54,6 +55,7 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/webhooks", webhookRoutes);
+app.use("/api/home", homeRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

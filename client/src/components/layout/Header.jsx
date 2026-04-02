@@ -43,24 +43,24 @@ export function Header() {
   };
 
   const navLinkClass = ({ isActive }) =>
-    `text-sm font-medium transition-colors duration-200 py-2 ${isActive ? "text-[#d4af37]" : "text-white/80 hover:text-[#d4af37]"
+    `text-sm font-medium transition-colors duration-200 py-2 ${isActive ? "text-accent" : "text-text-primary/80 hover:text-accent"
     }`;
 
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-[#262626] bg-[#0f0f0f]">
+      <header className="sticky top-0 z-20 border-b border-border-subtle bg-bg-primary">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-[auto_1fr_auto] items-center h-16 gap-3">
             <div className="flex items-center gap-2">
               {isHome ? (
-                <Link to="/" className="inline-flex items-center" aria-label="Go to home">
-                  <img src="/icons/icon-192.png" alt="" className="h-8 w-8 rounded-md" />
+                <Link to="/" className="text-xl font-bold tracking-tight text-text-primary">
+                  NoorFit
                 </Link>
               ) : (
                 <button
                   type="button"
                   onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
-                  className="p-2 -ml-2 rounded-xl text-white/90 active:scale-[0.98] transition-transform"
+                  className="p-2 -ml-2 rounded-xl text-text-primary/90 active:scale-[0.98] transition-transform"
                   aria-label="Back"
                 >
                   <HiArrowLeft className="w-6 h-6" />
@@ -72,7 +72,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={() => navigate("/search")}
-                className={`h-11 w-full rounded-xl border border-[#262626] bg-card px-3 flex items-center gap-2 text-left ${isSearchPage ? "opacity-0 pointer-events-none" : "opacity-100"
+                className={`h-11 w-full rounded-xl border border-border-subtle bg-bg-secondary px-3 flex items-center gap-2 text-left ${isSearchPage ? "opacity-0 pointer-events-none" : "opacity-100"
                   }`}
                 aria-label="Open search"
               >
@@ -90,7 +90,7 @@ export function Header() {
                 <NavLink
                   to="/cart"
                   className={({ isActive }) =>
-                    `relative p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
+                    `relative p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-text-primary/80 hover:text-accent"
                     }`
                   }
                   aria-label="Cart"
@@ -108,23 +108,20 @@ export function Header() {
               {!isAdminRoute && (
                 <>
                   {user ? (
-                    <>
-                      <NotificationBell />
-                      <NavLink
-                        to="/account"
-                        className={({ isActive }) =>
-                          `p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-white/80 hover:text-accent"
-                          }`
-                        }
-                        aria-label="Account"
-                      >
-                        <HiUser className="w-6 h-6" />
-                      </NavLink>
-                    </>
+                    <NavLink
+                      to="/account"
+                      className={({ isActive }) =>
+                        `p-2 rounded-xl transition-colors ${isActive ? "text-accent" : "text-text-primary/80 hover:text-accent"
+                        }`
+                      }
+                      aria-label="Account"
+                    >
+                      <HiUser className="w-6 h-6" />
+                    </NavLink>
                   ) : (
                     <NavLink
                       to="/auth"
-                      className="h-11 px-4 rounded-xl bg-accent text-black text-sm font-semibold inline-flex items-center active:scale-95 transition-transform"
+                      className="h-11 px-4 rounded-xl bg-accent text-bg-primary text-sm font-semibold inline-flex items-center active:scale-95 transition-transform"
                     >
                       Login
                     </NavLink>
@@ -140,7 +137,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="h-9 px-4 rounded-xl border border-[#262626] text-sm text-white hover:bg-[#262626] active:scale-95 transition-transform"
+                    className="h-9 px-4 rounded-xl border border-border-subtle text-sm text-text-primary hover:bg-bg-secondary active:scale-95 transition-transform"
                   >
                     Logout
                   </button>
@@ -165,14 +162,14 @@ export function Header() {
                         onChange={(e) => setSearchQ(e.target.value)}
                         onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
                         autoFocus
-                        className="w-full rounded-full bg-card border border-[#262626] px-4 py-2 text-sm text-white placeholder-muted focus:outline-none focus:border-[#d4af37]"
+                        className="w-full rounded-full bg-bg-secondary border border-border-subtle px-4 py-2 text-sm text-text-primary placeholder-muted focus:outline-none focus:border-accent"
                       />
                     </motion.form>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setSearchOpen(true)}
-                      className="p-2 rounded-xl text-white/80 hover:text-[#d4af37] transition-colors"
+                      className="p-2 rounded-xl text-text-primary/80 hover:text-accent transition-colors"
                       aria-label="Search"
                     >
                       <HiSearch className="w-5 h-5" />
@@ -190,7 +187,7 @@ export function Header() {
                         Admin
                       </NavLink>
                     )}
-                    <button type="button" onClick={handleLogout} className="p-2 rounded-xl text-white/80 hover:text-[#d4af37] transition-colors" aria-label="Logout">
+                    <button type="button" onClick={handleLogout} className="p-2 rounded-xl text-text-primary/80 hover:text-accent transition-colors" aria-label="Logout">
                       <HiLogout className="w-5 h-5" />
                     </button>
                   </div>

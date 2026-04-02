@@ -45,6 +45,8 @@ import {
   adminGetSettings,
   adminUpdateSettings,
   adminUploadImage,
+  adminListHomeSections,
+  adminUpsertHomeSections,
 } from "../controllers/admin.controller.js";
 import { answerProductQuestion } from "../controllers/qa.controller.js";
 
@@ -105,6 +107,9 @@ router.patch("/returns/:id/status", adminUpdateReturnStatus);
 router.get("/analytics", adminGetAnalytics);
 router.get("/settings", adminGetSettings);
 router.put("/settings", adminUpdateSettings);
+
+router.get("/home-sections", adminListHomeSections);
+router.put("/home-sections", adminUpsertHomeSections);
 
 // Q&A: answers (admin-only via router.use(protect, admin))
 router.patch("/questions/:id/answer", answerProductQuestion);

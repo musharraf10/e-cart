@@ -9,6 +9,11 @@ import { Announcement } from "../models/announcement.model.js";
 import { ReturnRequest } from "../models/return.model.js";
 import { Drop } from "../models/drop.model.js";
 import { SiteSetting } from "../models/siteSetting.model.js";
+import { HomeSection } from "../models/homeSection.model.js";
+import {
+  DEFAULT_HOME_SECTIONS,
+  ensureHomeSections,
+} from "./home.controller.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
 import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
@@ -1120,4 +1125,42 @@ export async function adminUpdateSettings(req, res) {
   );
 
   res.json(settings);
+}
+
+export async function adminListHomeSections(req, res) {
+  await ensureHomeSections();
+  const sections = await HomeSection.find().sort({ order: 1, key: 1 });
+  res.json(sections);
+}
+
+export async function adminUpsertHomeSections(req, res) {
+  const payload = Array.isArray(req.body?.sections) ? req.body.sections : [];
+
+  if (!payload.length) {
+    res.status(400);
+    throw new Error("sections payload is required");
+  }
+
+  const allowedKeys = new Set(DEFAULT_HOME_SECTIONS.map((item) => item.key));
+
+  await Promise.all(
+    payload
+      .filter((item) => allowedKeys.has(item.key))
+      .map((item, index) =>
+        HomeSection.findOneAndUpdate(
+          { key: item.key },
+          {
+            $set: {
+              label: item.label || item.key,
+              isActive: Boolean(item.isActive),
+              order: Number(item.order ?? index + 1) || index + 1,
+            },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true },
+        ),
+      ),
+  );
+
+  const sections = await HomeSection.find().sort({ order: 1, key: 1 });
+  res.json(sections);
 }

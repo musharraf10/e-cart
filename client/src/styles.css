@@ -4,15 +4,35 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary: 0 0% 98%;
+  --bg-secondary: 0 0% 100%;
+  --text-primary: 220 13% 12%;
+  --text-muted: 220 9% 46%;
+  --border-subtle: 220 13% 89%;
+  --accent: 151 63% 41%;
+  --danger: 0 72% 51%;
+}
+
+.dark {
+  --bg-primary: 224 24% 8%;
+  --bg-secondary: 222 20% 12%;
+  --text-primary: 210 20% 95%;
+  --text-muted: 215 15% 70%;
+  --border-subtle: 220 17% 22%;
+  --accent: 152 57% 52%;
+  --danger: 0 70% 58%;
+}
+
 @layer base {
   html {
     @apply scroll-smooth;
     max-width: 100%;
     overflow-x: hidden;
   }
+
   body {
-    @apply font-sans text-sm text-white bg-primary antialiased;
-    background-color: #0f0f0f;
+    @apply font-sans antialiased bg-bg-primary text-text-primary;
     max-width: 100%;
     overflow-x: hidden;
   }
@@ -27,77 +47,31 @@
   }
 }
 
-html,
-body {
-  overflow-x: hidden;
-}
-
-/* Focus ring for accessibility */
 @layer utilities {
-  /* Hide scrollbar visuals globally (scroll still works). */
   * {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge legacy */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
+
   *::-webkit-scrollbar {
     display: none;
   }
 
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-primary;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary;
   }
+
   .safe-area-pb {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
-  .skeleton-shimmer {
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(90deg, #202020 0%, #2c2c2c 50%, #202020 100%);
-    background-size: 240% 100%;
-    animation: skeleton-shimmer 1.2s linear infinite;
+  .surface-card {
+    @apply rounded-2xl border border-border-subtle bg-bg-secondary;
   }
-}
-
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: 140% 0;
-  }
-
-  100% {
-    background-position: -140% 0;
-  }
-}
-
-::-webkit-scrollbar {
-  display: none;
-}
-.carousel-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
-
-  /* Hide scrollbar by pushing it out */
-  padding-bottom: 20px;
-  margin-bottom: -20px;
-
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Optional hide */
-.carousel-scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .announcement-bar {
-  background-color: #a6c655;
-  color: #000000;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
+  @apply bg-accent text-bg-primary h-9 flex items-center overflow-hidden text-xs font-bold whitespace-nowrap;
 }
 
 .announcement-track {

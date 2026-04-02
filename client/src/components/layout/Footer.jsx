@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const footerLinkGroups = [
   [
@@ -14,37 +15,46 @@ const footerLinkGroups = [
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-[#262626] bg-[#0f0f0f]">
-      <div className="mx-auto w-full max-w-7xl px-4 py-8">
-        <div className="space-y-6">
-          <div>
-            <Link to="/" className="text-xl font-semibold text-white transition-colors hover:text-white">
+    <footer className="border-t border-border-subtle bg-primary mt-auto">
+      <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="md:col-span-2"
+          >
+            <Link to="/" className="text-xl font-bold text-text-primary tracking-tight">
               NoorFit
             </Link>
             <p className="mt-2 text-sm text-muted">
               Premium essentials designed for movement, comfort, and daily style.
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {footerLinkGroups.map((group, idx) => (
-              <ul key={idx} className="space-y-2">
-                {group.map((link) => (
-                  <li key={link.to}>
-                    <Link to={link.to} className="text-sm text-muted transition-colors hover:text-white">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
+          </motion.div>
         </div>
 
-        <div className="mt-6 border-t border-[#262626] pt-4">
-          <p className="text-xs text-muted">© {new Date().getFullYear()} NoorFit. All rights reserved.</p>
+        <div className="grid grid-cols-2 gap-4">
+          {footerLinkGroups.map((group, idx) => (
+            <ul key={idx} className="space-y-2">
+              {group.map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} className="text-sm text-muted transition-colors hover:text-white">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ))}
         </div>
       </div>
-    </footer>
+      <div className="mt-10 pt-8 border-t border-border-subtle flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+        <span className="text-xs text-muted">
+          © {new Date().getFullYear()} NoorFit. All rights reserved.
+        </span>
+        <span className="text-xs text-muted">
+          Crafted for Comfort. Designed for Life.
+        </span>
+      </div>
+    </footer >
   );
 }
