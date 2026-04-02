@@ -1,62 +1,66 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import api from "../../../api/client.js";
 
 export function AdminSettingsPage() {
-  const [settings, setSettings] = useState({
-    storeName: "NoorFit",
-    contactEmail: "support@noorfit.com",
-    shippingFee: 5,
-    taxPercentage: 5,
-    currency: "USD",
-  });
+  const [sections, setSections] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get("/admin/home-sections").then(({ data }) => setSections(data || []));
+  }, []);
+
+  const moveSection = (index, direction) => {
+    const next = [...sections];
+    const target = index + direction;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setSections(next.map((item, i) => ({ ...item, order: i + 1 })));
+  };
+
+  const toggleSection = (key) => {
+    setSections((prev) => prev.map((item) => (item.key === key ? { ...item, isActive: !item.isActive } : item)));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    const { data } = await api.put("/admin/home-sections", { sections });
+    setSections(data || []);
+    setSaving(false);
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight text-white">Admin Settings</h1>
-      <form
-        className="bg-card rounded-xl border border-[#262626] p-6 grid sm:grid-cols-2 gap-4 text-sm"
-        onSubmit={(e) => {
-          e.preventDefault();
-          alert("Settings saved (local demo)");
-        }}
-      >
-        <input
-          className="rounded-xl border border-[#262626] bg-primary px-3 py-2.5 text-white placeholder-muted focus:outline-none focus:border-accent"
-          value={settings.storeName}
-          onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-          placeholder="Store name"
-        />
-        <input
-          className="rounded-xl border border-[#262626] bg-primary px-3 py-2.5 text-white placeholder-muted focus:outline-none focus:border-accent"
-          type="email"
-          value={settings.contactEmail}
-          onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })}
-          placeholder="Contact email"
-        />
-        <input
-          className="rounded-xl border border-[#262626] bg-primary px-3 py-2.5 text-white placeholder-muted focus:outline-none focus:border-accent"
-          type="number"
-          value={settings.shippingFee}
-          onChange={(e) => setSettings({ ...settings, shippingFee: Number(e.target.value) })}
-          placeholder="Shipping fee"
-        />
-        <input
-          className="rounded-xl border border-[#262626] bg-primary px-3 py-2.5 text-white placeholder-muted focus:outline-none focus:border-accent"
-          type="number"
-          value={settings.taxPercentage}
-          onChange={(e) => setSettings({ ...settings, taxPercentage: Number(e.target.value) })}
-          placeholder="Tax %"
-        />
-        <input
-          className="rounded-xl border border-[#262626] bg-primary px-3 py-2.5 text-white placeholder-muted focus:outline-none focus:border-accent"
-          value={settings.currency}
-          onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-          placeholder="Currency"
-        />
-        <button className="sm:col-span-2 rounded-xl bg-accent text-primary py-2.5 font-medium hover:opacity-90">
-          Save
+      <h1 className="text-2xl font-bold tracking-tight">Homepage Sections</h1>
+
+      <div className="surface-card p-4">
+        <p className="mb-4 text-sm text-text-muted">Enable/disable homepage blocks and change their order.</p>
+        <div className="space-y-2">
+          {sections.map((section, index) => (
+            <div key={section.key} className="flex items-center justify-between rounded-xl border border-border-subtle p-3">
+              <div>
+                <p className="font-medium">{section.label}</p>
+                <p className="text-xs text-text-muted">key: {section.key}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => moveSection(index, -1)} className="rounded-lg border border-border-subtle px-2 py-1 text-xs">↑</button>
+                <button type="button" onClick={() => moveSection(index, 1)} className="rounded-lg border border-border-subtle px-2 py-1 text-xs">↓</button>
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.key)}
+                  className={`rounded-lg px-2.5 py-1 text-xs ${section.isActive ? "bg-accent text-bg-primary" : "border border-border-subtle"}`}
+                >
+                  {section.isActive ? "Enabled" : "Disabled"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={save} className="mt-4 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-bg-primary" disabled={saving}>
+          {saving ? "Saving..." : "Save changes"}
         </button>
-      </form>
+      </div>
     </motion.div>
   );
 }

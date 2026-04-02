@@ -9,7 +9,7 @@ const footerLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-[#262626] bg-primary mt-auto">
+    <footer className="border-t border-border-subtle bg-primary mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           <motion.div
@@ -18,7 +18,7 @@ export function Footer() {
             viewport={{ once: true }}
             className="md:col-span-2"
           >
-            <Link to="/" className="text-xl font-bold text-white tracking-tight">
+            <Link to="/" className="text-xl font-bold text-text-primary tracking-tight">
               NoorFit
             </Link>
             <p className="text-muted text-sm mt-2 max-w-md">
@@ -48,7 +48,7 @@ export function Footer() {
             </ul>
           </motion.div>
         </div>
-        <div className="mt-10 pt-8 border-t border-[#262626] flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+        <div className="mt-10 pt-8 border-t border-border-subtle flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
           <span className="text-xs text-muted">
             © {new Date().getFullYear()} NoorFit. All rights reserved.
           </span>

@@ -1,99 +1,54 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 
 export function HeroCarousel({ products = [] }) {
   const slides = useMemo(
     () =>
-      (products || [])
-        .filter((p) => p && (p.displayImage || p.images?.[0] || p.name))
-        .slice(0, 4)
-        .map((p) => ({
-          id: p.variantKey || `${p._id}-${p.displayColor || "default"}`,
-          title: p.name,
-          subtitle: p.displayColor ? `${p.category?.name || "New drop"} · ${p.displayColor}` : (p.category?.name || "New drop"),
-          image: p.displayImage || p.images?.[0],
-          href: p.routeTo || `/product/${p.slug}`,
-        })),
+      (products || []).slice(0, 6).map((item) => ({
+        id: item.variantKey || `${item._id}-${item.displayColor || "default"}`,
+        title: item.name,
+        image: item.displayImage || item.images?.[0],
+        href: item.routeTo || `/product/${item.slug}`,
+      })),
     [products],
   );
 
-  const [index, setIndex] = useState(0);
+  const [active, setActive] = useState(0);
 
-  useEffect(() => {
-    if (!slides.length) return;
-    const timer = setInterval(
-      () => setIndex((i) => (i + 1) % slides.length),
-      7000,
-    );
-    return () => clearInterval(timer);
-  }, [slides.length]);
-
-  if (!slides.length) {
-    return null;
-  }
-
-  const active = slides[index];
+  if (!slides.length) return null;
 
   return (
-    <section className="relative rounded-2xl overflow-hidden bg-card border border-[#262626]">
-      {active.image && (
-        <div className="absolute inset-0">
-          <img
-            src={active.image}
-            alt={active.title}
-            loading="lazy"
-            className="w-full h-full object-cover opacity-40 md:opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
-        </div>
-      )}
-
-      <div className="relative z-10 px-6 py-10 md:py-14 lg:py-16 max-w-3xl">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-muted mb-2">
-          NoorFit · Crafted for Comfort. Designed for Life.
-        </p>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active.id}
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-3 md:space-y-4"
-          >
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-tight">
-              {active.title}
-            </h1>
-            <p className="text-muted text-sm md:text-base">
-              {active.subtitle || "Elevated essentials for every day."}
-            </p>
+    <section className="space-y-3">
+      <h1 className="text-2xl font-semibold tracking-tight">New arrivals</h1>
+      <div className="-mx-4 overflow-x-auto px-4 snap-x snap-mandatory">
+        <div className="flex gap-3 items-stretch w-max pb-2">
+          {slides.map((slide, index) => (
             <Link
-              to={active.href}
-              className="inline-flex items-center rounded-xl bg-accent text-primary px-6 py-3 text-sm font-semibold hover:opacity-90 transition-opacity mt-2"
-            >
-              View product
-            </Link>
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="flex items-center gap-2 mt-6">
-          {slides.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setIndex(i)}
-              className={`h-1.5 rounded-full transition-all ${
-                i === index
-                  ? "w-6 bg-accent"
-                  : "w-2 bg-[#262626] hover:bg-[#404040]"
+              key={slide.id}
+              to={slide.href}
+              onMouseEnter={() => setActive(index)}
+              onFocus={() => setActive(index)}
+              className={`snap-center relative w-[70vw] max-w-[420px] min-w-[70vw] md:min-w-[540px] overflow-hidden rounded-3xl border border-border-subtle bg-bg-secondary transition-transform duration-300 ${
+                active === index ? "scale-100" : "scale-[0.94]"
               }`}
-              aria-label={`Go to banner ${i + 1}`}
-            />
+            >
+              {slide.image ? (
+                <img
+                  src={slide.image}
+                  alt={slide.title}
+                  loading="lazy"
+                  className="h-[46vw] max-h-80 min-h-52 w-full object-cover"
+                />
+              ) : (
+                <div className="h-56 w-full bg-bg-primary" />
+              )}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg-primary/80 to-transparent p-4">
+                <p className="text-sm font-medium text-text-primary">{slide.title}</p>
+              </div>
+            </Link>
           ))}
         </div>
       </div>
     </section>
   );
 }
-

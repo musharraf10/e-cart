@@ -16,6 +16,7 @@ import announcementRoutes from "./routes/announcement.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import homeRoutes from "./routes/home.routes.js";
 import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -52,6 +53,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/home", homeRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

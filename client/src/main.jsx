@@ -7,6 +7,15 @@ import { store } from "./store/store.js";
 import "./styles.css";
 import { registerServiceWorker } from "./pwa/register-sw.js";
 
+
+const prefersDark =
+  typeof window !== "undefined" &&
+  window.matchMedia &&
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
+if (prefersDark) {
+  document.documentElement.classList.add("dark");
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
