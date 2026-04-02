@@ -7,6 +7,7 @@ import App from "./App.jsx";
 import { store } from "./store/store.js";
 import "./styles.css";
 import { registerServiceWorker } from "./pwa/register-sw.js";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 
 setupListeners(store.dispatch);
 
@@ -15,9 +16,11 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <Provider store={store}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ThemeProvider>
     </Provider>
   </React.StrictMode>,
 );
