@@ -11,7 +11,7 @@ export function ToastProvider({ children }) {
   }, []);
 
   const notify = useCallback((message, type = "success", options = {}) => {
-    const id = crypto.randomUUID();
+    const id = Math.random().toString(36).substring(2, 11);
     const { duration = 2400, actionLabel, onAction } = options;
 
     setToasts((prev) => [...prev, { id, message, type, actionLabel, onAction }]);
@@ -33,11 +33,10 @@ export function ToastProvider({ children }) {
               initial={{ opacity: 0, y: -16, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -14, scale: 0.96 }}
-              className={`pointer-events-auto rounded-xl border px-4 py-3 text-sm shadow-card ${
-                toast.type === "error"
+              className={`pointer-events-auto rounded-xl border px-4 py-3 text-sm shadow-card ${toast.type === "error"
                   ? "border-border bg-card text-red-300"
                   : "border-border bg-card text-accent"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <span>{toast.message}</span>

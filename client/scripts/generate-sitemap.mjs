@@ -16,7 +16,7 @@ const SITE_URL = (
 const API_BASE_URL = (
   process.env.SITEMAP_API_BASE_URL ||
   process.env.VITE_API_BASE_URL ||
-  "http://10.16.38.220:5000/api"
+  "http://localhost:5000/api"
 ).replace(/\/$/, "");
 
 function escapeXml(value) {

@@ -9,7 +9,7 @@ import {
 import { generateInvoicePdfBuffer } from "../utils/invoice.util.js";
 
 function createOrderUrls(orderId) {
-  const clientUrl = process.env.CLIENT_URL || "http://10.16.38.220:5173/";
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173/";
   const safeId = encodeURIComponent(orderId.toString());
 
   return {

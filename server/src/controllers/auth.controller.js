@@ -94,7 +94,7 @@ async function buildAuthResponse(user, res) {
 }
 
 async function sendVerificationEmail(user, rawToken) {
-  const clientBaseUrl = process.env.CLIENT_URL || "http://10.16.38.220:5173/";
+  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173/";
   const verifyUrl = `${clientBaseUrl}/verify-email?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
 
   await sendEmail({
@@ -112,7 +112,7 @@ async function sendVerificationEmail(user, rawToken) {
 }
 
 async function sendPasswordResetEmail(user, rawToken) {
-  const clientBaseUrl = process.env.CLIENT_URL || "http://10.16.38.220:5173/";
+  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173/";
   const resetUrl = `${clientBaseUrl}/reset-password?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
 
   await sendEmail({
