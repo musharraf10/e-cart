@@ -3,7 +3,7 @@ import path from "node:path";
 
 const DIST_DIR = path.resolve("dist");
 const TEMPLATE_PATH = path.join(DIST_DIR, "index.html");
-const DEFAULT_API_BASE = "http://localhost:5000/api";
+const DEFAULT_API_BASE = "https://noorfit.onrender.com/api";
 const API_BASE = (
   process.env.PRERENDER_API_BASE_URL ||
   process.env.VITE_API_BASE_URL ||

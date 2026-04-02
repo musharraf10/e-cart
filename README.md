@@ -105,7 +105,7 @@ If you are debugging custom `useEffect` diagnostics in development, prefer idemp
 - `/support`
 - top product detail pages at `/product/<slug>`
 
-By default, top products are fetched from `http://localhost:5000/api/products?sort=rating` during build.
+By default, top products are fetched from `https://noorfit.onrender.com/api/products?sort=rating` during build.
 You can override behavior with build-time env vars:
 
 ```bash

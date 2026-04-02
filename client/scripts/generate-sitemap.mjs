@@ -16,7 +16,7 @@ const SITE_URL = (
 const API_BASE_URL = (
   process.env.SITEMAP_API_BASE_URL ||
   process.env.VITE_API_BASE_URL ||
-  "http://localhost:5000/api"
+  "https://noorfit.onrender.com/api"
 ).replace(/\/$/, "");
 
 function escapeXml(value) {

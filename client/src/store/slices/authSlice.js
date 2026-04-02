@@ -3,7 +3,7 @@ import axios from "axios";
 
 const tokenKey = "noorfit_token";
 const baseURL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_BASE_URL || "https://noorfit.onrender.com/api";
 
 export const initializeAuth = createAsyncThunk("auth/initialize", async () => {
   const token =

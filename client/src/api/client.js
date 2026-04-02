@@ -2,7 +2,8 @@ import axios from "axios";
 import { logout, setCredentials } from "../store/slices/authSlice.js";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
+  baseURL:
+    import.meta.env.VITE_API_BASE_URL || "https://noorfit.onrender.com/api",
   withCredentials: true,
 });
 
