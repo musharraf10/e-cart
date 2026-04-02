@@ -9,7 +9,7 @@ import {
 import { generateInvoicePdfBuffer } from "../utils/invoice.util.js";
 
 function createOrderUrls(orderId) {
-  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173/";
+  const clientUrl = process.env.CLIENT_URL || "https://noorfit.netlify.app/";
   const safeId = encodeURIComponent(orderId.toString());
 
   return {

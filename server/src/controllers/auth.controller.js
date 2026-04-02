@@ -94,7 +94,8 @@ async function buildAuthResponse(user, res) {
 }
 
 async function sendVerificationEmail(user, rawToken) {
-  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173/";
+  const clientBaseUrl =
+    process.env.CLIENT_URL || "https://noorfit.netlify.app/";
   const verifyUrl = `${clientBaseUrl}/verify-email?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
 
   await sendEmail({
@@ -112,7 +113,8 @@ async function sendVerificationEmail(user, rawToken) {
 }
 
 async function sendPasswordResetEmail(user, rawToken) {
-  const clientBaseUrl = process.env.CLIENT_URL || "http://localhost:5173/";
+  const clientBaseUrl =
+    process.env.CLIENT_URL || "https://noorfit.netlify.app/";
   const resetUrl = `${clientBaseUrl}/reset-password?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
 
   await sendEmail({
