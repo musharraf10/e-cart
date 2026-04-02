@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Routes,
@@ -56,7 +56,6 @@ import { AdminSettingsPage } from "./pages/admin/ops/AdminSettingsPage.jsx";
 
 import { initializeAuth } from "./store/slices/authSlice.js";
 import { ToastProvider, useToast } from "./components/ui/ToastProvider.jsx";
-import { DesktopBlockScreen } from "./components/layout/DesktopBlockScreen.jsx";
 import { GlobalLoader } from "./components/ui/GlobalLoader.jsx";
 import { activateWaitingServiceWorker } from "./pwa/register-sw.js";
 
@@ -64,9 +63,6 @@ function AppShell() {
   const dispatch = useDispatch();
   const location = useLocation();
   const { notify } = useToast();
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 768 : true
-  );
   const [installPromptEvent, setInstallPromptEvent] = useState(null);
   const [installOutcome, setInstallOutcome] = useState(null);
   const [showGlobalLoader, setShowGlobalLoader] = useState(true);
@@ -82,13 +78,6 @@ function AppShell() {
   useEffect(() => {
     dispatch(initializeAuth());
   }, [dispatch]);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     const handleSwUpdateAvailable = (event) => {
@@ -160,17 +149,6 @@ function AppShell() {
       outcome === "accepted" ? "success" : "error",
     );
   };
-
-  const isAdminRoute = location.pathname.startsWith("/admin");
-
-  const isDesktopBlocked = useMemo(
-    () => !isMobile && !isAdminRoute,
-    [isMobile, isAdminRoute]
-  );
-
-  if (isDesktopBlocked && !location.pathname.startsWith("/auth") && !location.pathname.startsWith("/login")) {
-    return <DesktopBlockScreen />;
-  }
 
   return (
     <>
