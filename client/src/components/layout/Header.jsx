@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
-import { HiArrowLeft, HiSearch, HiShoppingCart, HiUser, HiLogout } from "react-icons/hi";
+import { HiArrowLeft, HiSearch, HiUser, HiLogout, HiMoon, HiSun } from "react-icons/hi";
 import { logout } from "../../store/slices/authSlice.js";
 import api from "../../api/client.js";
 import { MobileNavigation } from "./MobileNavigation.jsx";
@@ -18,6 +18,16 @@ export function Header() {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(() =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+  );
+
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.classList.toggle("dark", isDarkMode);
+    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
 
   const isHome = location.pathname === "/";
   const isSearchPage = location.pathname === "/search";
@@ -86,6 +96,15 @@ export function Header() {
             </nav>
 
             <div className="flex items-center gap-2 justify-self-end">
+              <button
+                type="button"
+                onClick={() => setIsDarkMode((prev) => !prev)}
+                className="p-2 rounded-xl text-text-primary/80 hover:text-accent transition-colors"
+                aria-label="Toggle theme"
+              >
+                {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
+              </button>
+
               {/* {!isAdminRoute && (
                 <NavLink
                   to="/cart"

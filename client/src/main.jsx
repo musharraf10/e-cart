@@ -8,12 +8,13 @@ import { store } from "./store/store.js";
 import "./styles.css";
 import { registerServiceWorker } from "./pwa/register-sw.js";
 
-
+const persistedTheme = typeof window !== "undefined" ? localStorage.getItem("theme") : null;
 const prefersDark =
   typeof window !== "undefined" &&
   window.matchMedia &&
   window.matchMedia("(prefers-color-scheme: dark)").matches;
-if (prefersDark) {
+
+if (persistedTheme === "dark" || (!persistedTheme && prefersDark)) {
   document.documentElement.classList.add("dark");
 }
 

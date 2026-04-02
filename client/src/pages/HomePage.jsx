@@ -1,193 +1,197 @@
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { HeroCarousel } from "../components/ui/HeroCarousel.jsx";
-import { ProductGrid } from "../components/ui/ProductGrid.jsx";
-import { ProductGridSkeleton } from "../components/ui/LoadingSkeleton.jsx";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { HiArrowNarrowRight } from "react-icons/hi";
+import { motion } from "framer-motion";
 import { ProductCard } from "../components/products/ProductCard.jsx";
-import { ProductListItem } from "../components/products/ProductListItem.jsx";
-import { SectionHeader } from "../components/ui/SectionHeader.jsx";
-import { HorizontalProductRow } from "../components/ui/HorizontalProductRow.jsx";
-import { GridListToggle } from "../components/ui/GridListToggle.jsx";
-import Categories from "../pages/CategoryPage.jsx";
-import { expandProductsByVariant } from "../utils/productVariants.js";
+import { ProductGridSkeleton } from "../components/ui/LoadingSkeleton.jsx";
 import { SeoMeta } from "../components/seo/SeoMeta.jsx";
+import { expandProductsByVariant } from "../utils/productVariants.js";
 import {
   STALE_TIME_SECONDS,
   useGetCategoriesQuery,
   useGetProductsQuery,
 } from "../store/apis/catalogApi.js";
 
-const CATALOG_LIMIT = 12;
+const BRAND_VALUES = [
+  "Made in India",
+  "Ships worldwide in 48 hrs",
+  "Built for daily wear",
+];
+
+const QUICK_REVIEWS = [
+  {
+    quote: "Clean look, premium feel. Exactly what I wanted.",
+    author: "Aarav S.",
+  },
+  {
+    quote: "Minimal but unique — every drop feels special.",
+    author: "Sana K.",
+  },
+];
 
 export function HomePage() {
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [catalogPage, setCatalogPage] = useState(1);
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem("product_view_mode") || "grid");
+  const [activeCategory, setActiveCategory] = useState("");
 
   const queryOptions = useMemo(
-    () => ({
-      refetchOnMountOrArgChange: STALE_TIME_SECONDS,
-    }),
+    () => ({ refetchOnMountOrArgChange: STALE_TIME_SECONDS }),
     [],
   );
 
-  const allProductsQuery = useGetProductsQuery({ limit: 20, sort: "newest" }, queryOptions);
-  const newDropsQuery = useGetProductsQuery({ onlyNewDrops: true, limit: 12 }, queryOptions);
-  const trendingQuery = useGetProductsQuery({ sort: "rating", limit: 8 }, queryOptions);
   const categoriesQuery = useGetCategoriesQuery(undefined, queryOptions);
-  const catalogQuery = useGetProductsQuery(
-    {
-      limit: CATALOG_LIMIT,
-      page: catalogPage,
-      ...(selectedCategory ? { category: selectedCategory } : {}),
-    },
-    queryOptions,
-  );
+  const newCollectionQuery = useGetProductsQuery({ sort: "newest", limit: 8 }, queryOptions);
 
-  useEffect(() => {
-    localStorage.setItem("product_view_mode", viewMode);
-  }, [viewMode]);
-
-  const heroProductsSource = allProductsQuery.data?.items || [];
-  const newDrops = newDropsQuery.data?.items || [];
-  const trendingProducts = trendingQuery.data?.items || [];
   const categories = categoriesQuery.data || [];
-  const catalogProducts = catalogQuery.data?.items || [];
-  const catalogPages = catalogQuery.data?.totalPages || 1;
-  const catalogTotal = catalogQuery.data?.total || 0;
+  const newCollection = expandProductsByVariant(newCollectionQuery.data?.items || []);
 
-  const loading =
-    allProductsQuery.isLoading ||
-    newDropsQuery.isLoading ||
-    trendingQuery.isLoading ||
-    categoriesQuery.isLoading;
-
-  const catalogLoading = catalogQuery.isLoading;
-
-  const backendError =
-    allProductsQuery.isError || newDropsQuery.isError || trendingQuery.isError || categoriesQuery.isError || catalogQuery.isError
-      ? "Unable to load products right now. Please refresh in a moment."
-      : "";
-
-  const heroProducts = useMemo(() => expandProductsByVariant(heroProductsSource).slice(0, 4), [heroProductsSource]);
-  const expandedNewDrops = useMemo(() => expandProductsByVariant(newDrops), [newDrops]);
-  const expandedTrendingProducts = useMemo(() => expandProductsByVariant(trendingProducts), [trendingProducts]);
-  const expandedCatalogProducts = useMemo(() => expandProductsByVariant(catalogProducts), [catalogProducts]);
-
-  const selectCategory = (categoryId) => {
-    setSelectedCategory(categoryId);
-    setCatalogPage(1);
-  };
+  const filteredCollection = useMemo(() => {
+    if (!activeCategory) return newCollection;
+    return newCollection.filter((product) => product.category?._id === activeCategory);
+  }, [newCollection, activeCategory]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="space-y-12">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-10"
+    >
       <SeoMeta
-        title="NoorFit | Modest Activewear & New Drops"
-        description="Discover NoorFit essentials, trending activewear, and new drops designed for everyday comfort and confidence."
+        title="NoorFit | Minimal Clothing Brand"
+        description="A clean, unique clothing home screen with curated collections, monochrome style, and responsive shopping experience."
         canonicalUrl="/"
       />
-      <section>
-        <HeroCarousel products={heroProducts} />
-      </section>
 
-      <Categories categories={categories} withSeo={false} />
+      <section className="rounded-3xl border border-border-subtle bg-bg-secondary p-5 md:p-8">
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-text-muted">
+          <span>NOORFIT STUDIO</span>
+          <span>EST. 2026</span>
+        </div>
 
-      <section>
-        <SectionHeader title="New Drops" subtitle="Freshly added styles" />
-        {loading ? <ProductGridSkeleton count={4} /> : <HorizontalProductRow products={expandedNewDrops} />}
-      </section>
+        <div className="mt-6 grid gap-8 md:grid-cols-[1.2fr_1fr] md:items-center">
+          <div className="space-y-5">
+            <div className="inline-flex items-center rounded-full border border-border-subtle px-4 py-2 text-xs uppercase tracking-[0.18em] text-text-muted">
+              The Crew Collection
+            </div>
+            <h1 className="text-3xl font-semibold leading-tight md:text-5xl">
+              White &amp; black essentials for a bold everyday look.
+            </h1>
+            <p className="max-w-xl text-sm text-text-muted md:text-base">
+              Minimal design. Strong identity. Designed for modern streetwear and comfort-first movement.
+            </p>
+            <Link
+              to="/shop"
+              className="inline-flex items-center gap-2 rounded-full bg-text-primary px-5 py-3 text-sm font-semibold text-bg-primary transition hover:opacity-90"
+            >
+              Shop collection
+              <HiArrowNarrowRight className="h-4 w-4" />
+            </Link>
+          </div>
 
-      <section>
-        <SectionHeader title="Trending Products" subtitle="Most loved by shoppers" />
-        {loading ? (
-          <ProductGridSkeleton count={8} />
-        ) : (
-          <ProductGrid>
-            {expandedTrendingProducts.map((product) => (
-              <ProductCard key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} product={product} />
-            ))}
-          </ProductGrid>
-        )}
+          <div className="relative mx-auto h-[260px] w-full max-w-sm">
+            <div className="absolute left-4 top-6 h-44 w-32 rounded-2xl border border-border-subtle bg-bg-primary" />
+            <div className="absolute left-1/2 top-0 h-56 w-36 -translate-x-1/2 rounded-2xl border border-text-primary bg-text-primary/5" />
+            <div className="absolute right-4 top-6 h-44 w-32 rounded-2xl border border-border-subtle bg-bg-primary" />
+            <div className="absolute inset-x-8 bottom-0 rounded-2xl border border-border-subtle bg-bg-primary/80 px-4 py-3 text-center text-xs uppercase tracking-[0.16em] text-text-muted">
+              Monochrome • Responsive • Unique
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="space-y-4">
-        <SectionHeader
-          title="All Products"
-          subtitle={catalogTotal > 0 ? `${catalogTotal} product${catalogTotal === 1 ? "" : "s"}` : "Explore everything in NoorFit"}
-          action={<GridListToggle viewMode={viewMode} onChange={setViewMode} />}
-        />
-
-        {backendError && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            {backendError}
-          </div>
-        )}
-
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          <button
-            type="button"
-            onClick={() => selectCategory("")}
-            className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm transition-colors ${selectedCategory === "" ? "border-accent bg-accent/10 text-accent" : "border-border text-muted"}`}
-          >
-            All
-          </button>
+        <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Collections</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {categories.map((category) => (
             <button
               key={category._id}
               type="button"
-              onClick={() => selectCategory(category._id)}
-              className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm transition-colors ${selectedCategory === category._id ? "border-accent bg-accent/10 text-accent" : "border-border text-muted"}`}
+              onClick={() => setActiveCategory((prev) => (prev === category._id ? "" : category._id))}
+              className={`rounded-2xl border px-4 py-4 text-sm font-medium transition ${
+                activeCategory === category._id
+                  ? "border-text-primary bg-text-primary text-bg-primary"
+                  : "border-border-subtle bg-bg-secondary text-text-primary hover:border-text-primary"
+              }`}
             >
               {category.name}
             </button>
           ))}
         </div>
+      </section>
 
-        {catalogLoading ? (
-          <ProductGridSkeleton count={CATALOG_LIMIT} />
-        ) : expandedCatalogProducts.length ? (
-          <AnimatePresence mode="wait">
-            {viewMode === "grid" ? (
-              <ProductGrid key="grid" className="transition-all duration-200">
-                {expandedCatalogProducts.map((product) => (
-                  <motion.div key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} layout>
-                    <ProductCard product={product} />
-                  </motion.div>
-                ))}
-              </ProductGrid>
-            ) : (
-              <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 transition-all duration-200">
-                {expandedCatalogProducts.map((product) => (
-                  <ProductListItem key={product.variantKey || `${product._id}-${product.displayColor || "default"}`} product={product} />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+      <section className="grid gap-3 md:grid-cols-3">
+        {BRAND_VALUES.map((item) => (
+          <div
+            key={item}
+            className="rounded-2xl border border-border-subtle bg-bg-secondary px-4 py-3 text-center text-xs uppercase tracking-[0.14em] text-text-muted"
+          >
+            {item}
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-text-muted">New Collection</p>
+            <h2 className="mt-2 text-2xl font-semibold">Style under ₹2000</h2>
+          </div>
+          <Link to="/shop" className="text-sm text-text-muted underline underline-offset-4">
+            View all
+          </Link>
+        </div>
+
+        {newCollectionQuery.isLoading ? (
+          <ProductGridSkeleton count={8} />
         ) : (
-          <div className="rounded-xl border border-border bg-card py-10 text-center text-muted">No products found.</div>
-        )}
-
-        {catalogPages > 1 && (
-          <div className="flex justify-center gap-2 pt-2">
-            <button
-              type="button"
-              disabled={catalogPage <= 1}
-              onClick={() => setCatalogPage((prev) => prev - 1)}
-              className="rounded-xl border border-border px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="px-2 py-2 text-sm text-muted">Page {catalogPage} of {catalogPages}</span>
-            <button
-              type="button"
-              disabled={catalogPage >= catalogPages}
-              onClick={() => setCatalogPage((prev) => prev + 1)}
-              className="rounded-xl border border-border px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-            </button>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {filteredCollection.slice(0, 8).map((product) => (
+              <ProductCard
+                key={product.variantKey || `${product._id}-${product.displayColor || "default"}`}
+                product={product}
+              />
+            ))}
           </div>
         )}
+      </section>
+
+      <section className="rounded-3xl border border-border-subtle bg-bg-secondary p-5 md:p-7">
+        <div className="grid gap-6 md:grid-cols-[1fr_auto_1fr] md:items-center">
+          <div className="space-y-3 text-sm text-text-muted">
+            <p>100% comfortable fabrics</p>
+            <p>Gender neutral fits</p>
+            <p>Limited-run silhouettes</p>
+          </div>
+          <div className="mx-auto h-24 w-24 rounded-full border border-text-primary" />
+          <form className="flex flex-col gap-3 sm:flex-row md:justify-end" onSubmit={(event) => event.preventDefault()}>
+            <label htmlFor="email" className="sr-only">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Email"
+              className="h-11 rounded-full border border-border-subtle bg-bg-primary px-4 text-sm focus-ring"
+            />
+            <button
+              type="submit"
+              className="h-11 rounded-full bg-text-primary px-5 text-sm font-semibold text-bg-primary"
+            >
+              Join
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section className="space-y-3 pb-4">
+        <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Reviews</p>
+        <div className="grid gap-3 md:grid-cols-2">
+          {QUICK_REVIEWS.map((review) => (
+            <article key={review.author} className="rounded-2xl border border-border-subtle bg-bg-secondary p-4">
+              <p className="text-sm">“{review.quote}”</p>
+              <p className="mt-3 text-xs uppercase tracking-[0.12em] text-text-muted">{review.author}</p>
+            </article>
+          ))}
+        </div>
       </section>
     </motion.div>
   );
