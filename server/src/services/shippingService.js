@@ -169,7 +169,7 @@ export async function processShippingWebhookEvent(data) {
   }
 
   const order = await Order.findById(data.orderId).select(
-    "_id status shipping.status shipping.statusHistory shipping.events shipping.webhookLogs shipping.failedEvents createdAt",
+    "_id status paymentMethod paymentStatus shipping.status shipping.statusHistory shipping.events shipping.webhookLogs shipping.failedEvents createdAt",
   );
   if (!order) {
     return { processed: false, reason: "order_not_found", orderId: data.orderId };
@@ -244,6 +244,11 @@ export async function processShippingWebhookEvent(data) {
       ...(data.courier ? { "shipping.courier": data.courier } : {}),
       ...(data.trackingUrl ? { "shipping.trackingUrl": data.trackingUrl } : {}),
       ...(normalizedStatus === "delivered" ? { "shipping.deliveredAt": eventTime, deliveredAt: eventTime } : {}),
+      ...(normalizedStatus === "delivered" &&
+      order.paymentMethod === "cod" &&
+      order.paymentStatus !== "paid"
+        ? { paymentStatus: "paid", paidAt: eventTime }
+        : {}),
     },
     $push: {
       "shipping.statusHistory": { status: normalizedStatus, time: eventTime },
