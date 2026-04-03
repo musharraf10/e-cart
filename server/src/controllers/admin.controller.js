@@ -11,7 +11,11 @@ import { Drop } from "../models/drop.model.js";
 import { SiteSetting } from "../models/siteSetting.model.js";
 import { recalculateProductRatings } from "./review.controller.js";
 import { createNotification } from "../services/notification.service.js";
-import { sendStatusEmailByOrder } from "../services/order-notification.service.js";
+import {
+  dispatchOrderNotificationTasks,
+  sendPaymentSuccessEmail,
+  sendStatusEmailByOrder,
+} from "../services/order-notification.service.js";
 import { updateOrderStatus } from "../services/shippingService.js";
 import { normalizeOrderStatus } from "../utils/statusMapper.js";
 import {
@@ -649,7 +653,12 @@ export async function adminUpdateOrderStatus(req, res) {
     previousStatus !== order.status &&
     ["shipped", "delivered"].includes(order.status)
   ) {
-    await Promise.allSettled([sendStatusEmailByOrder(order, order.status)]);
+    await dispatchOrderNotificationTasks([
+      sendStatusEmailByOrder(order, order.status),
+      order.status === "delivered" && order.paymentMethod === "cod"
+        ? sendPaymentSuccessEmail(order)
+        : Promise.resolve(),
+    ]);
   }
 
   if (previousStatus !== order.status) {

@@ -117,3 +117,15 @@ export async function sendStatusEmailByOrder(order, status) {
 
   return null;
 }
+
+export async function dispatchOrderNotificationTasks(tasks = []) {
+  const settled = await Promise.allSettled(tasks);
+
+  settled.forEach((result) => {
+    if (result.status === "rejected") {
+      console.error("[ORDER-NOTIFICATION] Task failed:", result.reason?.message || result.reason);
+    }
+  });
+
+  return settled;
+}

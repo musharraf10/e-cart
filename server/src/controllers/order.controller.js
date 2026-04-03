@@ -2,7 +2,12 @@ import crypto from "crypto";
 import { Order } from "../models/order.model.js";
 import { User } from "../models/user.model.js";
 import { createNotification } from "../services/notification.service.js";
-import { sendOrderConfirmationEmail } from "../services/order-notification.service.js";
+import {
+  dispatchOrderNotificationTasks,
+  sendOrderConfirmationEmail,
+  sendPaymentSuccessEmail,
+  sendStatusEmailByOrder,
+} from "../services/order-notification.service.js";
 import { createShipment, updateOrderStatus as applyOrderStatusUpdate } from "../services/shippingService.js";
 import { normalizeOrderStatus } from "../utils/statusMapper.js";
 import { generateInvoicePdfBuffer } from "../utils/invoice.util.js";
@@ -105,7 +110,7 @@ export async function createOrder(req, res) {
 
   await markCouponUsed(orderPayload.couponCode);
 
-  await Promise.allSettled([
+  await dispatchOrderNotificationTasks([
     createNotification({
       userId: req.user._id,
       title: "Order placed",
@@ -282,13 +287,21 @@ export async function updateOrderStatus(req, res) {
   await order.save();
 
   if (previousStatus !== order.status) {
-    await createNotification({
+    await dispatchOrderNotificationTasks([
+      createNotification({
       userId: order.user,
       title: `Order ${order.status}`,
       message: `Your order #${order._id.toString().slice(-6)} moved from ${previousStatus} to ${order.status}.`,
       type: "order",
       link: `/account/orders/${order._id}`,
-    });
+      }),
+      sendStatusEmailByOrder(order, order.status),
+      previousStatus !== "delivered" &&
+        order.status === "delivered" &&
+        order.paymentMethod === "cod"
+        ? sendPaymentSuccessEmail(order)
+        : Promise.resolve(),
+    ]);
   }
 
   return res.json({
