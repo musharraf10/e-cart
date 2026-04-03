@@ -12,6 +12,10 @@ import {
   tokenExpiry,
 } from "../utils/security.util.js";
 import { sendEmail } from "../utils/email.util.js";
+import {
+  renderPasswordResetEmailTemplate,
+  renderVerificationEmailTemplate,
+} from "../utils/auth-email-templates.util.js";
 
 const refreshCookieName = "noorfit_refresh";
 
@@ -94,40 +98,33 @@ async function buildAuthResponse(user, res) {
 }
 
 async function sendVerificationEmail(user, rawToken) {
-  const clientBaseUrl =
-    process.env.CLIENT_URL || "https://noorfit.netlify.app/";
+  const clientBaseUrl = (process.env.CLIENT_URL || "https://noorfit.netlify.app")
+    .trim()
+    .replace(/\/+$/, "");
   const verifyUrl = `${clientBaseUrl}/verify-email?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
+  const html = renderVerificationEmailTemplate({
+    name: user.name,
+    verifyUrl,
+  });
 
   await sendEmail({
     to: user.email,
     subject: "Verify your NoorFit account",
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2>Welcome to NoorFit, ${user.name}!</h2>
-        <p>Please verify your email to activate your account.</p>
-        <p><a href="${verifyUrl}">Verify Email</a></p>
-        <p>This link expires in 24 hours.</p>
-      </div>
-    `,
+    html,
   });
 }
 
 async function sendPasswordResetEmail(user, rawToken) {
-  const clientBaseUrl =
-    process.env.CLIENT_URL || "https://noorfit.netlify.app/";
+  const clientBaseUrl = (process.env.CLIENT_URL || "https://noorfit.netlify.app")
+    .trim()
+    .replace(/\/+$/, "");
   const resetUrl = `${clientBaseUrl}/reset-password?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(user.email)}`;
+  const html = renderPasswordResetEmailTemplate({ resetUrl });
 
   await sendEmail({
     to: user.email,
     subject: "Reset your NoorFit password",
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2>Password reset request</h2>
-        <p>Click the link below to reset your password:</p>
-        <p><a href="${resetUrl}">Reset Password</a></p>
-        <p>This link expires in 30 minutes.</p>
-      </div>
-    `,
+    html,
   });
 }
 
@@ -252,7 +249,7 @@ export async function forgotPassword(req, res) {
   try {
     await sendPasswordResetEmail(user, rawResetToken);
     console.log(`[FORGOT PASSWORD] Email sent to: ${user.email}`);
-  } catch {
+  } catch (error) {
     console.error(`[FORGOT PASSWORD] Email failed:`, error.message);
     // User was saved with token, but email failed - log it for debugging
     // In production, you might want to alert the admin or retry later
