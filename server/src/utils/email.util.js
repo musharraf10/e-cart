@@ -21,6 +21,14 @@ function buildTransporter() {
     auth: { user, pass },
   });
 
+  transporter.verify((error, success) => {
+    if (error) {
+      console.log("Nodemailer Error:", error);
+    } else {
+      console.log("Server is ready to take our messages");
+    }
+  });
+
   return transporter;
 }
 
