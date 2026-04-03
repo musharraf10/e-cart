@@ -1,7 +1,10 @@
 import crypto from "crypto";
 import { Order } from "../models/order.model.js";
 import { createNotification } from "../services/notification.service.js";
-import { sendPaymentSuccessEmail } from "../services/order-notification.service.js";
+import {
+  dispatchOrderNotificationTasks,
+  sendPaymentSuccessEmail,
+} from "../services/order-notification.service.js";
 import { razorpay } from "../utils/razorpay.js";
 
 import {
@@ -117,7 +120,7 @@ async function markOrderPaid(order, paymentId) {
 
   await order.save();
 
-  await Promise.allSettled([
+  await dispatchOrderNotificationTasks([
     createNotification({
       userId: order.user,
       title: "Order confirmed",
