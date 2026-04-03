@@ -1,71 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://&lt;your-domain&gt;/</loc>
+    <loc>https://noorfit.netlify.app/</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/about</loc>
+    <loc>https://noorfit.netlify.app/about</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/account</loc>
+    <loc>https://noorfit.netlify.app/account</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/admin</loc>
+    <loc>https://noorfit.netlify.app/admin</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/auth</loc>
+    <loc>https://noorfit.netlify.app/auth</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/cancel</loc>
+    <loc>https://noorfit.netlify.app/cancel</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/cart</loc>
+    <loc>https://noorfit.netlify.app/cart</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/checkout</loc>
+    <loc>https://noorfit.netlify.app/checkout</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/login</loc>
+    <loc>https://noorfit.netlify.app/login</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/privacy</loc>
+    <loc>https://noorfit.netlify.app/privacy</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/reset-password</loc>
+    <loc>https://noorfit.netlify.app/reset-password</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/search</loc>
+    <loc>https://noorfit.netlify.app/search</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/shop</loc>
+    <loc>https://noorfit.netlify.app/shop</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/success</loc>
+    <loc>https://noorfit.netlify.app/success</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/support</loc>
+    <loc>https://noorfit.netlify.app/support</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/terms</loc>
+    <loc>https://noorfit.netlify.app/terms</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
   <url>
-    <loc>https://&lt;your-domain&gt;/verify-email</loc>
+    <loc>https://noorfit.netlify.app/verify-email</loc>
     <lastmod>2026-03-27T17:51:46.203Z</lastmod>
   </url>
 </urlset>

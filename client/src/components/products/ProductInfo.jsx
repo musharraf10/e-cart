@@ -219,13 +219,13 @@ export function ProductInfo({
 
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xl font-semibold text-white">
-          ${selectedPrice.toFixed(2)}
+          ₹{selectedPrice.toFixed(2)}
         </span>
 
         {product.originalPrice > selectedPrice && (
           <>
             <span className="text-muted line-through">
-              ${product.originalPrice.toFixed(2)}
+              ₹{product.originalPrice.toFixed(2)}
             </span>
 
             {discount > 0 && (

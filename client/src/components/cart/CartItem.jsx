@@ -72,7 +72,7 @@ export function CartItem({ item, index, selected, onSelectChange }) {
             </button>
           </div>
           <span className="text-white font-semibold">
-            ${lineTotal.toFixed(2)}
+            ₹ {lineTotal.toFixed(2)}
           </span>
           <button
             type="button"

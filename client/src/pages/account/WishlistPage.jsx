@@ -202,11 +202,11 @@ export function WishlistPage() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-accent font-bold text-sm">
-                          ${price?.toFixed(2)}
+                          ₹{price?.toFixed(2)}
                         </span>
                         {oldPrice && (
                           <span className="text-muted text-xs line-through">
-                            ${oldPrice.toFixed(2)}
+                            ₹{oldPrice.toFixed(2)}
                           </span>
                         )}
                         {discount && (

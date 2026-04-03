@@ -247,7 +247,7 @@ export function OrderDetailsPage() {
                       Qty: {item.qty}
                     </p>
                     <p className="text-white font-medium mt-2">
-                      ${item.price.toFixed(2)}
+                      ₹{item.price.toFixed(2)}
                     </p>
 
                     {currentStatus === "delivered" && user && (
@@ -306,7 +306,7 @@ export function OrderDetailsPage() {
               <div className="flex justify-between">
                 <span className="text-[#a1a1aa]">Subtotal</span>
                 <span className="text-white">
-                  ${order.total.toFixed(2)}
+                  ₹{order.total.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -316,7 +316,7 @@ export function OrderDetailsPage() {
               <div className="border-t border-[#262626] pt-3 flex justify-between">
                 <span className="text-white font-semibold">Total</span>
                 <span className="text-[#d4af37] text-xl font-bold">
-                  ${order.total.toFixed(2)}
+                  ₹{order.total.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -361,20 +361,20 @@ export function OrderDetailsPage() {
                 <div
                   key={step}
                   className={`flex items-center gap-3 text-sm ${steps.indexOf(step) <= steps.indexOf(currentStatus)
-                      ? "opacity-100"
-                      : "opacity-50"
+                    ? "opacity-100"
+                    : "opacity-50"
                     }`}
                 >
                   <div
                     className={`w-3 h-3 rounded-full ${steps.indexOf(step) <= steps.indexOf(currentStatus)
-                        ? "bg-[#d4af37]"
-                        : "bg-[#262626]"
+                      ? "bg-[#d4af37]"
+                      : "bg-[#262626]"
                       }`}
                   ></div>
                   <span
                     className={`capitalize ${steps.indexOf(step) <= steps.indexOf(currentStatus)
-                        ? "text-white"
-                        : "text-[#a1a1aa]"
+                      ? "text-white"
+                      : "text-[#a1a1aa]"
                       }`}
                   >
                     {step}

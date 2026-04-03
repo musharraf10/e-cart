@@ -159,11 +159,11 @@ export function ProductCard({ product, compact = false }) {
           <div className="mt-2 flex items-end justify-between gap-2">
             <div className="flex flex-col gap-0.5">
               <span className={`text-white font-semibold ${compact ? "text-sm" : "text-base"}`}>
-                ${displayPrice.toFixed(2)}
+                ₹{displayPrice.toFixed(2)}
               </span>
               <span className="text-muted text-xs h-4 leading-4 line-through">
                 {product.originalPrice && product.originalPrice > displayPrice
-                  ? `$${product.originalPrice.toFixed(2)}`
+                  ? `₹${product.originalPrice.toFixed(2)}`
                   : inventory < 1
                     ? "Unavailable"
                     : " "}

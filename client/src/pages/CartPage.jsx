@@ -103,7 +103,7 @@ export function CartPage() {
             <div className="flex items-center justify-between text-sm mb-4">
               <span className="text-muted">Subtotal</span>
               <span className="font-semibold text-white">
-                ${subtotal.toFixed(2)}
+                ₹{subtotal.toFixed(2)}
               </span>
             </div>
             <p className="text-muted text-xs mb-6">
@@ -124,7 +124,7 @@ export function CartPage() {
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
             <div className="text-sm">
               <p className="text-muted">{selectedItems.length} selected</p>
-              <p className="font-semibold text-white">${selectedSubtotal.toFixed(2)}</p>
+              <p className="font-semibold text-white">₹{selectedSubtotal.toFixed(2)}</p>
             </div>
             <button
               type="button"
@@ -144,7 +144,7 @@ export function CartPage() {
               <span className="font-semibold text-white">{selectedItems.length}</span> items selected
             </p>
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-white">${selectedSubtotal.toFixed(2)}</span>
+              <span className="text-sm font-semibold text-white">₹{selectedSubtotal.toFixed(2)}</span>
               <button
                 type="button"
                 disabled={selectedItems.length === 0}
