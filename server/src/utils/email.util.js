@@ -6,7 +6,7 @@ function buildTransporter() {
   if (transporter) return transporter;
 
   const host = process.env.EMAIL_HOST;
-  const port = Number(process.env.EMAIL_PORT || 465);
+  const port = Number(process.env.EMAIL_PORT) || 465;
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
 
