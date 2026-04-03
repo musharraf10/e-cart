@@ -9,7 +9,9 @@ import {
 import { generateInvoicePdfBuffer } from "../utils/invoice.util.js";
 
 function createOrderUrls(orderId) {
-  const clientUrl = process.env.CLIENT_URL || "https://noorfit.netlify.app/";
+  const clientUrl = (process.env.CLIENT_URL || "https://noorfit.netlify.app")
+    .trim()
+    .replace(/\/+$/, "");
   const safeId = encodeURIComponent(orderId.toString());
 
   return {
@@ -19,6 +21,13 @@ function createOrderUrls(orderId) {
 }
 
 async function loadEmailRecipient(order) {
+  if (order?.user?.email) {
+    return {
+      name: order.user.name || "Customer",
+      email: order.user.email,
+    };
+  }
+
   const user = await User.findById(order.user).select("name email");
   if (!user?.email) return null;
 
@@ -107,6 +116,14 @@ export async function sendOrderDeliveredEmail(order) {
 }
 
 export async function sendStatusEmailByOrder(order, status) {
+  if (["confirmed", "processing", "packed"].includes(status)) {
+    return sendOrderConfirmationEmail(order);
+  }
+
+  if (["in_transit", "out_for_delivery"].includes(status)) {
+    return sendOrderShippedEmail(order);
+  }
+
   if (status === "shipped") {
     return sendOrderShippedEmail(order);
   }
