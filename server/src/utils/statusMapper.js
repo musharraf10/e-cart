@@ -33,9 +33,12 @@ export function mapExternalStatus(status) {
     return mappedStatus;
   }
 
-  console.warn("[shipping] unknown external status received, defaulting to in_transit", {
-    externalStatus: status,
-  });
+  console.warn(
+    "[shipping] unknown external status received, defaulting to in_transit",
+    {
+      externalStatus: status,
+    },
+  );
   return "in_transit";
 }
 
