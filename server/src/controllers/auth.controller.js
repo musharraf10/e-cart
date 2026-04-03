@@ -15,6 +15,7 @@ import { sendEmail } from "../utils/email.util.js";
 import {
   renderPasswordResetEmailTemplate,
   renderVerificationEmailTemplate,
+  renderWelcomeEmailTemplate,
 } from "../utils/auth-email-templates.util.js";
 
 const refreshCookieName = "noorfit_refresh";
@@ -128,6 +129,23 @@ async function sendPasswordResetEmail(user, rawToken) {
   });
 }
 
+async function sendWelcomeEmail(user) {
+  const clientBaseUrl = (process.env.CLIENT_URL || "https://noorfit.netlify.app")
+    .trim()
+    .replace(/\/+$/, "");
+  const dashboardUrl = `${clientBaseUrl}/account/profile`;
+  const html = renderWelcomeEmailTemplate({
+    name: user.name,
+    dashboardUrl,
+  });
+
+  await sendEmail({
+    to: user.email,
+    subject: "Welcome to NoorFit 🎉",
+    html,
+  });
+}
+
 export async function register(req, res) {
   const { name, email, password } = req.body;
 
@@ -185,6 +203,13 @@ export async function verifyEmail(req, res) {
   user.verifyTokenHash = null;
   user.verifyTokenExpiry = null;
   await user.save();
+
+  try {
+    await sendWelcomeEmail(user);
+    console.log(`[WELCOME] Email sent to: ${user.email}`);
+  } catch (e) {
+    console.error("[WELCOME] Email failed:", e.message);
+  }
 
   res.json({ message: "Email verified successfully. You can now log in." });
 }
@@ -366,6 +391,13 @@ export async function googleLogin(req, res) {
       firebaseUid: decodedToken.uid,
       isVerified: true,
     });
+
+    try {
+      await sendWelcomeEmail(user);
+      console.log(`[WELCOME] Email sent to: ${user.email}`);
+    } catch (e) {
+      console.error("[WELCOME] Email failed:", e.message);
+    }
   } else {
     user.avatar = user.avatar || avatar;
     user.firebaseUid = user.firebaseUid || decodedToken.uid;

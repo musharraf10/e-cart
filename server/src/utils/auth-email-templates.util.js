@@ -79,3 +79,47 @@ export function renderPasswordResetEmailTemplate({ resetUrl }) {
       "If you did not request a password reset, you can ignore this email.",
   });
 }
+
+export function renderWelcomeEmailTemplate({ name = "there", dashboardUrl }) {
+  return `
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Welcome to Noor Fit</title>
+</head>
+<body style="margin:0;background:#020617;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020617;padding:24px 8px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:640px;max-width:640px;background:linear-gradient(180deg,#0b1120 0%,#0a1931 100%);border:1px solid #1e293b;border-radius:20px;overflow:hidden;">
+          <tr>
+            <td style="padding:28px 32px;border-bottom:1px solid #1e293b;text-align:center;">
+              <p style="margin:0;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#93c5fd;">Noor Fit</p>
+              <h1 style="margin:10px 0 0;font-size:30px;line-height:1.2;color:#f8fafc;">Welcome, ${escapeHtml(name)} ✨</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 28px;">
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#cbd5e1;">
+                We’re excited to have you with us. Your account is now ready and you can start exploring premium modest fashion collections.
+              </p>
+              <p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#94a3b8;">
+                Need help with your first order? Just reply to this email and our team will assist you.
+              </p>
+              ${
+                dashboardUrl
+                  ? `<p style="margin:0;"><a href="${dashboardUrl}" style="display:inline-block;background:#22c55e;color:#052e16;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:10px;">Go to My Account</a></p>`
+                  : ""
+              }
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
