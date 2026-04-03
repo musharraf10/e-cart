@@ -3,6 +3,7 @@ import { Order } from "../models/order.model.js";
 import { createNotification } from "../services/notification.service.js";
 import {
   dispatchOrderNotificationTasks,
+  sendOrderConfirmationEmail,
   sendPaymentSuccessEmail,
 } from "../services/order-notification.service.js";
 import { razorpay } from "../utils/razorpay.js";
@@ -128,6 +129,7 @@ async function markOrderPaid(order, paymentId) {
       type: "order",
       link: `/account/orders/${order._id}`,
     }),
+    sendOrderConfirmationEmail(order),
     sendPaymentSuccessEmail(order),
   ]);
 

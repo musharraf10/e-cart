@@ -1,3 +1,10 @@
+import { Order } from "../models/order.model.js";
+import { createNotification } from "../services/notification.service.js";
+import {
+  dispatchOrderNotificationTasks,
+  sendPaymentSuccessEmail,
+  sendStatusEmailByOrder,
+} from "../services/order-notification.service.js";
 import {
   handleWebhook,
   logShippingWebhookEvent,
@@ -25,6 +32,31 @@ export async function receiveShippingWebhook(req, res) {
           eventTime: payload?.eventTime,
         });
         await recordFailedShippingEvent(payload, new Error(processResult?.reason || "processing_failed"));
+        return;
+      }
+
+      if (processResult.updated && processResult.orderId && processResult.status) {
+        const order = await Order.findById(processResult.orderId).select(
+          "_id user status paymentMethod paymentStatus shippingTrackingNumber",
+        );
+
+        if (order) {
+          await dispatchOrderNotificationTasks([
+            createNotification({
+              userId: order.user,
+              title: `Order ${order.status}`,
+              message: `Your order #${order._id.toString().slice(-6)} is now ${order.status}.`,
+              type: "order",
+              link: `/account/orders/${order._id}`,
+            }),
+            sendStatusEmailByOrder(order, processResult.status),
+            processResult.status === "delivered" &&
+            order.paymentMethod === "cod" &&
+            order.paymentStatus !== "paid"
+              ? sendPaymentSuccessEmail(order)
+              : Promise.resolve(),
+          ]);
+        }
       }
     } catch (error) {
       console.error("[shipping-webhook] async processing failed", {
