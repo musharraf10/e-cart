@@ -152,8 +152,14 @@ export async function register(req, res) {
     verifyTokenHash: hashToken(rawVerifyToken),
     verifyTokenExpiry: tokenExpiry(24 * 60),
   });
-
-  await sendVerificationEmail(user, rawVerifyToken);
+  try {
+    await sendVerificationEmail(user, rawVerifyToken);
+    console.log(`[VERIFICATION] Email sent to: ${user.email}`);
+  } catch (e) {
+    console.error(`[VERIFICATION] Email failed:`, e.message);
+    // User was saved with token, but email failed - log it for debugging
+    // In production, you might want to alert the admin or retry later
+  }
 
   res.status(201).json({
     message: "Registration successful. Please verify your email before login.",
@@ -214,7 +220,14 @@ export async function resendVerificationEmail(req, res) {
   user.verifyTokenExpiry = tokenExpiry(24 * 60);
   await user.save();
 
-  await sendVerificationEmail(user, rawVerifyToken);
+  try {
+    await sendVerificationEmail(user, rawVerifyToken);
+    console.log(`[RESEND EMAIL] Email sent to: ${user.email}`);
+  } catch (e) {
+    console.error(`[RESEND EMAIL] Email failed:`, e.message);
+    // User was saved with token, but email failed - log it for debugging
+    // In production, you might want to alert the admin or retry later
+  }
 
   return res.json({
     message: "Verification email sent. Please check your inbox.",
@@ -236,8 +249,14 @@ export async function forgotPassword(req, res) {
   user.passwordResetTokenHash = hashToken(rawResetToken);
   user.passwordResetTokenExpiry = tokenExpiry(30);
   await user.save();
-
-  await sendPasswordResetEmail(user, rawResetToken);
+  try {
+    await sendPasswordResetEmail(user, rawResetToken);
+    console.log(`[FORGOT PASSWORD] Email sent to: ${user.email}`);
+  } catch {
+    console.error(`[FORGOT PASSWORD] Email failed:`, error.message);
+    // User was saved with token, but email failed - log it for debugging
+    // In production, you might want to alert the admin or retry later
+  }
 
   return res.json({
     message: "If that email exists, a reset link has been sent.",
